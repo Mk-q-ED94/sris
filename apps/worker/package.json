@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "description": "SRIS Cloudflare Worker",
-  "main": "src/index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env=\"\"",
+    "deploy:staging": "wrangler deploy --env staging",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
     "wrangler": "^4.90.0"
   },
   "engines": {
