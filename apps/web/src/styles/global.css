@@ -33,14 +33,38 @@ a {
   text-decoration: none;
 }
 
+.university-hero-bleed {
+  isolation: isolate;
+}
+
 .university-carousel-mask {
-  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
   perspective: 1200px;
 }
 
+.university-edge-blur {
+  pointer-events: none;
+  position: absolute;
+  top: 8px;
+  bottom: 18px;
+  z-index: 4;
+  width: min(18vw, 190px);
+  backdrop-filter: blur(12px);
+}
+
+.university-edge-blur-left {
+  left: -1px;
+  background: linear-gradient(90deg, #f6f8fb 0%, rgba(246, 248, 251, 0.86) 38%, transparent 100%);
+}
+
+.university-edge-blur-right {
+  right: -1px;
+  background: linear-gradient(270deg, #f6f8fb 0%, rgba(246, 248, 251, 0.86) 38%, transparent 100%);
+}
+
 .university-carousel-track {
-  animation: university-carousel-scroll 34s linear infinite;
+  animation: university-carousel-scroll 42s linear infinite;
 }
 
 .university-carousel-mask:hover .university-carousel-track {
@@ -64,7 +88,7 @@ a {
 }
 
 .university-reflection {
-  transform: rotateX(62deg) translateY(-12px) scale(0.94);
+  transform: rotateX(60deg) translateY(-14px) scale(0.95);
   transform-origin: top center;
 }
 
@@ -73,7 +97,7 @@ a {
     transform: translateX(0);
   }
   to {
-    transform: translateX(calc(-50% - 10px));
+    transform: translateX(calc(-50% - 16px));
   }
 }
 
