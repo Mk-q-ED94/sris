@@ -39,7 +39,7 @@ Create a private GitHub repository and add these repository secrets:
 
 Then push to `main`. `.github/workflows/cloudflare-worker.yml` will:
 
-1. Patch `wrangler.toml` / `wrangler.jsonc` with `CLOUDFLARE_D1_DATABASE_ID`.
+1. Patch `wrangler.jsonc` with `CLOUDFLARE_D1_DATABASE_ID`.
 2. Apply D1 migrations.
 3. Generate a temporary `.secrets.json` inside the GitHub runner.
 4. Deploy the Worker with `wrangler deploy --secrets-file .secrets.json`.
