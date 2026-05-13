@@ -17,22 +17,25 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { UniversityCarousel } from "../components/UniversityCarousel";
 import { useAuth } from "../contexts/AuthContext";
+import { useI18n } from "../contexts/I18nContext";
 import { fetchDashboard } from "../lib/api";
 import { compactNumber, formatDate } from "../lib/format";
+import type { Locale, MetricKey } from "../i18n/locales";
 import type { DashboardSummary, Paper, PaperCandidate, TimelineTask } from "../types/sris";
 
-const metricConfig = [
-  { key: "universities", label: "院校", icon: University, tone: "from-sky-500 to-cyan-400" },
-  { key: "programs", label: "项目", icon: GraduationCap, tone: "from-indigo-500 to-blue-400" },
-  { key: "professors", label: "教授", icon: UsersRound, tone: "from-violet-500 to-fuchsia-400" },
-  { key: "labs", label: "实验室", icon: FlaskConical, tone: "from-emerald-500 to-teal-400" },
-  { key: "papers", label: "论文", icon: BookOpen, tone: "from-slate-700 to-slate-500" },
-  { key: "pending_candidates", label: "待确认", icon: Inbox, tone: "from-amber-500 to-orange-400" },
-  { key: "timeline_tasks", label: "任务", icon: CalendarClock, tone: "from-rose-500 to-pink-400" },
-] as const;
+const metricConfig: Array<{ key: MetricKey; icon: React.ComponentType<{ className?: string }>; tone: string }> = [
+  { key: "universities", icon: University, tone: "from-sky-500 to-cyan-400" },
+  { key: "programs", icon: GraduationCap, tone: "from-indigo-500 to-blue-400" },
+  { key: "professors", icon: UsersRound, tone: "from-violet-500 to-fuchsia-400" },
+  { key: "labs", icon: FlaskConical, tone: "from-emerald-500 to-teal-400" },
+  { key: "papers", icon: BookOpen, tone: "from-slate-700 to-slate-500" },
+  { key: "pending_candidates", icon: Inbox, tone: "from-amber-500 to-orange-400" },
+  { key: "timeline_tasks", icon: CalendarClock, tone: "from-rose-500 to-pink-400" },
+];
 
 export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string) => void }) {
   const { token, clearToken } = useAuth();
+  const { t } = useI18n();
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +46,9 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
     try {
       setData(await fetchDashboard(token));
     } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes("invalid api token")) {
+        clearToken();
+      }
       setError(err instanceof Error ? err.message : "Dashboard request failed");
     } finally {
       setLoading(false);
@@ -67,14 +73,14 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
             <Activity className="h-5 w-5" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-[-0.03em]">无法加载总览</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.03em]">{t.dashboardLoadFailed}</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">{error}</p>
           <div className="mt-6 flex justify-center gap-3">
             <button onClick={load} className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white">
-              重试
+              {t.retry}
             </button>
             <button onClick={clearToken} className="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-semibold text-slate-700">
-              重新输入 token
+              {t.reenterToken}
             </button>
           </div>
         </div>
@@ -92,19 +98,17 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-500">
               <Sparkles className="h-4 w-4 text-cyan-600" />
-              Research intelligence cockpit
+              {t.cockpitChip}
             </div>
             <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.055em] text-slate-950 sm:text-6xl">
-              SGU / AI 修士申请总览
+              {t.heroTitle}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500 sm:text-lg">
-              把院校、教授、实验室、论文雷达和申请任务压缩成一个可扫描的每日控制台。
-            </p>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500 sm:text-lg">{t.heroBody}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
-            <HeroStat label="待确认论文" value={data?.counts.pending_candidates ?? 0} helper="Review queue" />
-            <HeroStat label="90 天任务" value={data?.upcoming_tasks.length ?? 0} helper="Application timeline" />
-            <HeroStat label="完成率" value={`${completion}%`} helper="Upcoming window" />
+            <HeroStat label={t.hero.pending} value={data?.counts.pending_candidates ?? 0} helper={t.hero.pendingHelper} />
+            <HeroStat label={t.hero.tasks90d} value={data?.upcoming_tasks.length ?? 0} helper={t.hero.tasksHelper} />
+            <HeroStat label={t.hero.completion} value={`${completion}%`} helper={t.hero.completionHelper} />
           </div>
         </div>
       </section>
@@ -122,7 +126,7 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
                 <Icon className="h-4 w-4" />
               </div>
               <div className="text-2xl font-semibold tracking-[-0.03em]">{loading ? "…" : compactNumber(value)}</div>
-              <div className="mt-1 text-sm font-medium text-slate-500">{metric.label}</div>
+              <div className="mt-1 text-sm font-medium text-slate-500">{t.metrics[metric.key]}</div>
             </div>
           );
         })}
@@ -130,29 +134,29 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
 
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.75fr]">
         <Panel
-          title="近期论文"
-          subtitle="已进入正式库的研究信号"
+          title={t.panels.recentPapers[0]}
+          subtitle={t.panels.recentPapers[1]}
           action={
             <button onClick={load} className="inline-flex h-9 items-center gap-2 rounded-2xl bg-slate-100 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
               <RefreshCw className="h-4 w-4" />
-              刷新
+              {t.refresh}
             </button>
           }
         >
-          <PaperList papers={data?.recent_papers ?? []} loading={loading} />
+          <PaperList papers={data?.recent_papers ?? []} loading={loading} t={t} />
         </Panel>
 
-        <Panel title="申请窗口" subtitle="未来 90 天高优先级动作">
-          <Timeline tasks={data?.upcoming_tasks ?? []} loading={loading} />
+        <Panel title={t.panels.timeline[0]} subtitle={t.panels.timeline[1]}>
+          <Timeline tasks={data?.upcoming_tasks ?? []} loading={loading} t={t} />
         </Panel>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[0.82fr_1fr]">
-        <Panel title="待确认队列" subtitle="自动采集结果进入正式库前的缓冲区">
-          <CandidateList candidates={data?.pending_candidates ?? []} loading={loading} />
+        <Panel title={t.panels.review[0]} subtitle={t.panels.review[1]}>
+          <CandidateList candidates={data?.pending_candidates ?? []} loading={loading} t={t} />
         </Panel>
-        <Panel title="系统状态" subtitle="面向长期运行的基础设施信号">
-          <SystemStatus data={data} loading={loading} />
+        <Panel title={t.panels.status[0]} subtitle={t.panels.status[1]}>
+          <SystemStatus data={data} loading={loading} t={t} />
         </Panel>
       </section>
     </div>
@@ -194,9 +198,9 @@ function Panel({
   );
 }
 
-function PaperList({ papers, loading }: { papers: Paper[]; loading: boolean }) {
+function PaperList({ papers, loading, t }: { papers: Paper[]; loading: boolean; t: Locale }) {
   if (loading) return <SkeletonRows />;
-  if (!papers.length) return <EmptyState title="暂无论文" helper="运行 arXiv ingest 或在 Review Queue 接受候选论文。" />;
+  if (!papers.length) return <EmptyState title={t.noPapersTitle} helper={t.noPapersHelper} />;
   return (
     <div className="space-y-3">
       {papers.slice(0, 6).map((paper) => (
@@ -208,7 +212,7 @@ function PaperList({ papers, loading }: { papers: Paper[]; loading: boolean }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="line-clamp-2 text-sm font-semibold leading-6 text-slate-900">{paper.title}</h3>
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500">{paper.authors.join(", ") || "Unknown authors"}</p>
+              <p className="mt-1 line-clamp-1 text-xs text-slate-500">{paper.authors.join(", ") || t.unknownAuthors}</p>
             </div>
             <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-cyan-600" />
           </div>
@@ -227,41 +231,47 @@ function PaperList({ papers, loading }: { papers: Paper[]; loading: boolean }) {
   );
 }
 
-function Timeline({ tasks, loading }: { tasks: TimelineTask[]; loading: boolean }) {
+function Timeline({ tasks, loading, t }: { tasks: TimelineTask[]; loading: boolean; t: Locale }) {
   if (loading) return <SkeletonRows />;
-  if (!tasks.length) return <EmptyState title="没有临近任务" helper="未来 90 天暂无未完成事项。" />;
+  if (!tasks.length) return <EmptyState title={t.noTasksTitle} helper={t.noTasksHelper} />;
   return (
     <div className="space-y-3">
-      {tasks.slice(0, 7).map((task) => (
-        <div key={task.id} className="flex gap-3 rounded-3xl border border-slate-200/70 bg-slate-50/70 p-4">
-          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
-            {task.status === "done" ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Clock3 className="h-4 w-4" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="truncate text-sm font-semibold text-slate-900">{task.title}</h3>
-              <Badge tone={task.priority === "high" ? "amber" : "slate"}>{task.priority}</Badge>
+      {tasks.slice(0, 7).map((task) => {
+        const priorityKey = (task.priority === "high" || task.priority === "low" ? task.priority : "medium") as
+          | "high"
+          | "medium"
+          | "low";
+        return (
+          <div key={task.id} className="flex gap-3 rounded-3xl border border-slate-200/70 bg-slate-50/70 p-4">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
+              {task.status === "done" ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Clock3 className="h-4 w-4" />}
             </div>
-            <div className="mt-1 text-xs text-slate-500">
-              {task.task_type ?? "Task"} · {formatDate(task.deadline)}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="truncate text-sm font-semibold text-slate-900">{task.title}</h3>
+                <Badge tone={priorityKey === "high" ? "amber" : "slate"}>{t.priorities[priorityKey]}</Badge>
+              </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {task.task_type ?? "Task"} · {formatDate(task.deadline, t.dateLocale, t.notSet)}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-function CandidateList({ candidates, loading }: { candidates: PaperCandidate[]; loading: boolean }) {
+function CandidateList({ candidates, loading, t }: { candidates: PaperCandidate[]; loading: boolean; t: Locale }) {
   if (loading) return <SkeletonRows />;
-  if (!candidates.length) return <EmptyState title="Review Queue 清空" helper="新的 arXiv 候选会在定时任务后出现。" />;
+  if (!candidates.length) return <EmptyState title={t.reviewClearedTitle} helper={t.reviewClearedHelper} />;
   return (
     <div className="space-y-3">
       {candidates.slice(0, 5).map((candidate) => (
         <div key={candidate.id} className="rounded-3xl border border-amber-100 bg-amber-50/60 p-4">
           <div className="mb-2 flex flex-wrap gap-2">
             <Badge tone="amber">{candidate.source ?? "arXiv"}</Badge>
-            <Badge>{formatDate(candidate.published_at)}</Badge>
+            <Badge>{formatDate(candidate.published_at, t.dateLocale, t.notSet)}</Badge>
           </div>
           <h3 className="line-clamp-2 text-sm font-semibold leading-6">{candidate.title}</h3>
           <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{candidate.abstract}</p>
@@ -271,12 +281,12 @@ function CandidateList({ candidates, loading }: { candidates: PaperCandidate[]; 
   );
 }
 
-function SystemStatus({ data, loading }: { data: DashboardSummary | null; loading: boolean }) {
+function SystemStatus({ data, loading, t }: { data: DashboardSummary | null; loading: boolean; t: Locale }) {
   const items = [
-    { label: "D1 数据库", value: loading ? "Checking" : "Connected", ok: true },
-    { label: "arXiv Radar", value: `${data?.pending_candidates.length ?? 0} pending`, ok: true },
-    { label: "AI 摘要", value: "Interface reserved", ok: false },
-    { label: "Cloudflare Cron", value: "Daily 23:15 UTC", ok: true },
+    { label: t.status.db, value: loading ? t.status.checking : t.status.connected, ok: true },
+    { label: t.status.arxiv, value: t.status.pendingFmt(data?.pending_candidates.length ?? 0), ok: true },
+    { label: t.status.ai, value: t.status.aiReserved, ok: false },
+    { label: t.status.cron, value: t.status.cronSchedule, ok: true },
   ];
 
   return (

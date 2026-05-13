@@ -7,7 +7,8 @@
     "dev:web": "npm --prefix apps/web run dev",
     "build:web": "npm --prefix apps/web run build",
     "dev": "npm --prefix apps/worker run dev",
-    "deploy": "npm --prefix apps/worker run deploy",
+    "deploy": "npm run build:web && npm --prefix apps/worker run deploy",
+    "deploy:staging": "npm run build:web && npm --prefix apps/worker run deploy:staging",
     "typecheck": "npm --prefix apps/worker run typecheck",
     "test": "npm --prefix apps/worker run test",
     "check": "npm run build:web && npm run typecheck && npm run test"
