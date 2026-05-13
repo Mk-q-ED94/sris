@@ -1,2 +1,0 @@
-"""SRIS FastAPI application package."""
-

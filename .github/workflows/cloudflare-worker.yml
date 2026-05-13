@@ -40,7 +40,7 @@ jobs:
         env:
           CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
         run: |
-          node -e "const fs=require('fs'); const p='apps/worker/wrangler.jsonc'; const s=fs.readFileSync(p,'utf8').replace('REPLACE_WITH_D1_DATABASE_ID', process.env.CLOUDFLARE_D1_DATABASE_ID); fs.writeFileSync(p,s);"
+          node -e "const fs=require('fs'); const p='apps/worker/wrangler.jsonc'; const id=process.env.CLOUDFLARE_D1_DATABASE_ID; const s=fs.readFileSync(p,'utf8').replace(/REPLACE_WITH_D1_DATABASE_ID/g, id).replace(/REPLACE_WITH_STAGING_D1_DATABASE_ID/g, id); fs.writeFileSync(p,s);"
 
       - name: Install Worker dependencies
         working-directory: apps/worker
@@ -72,4 +72,4 @@ jobs:
           workingDirectory: apps/worker
           packageManager: npm
           wranglerVersion: "4.90.1"
-          command: deploy --secrets-file .secrets.json
+          command: deploy --secrets-file .secrets.json --env=""
