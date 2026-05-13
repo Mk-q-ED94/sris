@@ -1,0 +1,47 @@
+name: Deploy SRIS to Cloudflare
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          test -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+          test -n "${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}"
+          test -n "${{ secrets.SRIS_API_TOKEN }}"
+          test -n "${{ secrets.SRIS_CRON_SECRET }}"
+
+      - name: Inject D1 database id into Wrangler config
+        run: |
+          node -e "const fs=require('fs'); const p='apps/worker/wrangler.jsonc'; const s=fs.readFileSync(p,'utf8').replace('REPLACE_WITH_D1_DATABASE_ID', process.env.CLOUDFLARE_D1_DATABASE_ID); fs.writeFileSync(p,s);"
+        env:
+          CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
+
+      - name: Apply migrations and deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/worker
+          packageManager: npm
+          secrets: |
+            API_TOKEN
+            CRON_SECRET
+          command: |
+            d1 migrations apply sris-db --remote
+            deploy
+        env:
+          API_TOKEN: ${{ secrets.SRIS_API_TOKEN }}
+          CRON_SECRET: ${{ secrets.SRIS_CRON_SECRET }}

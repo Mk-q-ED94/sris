@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sris",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-13",
+  "triggers": {
+    "crons": ["15 23 * * *"]
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    "APP_NAME": "SRIS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sris-db",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ]
+}

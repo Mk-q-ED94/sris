@@ -1,0 +1,22 @@
+{
+  "name": "sris",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SGU Research Intelligence System monorepo",
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "lint:web": "npm --workspace apps/web run lint",
+    "dev:api": "uv run --project apps/api uvicorn sris_api.main:app --reload --app-dir apps/api/src",
+    "test:api": "uv run --project apps/api pytest",
+    "check:worker": "node --check apps/worker/src/index.js",
+    "check": "npm run lint:web && npm run build:web && npm run test:api"
+  },
+  "workspaces": [
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  }
+}
