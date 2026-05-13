@@ -10,11 +10,19 @@ SRIS is a private, long-term research intelligence console for Japanese SGU / AI
 - Automation: Cron-protected arXiv ingest endpoint, callable from GitHub Actions or Render Cron
 - Deploy: Vercel for `apps/web`, Render for `apps/api`
 
-## Cloudflare Option
+## Deployment Paths
 
-`apps/worker` contains a Cloudflare-first deployment that serves the console, API, D1 storage, and cron ingest from one Worker. This is the recommended low-cost path for the personal SRIS deployment.
+SRIS supports two deployment paths. **The Cloudflare path is the primary one**; the Vercel + Render + Supabase path is kept as a reference / fallback but is no longer scheduled by CI.
+
+### Cloudflare (primary)
+
+`apps/worker` serves the console, API, D1 storage, and cron ingest from a single Worker. Deployment is automated via `.github/workflows/cloudflare-worker.yml` on push to `main`. The daily arXiv ingest is triggered by the Worker's own cron at `15 23 * * *` (see `apps/worker/wrangler.jsonc`).
 
 See [apps/worker/README.md](apps/worker/README.md).
+
+### Vercel + Render + Supabase (legacy)
+
+`apps/web` (Next.js on Vercel) + `apps/api` (FastAPI on Render) + `supabase/` (Postgres schema). No cron is scheduled for this path — if you re-activate it, add a single cron source (Render cron job or GitHub Action) and make sure the Cloudflare path is disabled to avoid duplicate ingest. The Supabase migration schema may have drifted from the D1 schema; treat D1 (`apps/worker/migrations/`) as authoritative.
 
 ## Local Setup
 

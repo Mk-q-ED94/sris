@@ -367,7 +367,8 @@ async function ingestArxiv(db) {
           )
           .run();
         created += 1;
-      } catch (_error) {
+      } catch (error) {
+        console.error("ingest: failed to insert paper_candidate", { url: paper.url, error });
         skipped += 1;
       }
     }
