@@ -62,7 +62,7 @@ jobs:
           workingDirectory: apps/worker
           packageManager: npm
           wranglerVersion: "4.90.1"
-          command: d1 migrations apply sris-db --remote --yes
+          command: d1 migrations apply sris-db --remote
 
       - name: Deploy Worker with secrets
         uses: cloudflare/wrangler-action@v3
