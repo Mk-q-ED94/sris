@@ -2,50 +2,118 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
   <title>SRIS</title>
   <style>
-    :root { --bg:#f7f9fb; --surface:#fff; --text:#172033; --muted:#617085; --border:#dbe3ea; --accent:#16798c; --warn:#b7791f; --ok:#2f855a; }
-    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--text); font-family:Arial, Helvetica, sans-serif; letter-spacing:0; }
-    .shell { display:grid; grid-template-columns:260px 1fr; min-height:100vh; }
-    aside { background:var(--surface); border-right:1px solid var(--border); padding:18px 14px; position:sticky; top:0; height:100vh; }
+    :root {
+      --bg:#f7f9fb; --surface:#fff; --text:#172033; --muted:#617085; --border:#dbe3ea;
+      --accent:#16798c; --warn:#b7791f; --ok:#2f855a;
+      --sidebar-w: 260px;
+    }
+    * { box-sizing:border-box; }
+    html, body { height:100%; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Microsoft YaHei", "PingFang SC", Arial, sans-serif; letter-spacing:0; -webkit-text-size-adjust:100%; }
+    .shell { display:grid; grid-template-columns: var(--sidebar-w) 1fr; min-height:100vh; min-height:100dvh; }
+    aside {
+      background:var(--surface); border-right:1px solid var(--border); padding:18px 14px;
+      position:sticky; top:0; height:100vh; height:100dvh; overflow-y:auto; z-index:30;
+    }
     .brand { padding:4px 8px 18px; border-bottom:1px solid var(--border); margin-bottom:14px; }
     .brand strong { display:block; font-size:22px; } .brand span, .muted { color:var(--muted); font-size:12px; }
-    nav button { width:100%; display:flex; align-items:center; gap:10px; border:0; background:transparent; color:var(--muted); padding:10px 12px; border-radius:6px; font-weight:600; cursor:pointer; text-align:left; }
+    nav button { width:100%; display:flex; align-items:center; gap:10px; border:0; background:transparent; color:var(--muted); padding:10px 12px; border-radius:6px; font-weight:600; cursor:pointer; text-align:left; font:inherit; }
     nav button.active, nav button:hover { background:#edf3f5; color:var(--text); }
-    main { min-width:0; } header { height:64px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:rgba(247,249,251,.92); position:sticky; top:0; backdrop-filter:blur(10px); }
-    .header-right { display:flex; align-items:center; gap:14px; }
+    .sidebar-foot { color:var(--muted); font-size:12px; padding:14px 8px 0; margin-top:18px; border-top:1px solid var(--border); }
+    main { min-width:0; }
+    header {
+      height:64px; border-bottom:1px solid var(--border); display:flex; align-items:center;
+      justify-content:space-between; gap:12px; padding:0 24px;
+      background:rgba(247,249,251,.92); position:sticky; top:0; backdrop-filter:blur(10px); z-index:20;
+    }
+    header strong { font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .header-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+    .menu-btn {
+      display:none; width:36px; height:36px; border:1px solid var(--border); background:white;
+      border-radius:6px; cursor:pointer; align-items:center; justify-content:center; padding:0;
+      font-size:18px; line-height:1; flex-shrink:0;
+    }
+    .menu-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     .lang-select { height:32px; border:1px solid var(--border); border-radius:6px; padding:0 10px; background:white; color:var(--text); font:inherit; font-size:13px; cursor:pointer; }
+    .overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.36); z-index:25; }
     .content { max-width:1360px; padding:24px; margin:0 auto; }
     h1 { font-size:26px; margin:0; } h2 { font-size:16px; margin:0; } p { line-height:1.55; }
-    .page-head { display:flex; justify-content:space-between; gap:16px; align-items:end; margin-bottom:22px; }
-    .grid { display:grid; gap:14px; } .metrics { grid-template-columns:repeat(7,minmax(120px,1fr)); }
+    .page-head { display:flex; justify-content:space-between; gap:16px; align-items:end; margin-bottom:22px; flex-wrap:wrap; }
+    .grid { display:grid; gap:14px; }
+    .metrics { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .dashboard-grid { display:grid; gap:14px; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); margin-top:18px; }
     .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
     .card-head { padding:16px 18px; border-bottom:1px solid var(--border); font-weight:700; }
     .card-body { padding:18px; } .metric { padding:16px; } .metric .num { font-size:26px; font-weight:700; margin-top:6px; }
-    table { width:100%; border-collapse:collapse; font-size:14px; } th { background:#eef3f6; color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:.04em; text-align:left; padding:12px 14px; border-bottom:1px solid var(--border); }
+    .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th { background:#eef3f6; color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:.04em; text-align:left; padding:12px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
     td { padding:13px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
     input, textarea, select { width:100%; border:1px solid var(--border); border-radius:6px; padding:10px 11px; font:inherit; background:white; }
     textarea { min-height:86px; resize:vertical; } label span { display:block; margin-bottom:5px; color:var(--muted); font-size:12px; font-weight:700; }
-    .toolbar { display:flex; gap:10px; margin-bottom:14px; } .toolbar input { flex:1; }
+    .toolbar { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; } .toolbar input { flex:1; min-width:200px; }
     button.primary, button.secondary, a.button { height:39px; border-radius:6px; padding:0 14px; font-weight:700; cursor:pointer; border:1px solid var(--accent); background:var(--accent); color:white; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
     button.secondary { background:white; color:var(--text); border-color:var(--border); }
     .badge { display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:4px; border:1px solid #c7d7dd; color:var(--accent); background:#e9f5f7; font-size:12px; font-weight:700; margin:2px; }
     .badge.warn { color:#975a16; background:#fff7e6; border-color:#f5d18b; } .badge.ok { color:var(--ok); background:#eefaf3; border-color:#b7e4c7; } .badge.gray { color:var(--muted); background:#f2f5f7; border-color:var(--border); }
-    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; } .span2 { grid-column:span 2; }
-    .review { display:grid; grid-template-columns:1fr auto; gap:18px; padding:18px; } .hidden { display:none; } .error { border:1px solid #fed7d7; background:#fff5f5; color:#c53030; padding:12px; border-radius:6px; margin-bottom:14px; }
-    @media (max-width: 980px) { .shell { grid-template-columns:1fr; } aside { position:relative; height:auto; } .metrics { grid-template-columns:repeat(2,1fr); } .form-grid, .review { grid-template-columns:1fr; } .span2 { grid-column:span 1; } }
+    .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; } .span2 { grid-column:span 2; }
+    .review { display:grid; grid-template-columns:1fr auto; gap:18px; padding:18px; }
+    .review-actions { display:flex; flex-direction:column; gap:8px; }
+    .hidden { display:none; }
+    .error { border:1px solid #fed7d7; background:#fff5f5; color:#c53030; padding:12px; border-radius:6px; margin-bottom:14px; }
+
+    @media (max-width: 1100px) {
+      .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (max-width: 880px) {
+      .shell { grid-template-columns: 1fr; }
+      aside {
+        position:fixed; top:0; left:0; width:280px; max-width:80vw;
+        height:100vh; height:100dvh;
+        transform: translateX(-100%); transition: transform .2s ease;
+        box-shadow: 0 4px 24px rgba(15,23,42,.12);
+      }
+      body.drawer-open aside { transform: translateX(0); }
+      body.drawer-open .overlay { display:block; }
+      .menu-btn { display:inline-flex; }
+      header { padding:0 16px; height:56px; }
+      header strong { font-size:14px; }
+      .content { padding:16px; }
+      .review { grid-template-columns: 1fr; }
+      .review-actions { flex-direction:row; }
+      h1 { font-size:22px; }
+      .metric .num { font-size:22px; }
+      .card-body { padding:14px; }
+      .card-head { padding:14px 16px; }
+    }
+
+    @media (max-width: 480px) {
+      .lang-select { font-size:12px; padding:0 6px; }
+      .header-right { gap:8px; }
+      .badge { font-size:11px; height:22px; padding:0 6px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      aside { transition: none; }
+    }
   </style>
 </head>
 <body>
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
   <div class="shell">
-    <aside>
+    <aside id="sidebar" aria-label="primary navigation">
       <div class="brand"><strong>SRIS</strong><span id="brandSub">Research Intelligence</span></div>
       <nav id="nav"></nav>
-      <p class="muted" id="sidebarFoot" style="position:absolute;bottom:18px;left:22px"></p>
+      <p class="sidebar-foot" id="sidebarFoot"></p>
     </aside>
     <main>
       <header>
+        <button class="menu-btn" id="menuBtn" aria-label="menu" aria-controls="sidebar" aria-expanded="false">☰</button>
         <strong id="appTitle"></strong>
         <div class="header-right">
           <span class="muted" id="authState"></span>
@@ -168,6 +236,20 @@
     const appTitleEl = document.getElementById('appTitle');
     const brandSubEl = document.getElementById('brandSub');
     const sidebarFootEl = document.getElementById('sidebarFoot');
+    const overlay = document.getElementById('overlay');
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+
+    function setDrawer(open) {
+      const next = open ?? !document.body.classList.contains('drawer-open');
+      document.body.classList.toggle('drawer-open', next);
+      menuBtn.setAttribute('aria-expanded', String(next));
+      overlay.setAttribute('aria-hidden', String(!next));
+    }
+    menuBtn.onclick = () => setDrawer();
+    overlay.onclick = () => setDrawer(false);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setDrawer(false); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 880) setDrawer(false); });
 
     langSelect.value = lang;
     langSelect.onchange = e => { lang = e.target.value; localStorage.setItem('sris_lang', lang); applyLang(); render(); };
@@ -180,7 +262,10 @@
       sidebarFootEl.innerHTML = L.sidebarFoot;
       nav.innerHTML = PAGES.map(key => '<button data-route="'+key+'">'+esc(L.nav[key])+'</button>').join('');
     }
-    nav.onclick = e => { const key = e.target.dataset.route; if (key) { route = key; location.hash = key; render(); } };
+    nav.onclick = e => {
+      const key = e.target.dataset.route;
+      if (key) { route = key; location.hash = key; setDrawer(false); render(); }
+    };
     window.onhashchange = () => { route = location.hash.slice(1) || 'dashboard'; render(); };
 
     function headers() { return token ? { authorization: 'Bearer ' + token, 'content-type': 'application/json' } : { 'content-type':'application/json' }; }
@@ -216,17 +301,17 @@
       const data = await api('/dashboard');
       const keys = ['universities','programs','professors','labs','papers','pending_candidates','timeline_tasks'];
       app.innerHTML = pageHead() + '<div class="grid metrics">' + keys.map(k => '<div class="card metric"><span class="muted">'+esc(L.metricLabels[k])+'</span><div class="num">'+(data.counts[k]||0)+'</div></div>').join('') + '</div>' +
-        '<div class="grid" style="grid-template-columns:1.2fr .8fr;margin-top:18px"><div class="card"><div class="card-head">'+esc(L.cardHeads.recentPapers)+'</div>'+paperTable(data.recent_papers)+'</div><div class="card"><div class="card-head">'+esc(L.cardHeads.upcomingTimeline)+'</div><div class="card-body">'+data.upcoming_tasks.map(t=>'<p><strong>'+esc(t.title)+'</strong><br/><span class="muted">'+date(t.deadline)+' · '+esc(t.priority)+'</span></p>').join('')+'</div></div></div>';
+        '<div class="dashboard-grid"><div class="card"><div class="card-head">'+esc(L.cardHeads.recentPapers)+'</div><div class="scroll">'+paperTable(data.recent_papers)+'</div></div><div class="card"><div class="card-head">'+esc(L.cardHeads.upcomingTimeline)+'</div><div class="card-body">'+data.upcoming_tasks.map(t=>'<p><strong>'+esc(t.title)+'</strong><br/><span class="muted">'+date(t.deadline)+' · '+esc(t.priority)+'</span></p>').join('')+'</div></div></div>';
     }
     function endpoint(key) { return ({universities:'/universities',professors:'/professors',labs:'/labs',programs:'/programs',papers:'/papers',timeline:'/timeline',sources:'/radar-sources'})[key]; }
     async function renderTable(key) {
       const L = T();
       app.innerHTML = pageHead() + '<p class="muted">'+esc(L.loading)+'</p>';
       const rows = await api(endpoint(key));
-      app.innerHTML = pageHead() + '<div class="toolbar"><input id="q" placeholder="'+esc(L.filter)+'" oninput="filterRows()"><button class="secondary" onclick="toggleForm()">'+esc(L.newBtn)+'</button></div><div id="form" class="hidden">'+formFor(key)+'</div><div class="card" id="rows">'+tableFor(key, rows)+'</div>';
+      app.innerHTML = pageHead() + '<div class="toolbar"><input id="q" placeholder="'+esc(L.filter)+'" oninput="filterRows()"><button class="secondary" onclick="toggleForm()">'+esc(L.newBtn)+'</button></div><div id="form" class="hidden">'+formFor(key)+'</div><div class="card" id="rows"><div class="scroll">'+tableFor(key, rows)+'</div></div>';
       window.currentRows = rows; window.currentKey = key;
     }
-    window.filterRows = () => { const q = document.getElementById('q').value.toLowerCase(); document.getElementById('rows').innerHTML = tableFor(window.currentKey, window.currentRows.filter(r => JSON.stringify(r).toLowerCase().includes(q))); };
+    window.filterRows = () => { const q = document.getElementById('q').value.toLowerCase(); document.getElementById('rows').innerHTML = '<div class="scroll">'+tableFor(window.currentKey, window.currentRows.filter(r => JSON.stringify(r).toLowerCase().includes(q)))+'</div>'; };
     window.toggleForm = () => document.getElementById('form').classList.toggle('hidden');
     window.createItem = async (key) => {
       const data = Object.fromEntries([...document.querySelectorAll('#form [name]')].map(i => [i.name, i.value]));
@@ -254,7 +339,7 @@
       const L = T();
       app.innerHTML = pageHead() + '<p class="muted">'+esc(L.loading)+'</p>';
       const rows = await api('/review/papers');
-      app.innerHTML = pageHead() + '<div class="grid">'+rows.map(c=>'<div class="card review"><div><div>'+chips([c.source||'arXiv'])+chips(c.matched_keywords,'warn')+'</div><h2>'+esc(c.title)+'</h2><p class="muted">'+esc((c.authors||[]).join(', '))+'</p><p>'+esc(c.abstract||'')+'</p><a href="'+esc(c.url)+'">'+esc(L.openSource)+'</a></div><div><button class="primary" onclick="accept(\''+c.id+'\')">'+esc(L.accept)+'</button> <button class="secondary" onclick="ignore(\''+c.id+'\')">'+esc(L.ignore)+'</button></div></div>').join('')+'</div>';
+      app.innerHTML = pageHead() + '<div class="grid">'+rows.map(c=>'<div class="card review"><div><div>'+chips([c.source||'arXiv'])+chips(c.matched_keywords,'warn')+'</div><h2>'+esc(c.title)+'</h2><p class="muted">'+esc((c.authors||[]).join(', '))+'</p><p>'+esc(c.abstract||'')+'</p><a href="'+esc(c.url)+'">'+esc(L.openSource)+'</a></div><div class="review-actions"><button class="primary" onclick="accept(\''+c.id+'\')">'+esc(L.accept)+'</button><button class="secondary" onclick="ignore(\''+c.id+'\')">'+esc(L.ignore)+'</button></div></div>').join('')+'</div>';
     }
     window.accept = async id => { await api('/review/papers/'+id+'/accept', { method:'POST' }); renderReview(); };
     window.ignore = async id => { await api('/review/papers/'+id+'/ignore', { method:'POST' }); renderReview(); };
