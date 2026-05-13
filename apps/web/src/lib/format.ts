@@ -1,6 +1,6 @@
-export function formatDate(value?: string | null): string {
-  if (!value) return "未设置";
-  return new Intl.DateTimeFormat("zh-CN", {
+export function formatDate(value: string | null | undefined, dateLocale: string, fallback: string): string {
+  if (!value) return fallback;
+  return new Intl.DateTimeFormat(dateLocale, {
     timeZone: "Asia/Shanghai",
     month: "short",
     day: "numeric",

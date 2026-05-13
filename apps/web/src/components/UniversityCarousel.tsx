@@ -1,7 +1,9 @@
 import { ArrowUpRight, MapPin } from "lucide-react";
 import { featuredUniversities } from "../data/universities";
+import { useI18n } from "../contexts/I18nContext";
 
 export function UniversityCarousel({ onSelect }: { onSelect: (id: string) => void }) {
+  const { t } = useI18n();
   const carouselItems = [...featuredUniversities, ...featuredUniversities];
 
   return (
@@ -9,12 +11,10 @@ export function UniversityCarousel({ onSelect }: { onSelect: (id: string) => voi
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(14,165,233,0.18),transparent_36%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(246,248,251,0.12)_62%,rgba(246,248,251,0))]" />
       <div className="relative mb-3 flex items-end justify-between gap-4 sm:mb-5">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-600">Target schools</div>
-          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.055em] text-slate-950 sm:text-5xl">目标院校快速入口</h2>
+          <div className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-600">{t.carouselTagline}</div>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.055em] text-slate-950 sm:text-5xl">{t.carouselTitle}</h2>
         </div>
-        <div className="hidden text-right text-sm leading-6 text-slate-400 sm:block">
-          自动轮播 · 点击进入院校信息
-        </div>
+        <div className="hidden text-right text-sm leading-6 text-slate-400 sm:block">{t.carouselHint}</div>
       </div>
 
       <div className="university-carousel-mask relative">
