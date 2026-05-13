@@ -14,6 +14,8 @@
     nav button { width:100%; display:flex; align-items:center; gap:10px; border:0; background:transparent; color:var(--muted); padding:10px 12px; border-radius:6px; font-weight:600; cursor:pointer; text-align:left; }
     nav button.active, nav button:hover { background:#edf3f5; color:var(--text); }
     main { min-width:0; } header { height:64px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:rgba(247,249,251,.92); position:sticky; top:0; backdrop-filter:blur(10px); }
+    .header-right { display:flex; align-items:center; gap:14px; }
+    .lang-select { height:32px; border:1px solid var(--border); border-radius:6px; padding:0 10px; background:white; color:var(--text); font:inherit; font-size:13px; cursor:pointer; }
     .content { max-width:1360px; padding:24px; margin:0 auto; }
     h1 { font-size:26px; margin:0; } h2 { font-size:16px; margin:0; } p { line-height:1.55; }
     .page-head { display:flex; justify-content:space-between; gap:16px; align-items:end; margin-bottom:22px; }
@@ -38,33 +40,146 @@
 <body>
   <div class="shell">
     <aside>
-      <div class="brand"><strong>SRIS</strong><span>Research Intelligence</span></div>
+      <div class="brand"><strong>SRIS</strong><span id="brandSub">Research Intelligence</span></div>
       <nav id="nav"></nav>
-      <p class="muted" style="position:absolute;bottom:18px;left:22px">Cloudflare Worker + D1<br/>Asia/Shanghai deadlines</p>
+      <p class="muted" id="sidebarFoot" style="position:absolute;bottom:18px;left:22px"></p>
     </aside>
     <main>
-      <header><strong>SGU / AI 修士申请情报控制台</strong><span class="muted" id="authState"></span></header>
+      <header>
+        <strong id="appTitle"></strong>
+        <div class="header-right">
+          <span class="muted" id="authState"></span>
+          <select id="langSelect" class="lang-select" aria-label="language">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+          </select>
+        </div>
+      </header>
       <div class="content" id="app"></div>
     </main>
   </div>
   <script>
-    const pages = [
-      ['dashboard','Dashboard'], ['universities','Universities'], ['professors','Professors'], ['labs','Labs'],
-      ['programs','Programs'], ['papers','Paper Radar'], ['review','Review Queue'], ['timeline','Timeline'], ['sources','Settings / Sources']
-    ];
-    const titles = {
-      dashboard:['Dashboard','近期论文、待确认情报、申请任务和核心数据库规模总览。'],
-      universities:['Universities','目标院校数据库。'], professors:['Professors','教授、方向关键词和联系资料。'],
-      labs:['Labs','实验室、研究方向和近期论文。'], programs:['Programs','英文修士项目、申请要求和 deadline。'],
-      papers:['Paper Radar','已确认入库的论文列表。'], review:['Review Queue','自动采集结果人工确认后进入正式论文库。'],
-      timeline:['Timeline','TOEFL、JLPT、SOP、推荐信、申请 DDL。'], sources:['Settings / Sources','arXiv RSS 查询源、关键词和自动化配置。']
+    const PAGES = ['dashboard','universities','professors','labs','programs','papers','review','timeline','sources'];
+
+    const LOCALES = {
+      zh: {
+        htmlLang: 'zh-CN', dateLocale: 'zh-CN',
+        appTitle: 'SGU / AI 修士申请情报控制台',
+        brandSub: 'Research Intelligence',
+        sidebarFoot: 'Cloudflare Worker + D1<br/>Asia/Shanghai deadlines',
+        authActive: 'API 令牌已激活', authRequired: '需要 API 令牌',
+        tokenCardHead: 'SRIS 访问令牌',
+        tokenHelp: '输入部署时设置的 API_TOKEN。令牌只保存在此浏览器 localStorage。',
+        enter: '进入', loading: '加载中...', notSet: '未设置',
+        filter: '结构化筛选 / 关键词',
+        newBtn: '新建', save: '保存', openSource: '打开原文', accept: '采纳', ignore: '忽略',
+        nav: { dashboard:'总览', universities:'院校', professors:'教授', labs:'实验室',
+               programs:'项目', papers:'论文雷达', review:'待确认', timeline:'时间线', sources:'数据源设置' },
+        titles: {
+          dashboard:['总览','近期论文、待确认情报、申请任务和核心数据库规模。'],
+          universities:['院校','目标院校数据库。'],
+          professors:['教授','教授、方向关键词和联系资料。'],
+          labs:['实验室','实验室、研究方向和近期论文。'],
+          programs:['项目','英文修士项目、申请要求和 deadline。'],
+          papers:['论文雷达','已确认入库的论文列表。'],
+          review:['待确认','自动采集结果人工确认后进入正式论文库。'],
+          timeline:['时间线','TOEFL、JLPT、SOP、推荐信、申请 DDL。'],
+          sources:['数据源设置','arXiv RSS 查询源、关键词和自动化配置。'],
+        },
+        metricLabels: { universities:'院校', programs:'项目', professors:'教授', labs:'实验室',
+                        papers:'论文', pending_candidates:'待审', timeline_tasks:'任务' },
+        cardHeads: { recentPapers:'近期论文', upcomingTimeline:'临近事项' },
+        paperCols: { title:'标题', authors:'作者', venue:'来源', year:'年份', keywords:'关键词' },
+        badges: { enabled:'已启用', off:'关闭' },
+      },
+      en: {
+        htmlLang: 'en', dateLocale: 'en-US',
+        appTitle: 'SGU / AI Master Application Intelligence Console',
+        brandSub: 'Research Intelligence',
+        sidebarFoot: 'Cloudflare Worker + D1<br/>Asia/Shanghai deadlines',
+        authActive: 'API token active', authRequired: 'API token required',
+        tokenCardHead: 'SRIS access token',
+        tokenHelp: 'Enter the API_TOKEN set at deploy time. The token is stored only in this browser’s localStorage.',
+        enter: 'Enter', loading: 'Loading...', notSet: 'not set',
+        filter: 'Filter / keyword search',
+        newBtn: 'New', save: 'Save', openSource: 'Open source', accept: 'Accept', ignore: 'Ignore',
+        nav: { dashboard:'Dashboard', universities:'Universities', professors:'Professors', labs:'Labs',
+               programs:'Programs', papers:'Paper Radar', review:'Review Queue', timeline:'Timeline', sources:'Settings / Sources' },
+        titles: {
+          dashboard:['Dashboard','Recent papers, pending intel, application tasks, and core database size.'],
+          universities:['Universities','Target university database.'],
+          professors:['Professors','Professors, research keywords, and contact info.'],
+          labs:['Labs','Labs, research directions, and recent papers.'],
+          programs:['Programs','English-taught master programs, requirements, and deadlines.'],
+          papers:['Paper Radar','Papers that have been accepted into the main library.'],
+          review:['Review Queue','Auto-collected papers waiting for human confirmation.'],
+          timeline:['Timeline','TOEFL, JLPT, SOP, recommendation letters, and application DDLs.'],
+          sources:['Settings / Sources','arXiv RSS queries, keywords, and automation configuration.'],
+        },
+        metricLabels: { universities:'Universities', programs:'Programs', professors:'Professors', labs:'Labs',
+                        papers:'Papers', pending_candidates:'Review', timeline_tasks:'Tasks' },
+        cardHeads: { recentPapers:'Recent papers', upcomingTimeline:'Upcoming timeline' },
+        paperCols: { title:'Title', authors:'Authors', venue:'Venue', year:'Year', keywords:'Keywords' },
+        badges: { enabled:'enabled', off:'off' },
+      },
+      ja: {
+        htmlLang: 'ja', dateLocale: 'ja-JP',
+        appTitle: 'SGU / AI 修士出願インテリジェンス・コンソール',
+        brandSub: 'Research Intelligence',
+        sidebarFoot: 'Cloudflare Worker + D1<br/>Asia/Shanghai deadlines',
+        authActive: 'API トークン有効', authRequired: 'API トークンが必要',
+        tokenCardHead: 'SRIS アクセストークン',
+        tokenHelp: 'デプロイ時に設定した API_TOKEN を入力してください。トークンはこのブラウザの localStorage のみに保存されます。',
+        enter: '入る', loading: '読み込み中...', notSet: '未設定',
+        filter: '絞り込み / キーワード',
+        newBtn: '新規', save: '保存', openSource: '原文を開く', accept: '採用', ignore: '無視',
+        nav: { dashboard:'ダッシュボード', universities:'大学', professors:'教授', labs:'研究室',
+               programs:'プログラム', papers:'論文レーダー', review:'レビュー待ち', timeline:'タイムライン', sources:'ソース設定' },
+        titles: {
+          dashboard:['ダッシュボード','最近の論文、未確認情報、出願タスク、データベース規模の概要。'],
+          universities:['大学','志望校データベース。'],
+          professors:['教授','教授・研究キーワード・連絡先。'],
+          labs:['研究室','研究室・研究方向・最近の論文。'],
+          programs:['プログラム','英語修士プログラム、要件、締切。'],
+          papers:['論文レーダー','正式に登録済みの論文一覧。'],
+          review:['レビュー待ち','自動収集された候補を人手で確認して登録します。'],
+          timeline:['タイムライン','TOEFL・JLPT・SOP・推薦状・出願締切。'],
+          sources:['ソース設定','arXiv RSS クエリ、キーワード、自動化設定。'],
+        },
+        metricLabels: { universities:'大学', programs:'プログラム', professors:'教授', labs:'研究室',
+                        papers:'論文', pending_candidates:'レビュー', timeline_tasks:'タスク' },
+        cardHeads: { recentPapers:'最近の論文', upcomingTimeline:'直近の予定' },
+        paperCols: { title:'タイトル', authors:'著者', venue:'掲載元', year:'年', keywords:'キーワード' },
+        badges: { enabled:'有効', off:'停止' },
+      },
     };
+
+    let lang = localStorage.getItem('sris_lang') || 'zh';
+    if (!LOCALES[lang]) lang = 'zh';
+    const T = () => LOCALES[lang];
+
     let route = location.hash.slice(1) || 'dashboard';
     let token = localStorage.getItem('sris_token') || '';
     const app = document.getElementById('app');
     const nav = document.getElementById('nav');
     const authState = document.getElementById('authState');
-    nav.innerHTML = pages.map(([key,label]) => '<button data-route="'+key+'">'+label+'</button>').join('');
+    const langSelect = document.getElementById('langSelect');
+    const appTitleEl = document.getElementById('appTitle');
+    const brandSubEl = document.getElementById('brandSub');
+    const sidebarFootEl = document.getElementById('sidebarFoot');
+
+    langSelect.value = lang;
+    langSelect.onchange = e => { lang = e.target.value; localStorage.setItem('sris_lang', lang); applyLang(); render(); };
+
+    function applyLang() {
+      const L = T();
+      document.documentElement.lang = L.htmlLang;
+      appTitleEl.textContent = L.appTitle;
+      brandSubEl.textContent = L.brandSub;
+      sidebarFootEl.innerHTML = L.sidebarFoot;
+      nav.innerHTML = PAGES.map(key => '<button data-route="'+key+'">'+esc(L.nav[key])+'</button>').join('');
+    }
     nav.onclick = e => { const key = e.target.dataset.route; if (key) { route = key; location.hash = key; render(); } };
     window.onhashchange = () => { route = location.hash.slice(1) || 'dashboard'; render(); };
 
@@ -75,12 +190,13 @@
       return res.json();
     }
     function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function date(v) { return v ? new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai'}).format(new Date(v)) : '未设置'; }
+    function date(v) { return v ? new Intl.DateTimeFormat(T().dateLocale,{timeZone:'Asia/Shanghai'}).format(new Date(v)) : T().notSet; }
     function chips(values, tone='gray') { return (values||[]).map(v => '<span class="badge '+tone+'">'+esc(v)+'</span>').join('') || '<span class="muted">-</span>'; }
-    function pageHead() { const [t,d] = titles[route]; return '<div class="page-head"><div><h1>'+t+'</h1><p class="muted">'+d+'</p></div></div>'; }
-    function setAuth() { authState.innerHTML = token ? 'API token active' : 'API token required'; }
+    function pageHead() { const [t,d] = T().titles[route]; return '<div class="page-head"><div><h1>'+esc(t)+'</h1><p class="muted">'+esc(d)+'</p></div></div>'; }
+    function setAuth() { authState.innerHTML = token ? T().authActive : T().authRequired; }
     function requireTokenView() {
-      return '<div class="card" style="max-width:560px"><div class="card-head">SRIS 访问令牌</div><div class="card-body"><p class="muted">输入部署时设置的 API_TOKEN。令牌只保存在此浏览器 localStorage。</p><div class="toolbar"><input id="tokenInput" type="password" placeholder="API_TOKEN" /><button class="primary" onclick="saveToken()">Enter</button></div></div></div>';
+      const L = T();
+      return '<div class="card" style="max-width:560px"><div class="card-head">'+esc(L.tokenCardHead)+'</div><div class="card-body"><p class="muted">'+esc(L.tokenHelp)+'</p><div class="toolbar"><input id="tokenInput" type="password" placeholder="API_TOKEN" /><button class="primary" onclick="saveToken()">'+esc(L.enter)+'</button></div></div></div>';
     }
     window.saveToken = () => { token = document.getElementById('tokenInput').value; localStorage.setItem('sris_token', token); render(); };
 
@@ -95,17 +211,19 @@
       } catch (err) { app.innerHTML = '<div class="error">'+esc(err.message)+'</div>'; }
     }
     async function renderDashboard() {
-      app.innerHTML = pageHead() + '<p class="muted">Loading...</p>';
+      const L = T();
+      app.innerHTML = pageHead() + '<p class="muted">'+esc(L.loading)+'</p>';
       const data = await api('/dashboard');
-      const keys = [['universities','Universities'],['programs','Programs'],['professors','Professors'],['labs','Labs'],['papers','Papers'],['pending_candidates','Review'],['timeline_tasks','Tasks']];
-      app.innerHTML = pageHead() + '<div class="grid metrics">' + keys.map(([k,l]) => '<div class="card metric"><span class="muted">'+l+'</span><div class="num">'+(data.counts[k]||0)+'</div></div>').join('') + '</div>' +
-        '<div class="grid" style="grid-template-columns:1.2fr .8fr;margin-top:18px"><div class="card"><div class="card-head">Recent Papers</div>'+paperTable(data.recent_papers)+'</div><div class="card"><div class="card-head">Upcoming Timeline</div><div class="card-body">'+data.upcoming_tasks.map(t=>'<p><strong>'+esc(t.title)+'</strong><br/><span class="muted">'+date(t.deadline)+' · '+esc(t.priority)+'</span></p>').join('')+'</div></div></div>';
+      const keys = ['universities','programs','professors','labs','papers','pending_candidates','timeline_tasks'];
+      app.innerHTML = pageHead() + '<div class="grid metrics">' + keys.map(k => '<div class="card metric"><span class="muted">'+esc(L.metricLabels[k])+'</span><div class="num">'+(data.counts[k]||0)+'</div></div>').join('') + '</div>' +
+        '<div class="grid" style="grid-template-columns:1.2fr .8fr;margin-top:18px"><div class="card"><div class="card-head">'+esc(L.cardHeads.recentPapers)+'</div>'+paperTable(data.recent_papers)+'</div><div class="card"><div class="card-head">'+esc(L.cardHeads.upcomingTimeline)+'</div><div class="card-body">'+data.upcoming_tasks.map(t=>'<p><strong>'+esc(t.title)+'</strong><br/><span class="muted">'+date(t.deadline)+' · '+esc(t.priority)+'</span></p>').join('')+'</div></div></div>';
     }
     function endpoint(key) { return ({universities:'/universities',professors:'/professors',labs:'/labs',programs:'/programs',papers:'/papers',timeline:'/timeline',sources:'/radar-sources'})[key]; }
     async function renderTable(key) {
-      app.innerHTML = pageHead() + '<p class="muted">Loading...</p>';
+      const L = T();
+      app.innerHTML = pageHead() + '<p class="muted">'+esc(L.loading)+'</p>';
       const rows = await api(endpoint(key));
-      app.innerHTML = pageHead() + '<div class="toolbar"><input id="q" placeholder="结构化筛选 / keyword filter" oninput="filterRows()"><button class="secondary" onclick="toggleForm()">New</button></div><div id="form" class="hidden">'+formFor(key)+'</div><div class="card" id="rows">'+tableFor(key, rows)+'</div>';
+      app.innerHTML = pageHead() + '<div class="toolbar"><input id="q" placeholder="'+esc(L.filter)+'" oninput="filterRows()"><button class="secondary" onclick="toggleForm()">'+esc(L.newBtn)+'</button></div><div id="form" class="hidden">'+formFor(key)+'</div><div class="card" id="rows">'+tableFor(key, rows)+'</div>';
       window.currentRows = rows; window.currentKey = key;
     }
     window.filterRows = () => { const q = document.getElementById('q').value.toLowerCase(); document.getElementById('rows').innerHTML = tableFor(window.currentKey, window.currentRows.filter(r => JSON.stringify(r).toLowerCase().includes(q))); };
@@ -120,22 +238,28 @@
         universities:['name','location','website','notes'], professors:['university_id','name','title','website','research_keywords','notes'], labs:['university_id','professor_id','lab_name','research_keywords','website','recent_papers','notes'],
         programs:['university_id','program_name','degree','language','deadline','requirements'], timeline:['title','deadline','priority','status','task_type','notes'], sources:['name','query','keywords']
       }[key] || [];
-      return '<div class="card" style="margin-bottom:14px"><div class="card-body form-grid">'+fields.map(f=>'<label><span>'+f+'</span><input name="'+f+'"></label>').join('')+'<button class="primary" onclick="createItem(\''+key+'\')">Save</button></div></div>';
+      return '<div class="card" style="margin-bottom:14px"><div class="card-body form-grid">'+fields.map(f=>'<label><span>'+f+'</span><input name="'+f+'"></label>').join('')+'<button class="primary" onclick="createItem(\''+key+'\')">'+esc(T().save)+'</button></div></div>';
     }
     function tableFor(key, rows) {
       if (key === 'papers') return paperTable(rows);
       const cols = Object.keys(rows[0] || {empty:''}).filter(c => !['created_at','updated_at'].includes(c)).slice(0,8);
       return '<table><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+cols.map(c=>'<td>'+cell(r[c])+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
     }
-    function paperTable(rows) { return '<table><thead><tr><th>Title</th><th>Authors</th><th>Venue</th><th>Year</th><th>Keywords</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><a href="'+esc(p.url)+'">'+esc(p.title)+'</a></td><td>'+esc((p.authors||[]).join(', '))+'</td><td>'+esc(p.venue||p.source||'-')+'</td><td>'+esc(p.year||'-')+'</td><td>'+chips(p.keywords)+'</td></tr>').join('')+'</tbody></table>'; }
-    function cell(v) { if (Array.isArray(v)) return chips(v); if (typeof v === 'boolean') return v ? '<span class="badge ok">enabled</span>' : '<span class="badge gray">off</span>'; return esc(v ?? '-'); }
+    function paperTable(rows) {
+      const C = T().paperCols;
+      return '<table><thead><tr><th>'+esc(C.title)+'</th><th>'+esc(C.authors)+'</th><th>'+esc(C.venue)+'</th><th>'+esc(C.year)+'</th><th>'+esc(C.keywords)+'</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><a href="'+esc(p.url)+'">'+esc(p.title)+'</a></td><td>'+esc((p.authors||[]).join(', '))+'</td><td>'+esc(p.venue||p.source||'-')+'</td><td>'+esc(p.year||'-')+'</td><td>'+chips(p.keywords)+'</td></tr>').join('')+'</tbody></table>';
+    }
+    function cell(v) { const B = T().badges; if (Array.isArray(v)) return chips(v); if (typeof v === 'boolean') return v ? '<span class="badge ok">'+esc(B.enabled)+'</span>' : '<span class="badge gray">'+esc(B.off)+'</span>'; return esc(v ?? '-'); }
     async function renderReview() {
-      app.innerHTML = pageHead() + '<p class="muted">Loading...</p>';
+      const L = T();
+      app.innerHTML = pageHead() + '<p class="muted">'+esc(L.loading)+'</p>';
       const rows = await api('/review/papers');
-      app.innerHTML = pageHead() + '<div class="grid">'+rows.map(c=>'<div class="card review"><div><div>'+chips([c.source||'arXiv'])+chips(c.matched_keywords,'warn')+'</div><h2>'+esc(c.title)+'</h2><p class="muted">'+esc((c.authors||[]).join(', '))+'</p><p>'+esc(c.abstract||'')+'</p><a href="'+esc(c.url)+'">Open source</a></div><div><button class="primary" onclick="accept(\''+c.id+'\')">Accept</button> <button class="secondary" onclick="ignore(\''+c.id+'\')">Ignore</button></div></div>').join('')+'</div>';
+      app.innerHTML = pageHead() + '<div class="grid">'+rows.map(c=>'<div class="card review"><div><div>'+chips([c.source||'arXiv'])+chips(c.matched_keywords,'warn')+'</div><h2>'+esc(c.title)+'</h2><p class="muted">'+esc((c.authors||[]).join(', '))+'</p><p>'+esc(c.abstract||'')+'</p><a href="'+esc(c.url)+'">'+esc(L.openSource)+'</a></div><div><button class="primary" onclick="accept(\''+c.id+'\')">'+esc(L.accept)+'</button> <button class="secondary" onclick="ignore(\''+c.id+'\')">'+esc(L.ignore)+'</button></div></div>').join('')+'</div>';
     }
     window.accept = async id => { await api('/review/papers/'+id+'/accept', { method:'POST' }); renderReview(); };
     window.ignore = async id => { await api('/review/papers/'+id+'/ignore', { method:'POST' }); renderReview(); };
+
+    applyLang();
     render();
   </script>
 </body>
