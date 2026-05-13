@@ -1,4 +1,4 @@
-import { ArrowRight, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n, LANG_LABELS } from "../contexts/I18nContext";
@@ -15,63 +15,78 @@ export function TokenGate() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-hidden bg-[#f5f7fb] text-slate-950">
-      <div className="absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_22%_24%,rgba(56,189,248,0.24),transparent_32%),radial-gradient(circle_at_76%_10%,rgba(99,102,241,0.18),transparent_28%)]" />
-      <div className="absolute right-6 top-6 z-10">
-        <select
-          value={lang}
-          onChange={(event) => setLang(event.target.value as LangCode)}
-          className="h-9 rounded-2xl border border-white/80 bg-white/80 px-3 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur"
-          aria-label="language"
-        >
-          {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
-            <option key={code} value={code}>
-              {LANG_LABELS[code]}
-            </option>
-          ))}
-        </select>
-      </div>
-      <section className="relative mx-auto grid min-h-[100dvh] w-full max-w-6xl place-items-center px-6 py-12">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-[0.95fr_1.05fr]">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm backdrop-blur">
-              <ShieldCheck className="h-4 w-4 text-cyan-600" />
-              {t.tokenGate.chip}
-            </div>
-            <h1 className="max-w-xl text-5xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">
-              {t.tokenGate.title}
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">{t.tokenGate.body}</p>
+    <main className="min-h-[100dvh] bg-[var(--color-paper)] text-[var(--color-ink)]">
+      <header className="border-b border-[var(--color-hairline)]">
+        <div className="mx-auto flex max-w-[1320px] items-center justify-between px-6 py-5 sm:px-10">
+          <div className="flex items-baseline gap-2">
+            <div className="h-3 w-3 bg-[var(--color-todai)]" />
+            <span className="serif text-[20px] font-semibold tracking-[-0.01em]">SRIS</span>
+            <span className="mono ml-3 hidden text-[10px] uppercase tracking-[0.26em] text-[var(--color-muted)] sm:inline">
+              Research Intelligence
+            </span>
           </div>
-
-          <form
-            onSubmit={submit}
-            className="rounded-[28px] border border-white/80 bg-white/80 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl"
+          <select
+            value={lang}
+            onChange={(event) => setLang(event.target.value as LangCode)}
+            className="h-9 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-3 text-[12.5px] font-medium"
+            aria-label="language"
           >
-            <div className="rounded-[22px] border border-slate-200/70 bg-white p-8">
-              <div className="mb-7 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
-                <KeyRound className="h-5 w-5" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-[-0.02em]">{t.tokenGate.formTitle}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">{t.tokenGate.formBody}</p>
-              <label className="mt-7 block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">{t.tokenGate.fieldLabel}</span>
-                <input
-                  value={token}
-                  onChange={(event) => setToken(event.target.value)}
-                  type="password"
-                  autoComplete="current-password"
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10"
-                  placeholder={t.tokenGate.placeholder}
-                />
-              </label>
-              <button className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800">
-                {t.tokenGate.submit}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
+            {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
+              <option key={code} value={code}>
+                {LANG_LABELS[code]}
+              </option>
+            ))}
+          </select>
         </div>
+      </header>
+
+      <section className="mx-auto grid w-full max-w-[1320px] gap-12 px-6 py-16 sm:px-10 sm:py-24 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+        <div>
+          <div className="flex items-center gap-3 mono text-[11px] uppercase tracking-[0.26em] text-[var(--color-todai)]">
+            <span className="rule-accent" />
+            <span>00 — Access</span>
+          </div>
+          <h1 className="serif mt-6 text-[44px] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--color-ink)] sm:text-[60px]">
+            {t.tokenGate.title}
+          </h1>
+          <p className="mt-6 max-w-xl text-[15.5px] leading-[1.8] text-[var(--color-muted)]">
+            {t.tokenGate.body}
+          </p>
+          <div className="mt-10 hairline-t pt-6">
+            <div className="mono text-[10.5px] uppercase tracking-[0.22em] text-[var(--color-subtle)]">
+              Stack
+            </div>
+            <div className="mt-2 text-[13px] text-[var(--color-muted)]">{t.tokenGate.chip}</div>
+          </div>
+        </div>
+
+        <form
+          onSubmit={submit}
+          className="self-center border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] p-8 sm:p-10"
+        >
+          <div className="mono text-[10.5px] uppercase tracking-[0.22em] text-[var(--color-todai)]">
+            Private Access
+          </div>
+          <h2 className="serif mt-2 text-[26px] font-semibold tracking-[-0.01em]">{t.tokenGate.formTitle}</h2>
+          <p className="mt-3 text-[13px] leading-6 text-[var(--color-muted)]">{t.tokenGate.formBody}</p>
+          <label className="mt-8 block">
+            <span className="mono text-[10.5px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
+              {t.tokenGate.fieldLabel}
+            </span>
+            <input
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+              type="password"
+              autoComplete="current-password"
+              placeholder={t.tokenGate.placeholder}
+              className="mt-2 block h-12 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[15px] outline-none transition-colors focus:border-[var(--color-todai)]"
+            />
+          </label>
+          <button className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 bg-[var(--color-ink)] px-5 text-[13.5px] font-medium tracking-wide text-white transition-colors hover:bg-[var(--color-todai)]">
+            {t.tokenGate.submit}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </form>
       </section>
     </main>
   );

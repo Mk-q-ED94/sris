@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   LogOut,
   Radar,
-  Search,
-  Sparkles,
   University,
   UsersRound,
 } from "lucide-react";
@@ -64,82 +62,90 @@ export function AppShell({
   const { t, lang, setLang } = useI18n();
 
   return (
-    <div className="min-h-[100dvh] bg-[#f6f8fb] text-slate-950">
-      <div className="fixed inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_12%_10%,rgba(14,165,233,0.18),transparent_30%),radial-gradient(circle_at_75%_4%,rgba(99,102,241,0.14),transparent_30%)]" />
-      <div className="relative grid min-h-[100dvh] lg:grid-cols-[280px_1fr]">
-        <aside className="hidden border-r border-white/70 bg-white/70 px-4 py-5 shadow-[1px_0_0_rgba(148,163,184,0.16)] backdrop-blur-xl lg:block">
-          <div className="mb-7 flex items-center gap-3 px-2">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/10">
-              <Sparkles className="h-5 w-5" />
+    <div className="min-h-[100dvh] bg-[var(--color-paper)] text-[var(--color-ink)]">
+      <div className="grid min-h-[100dvh] lg:grid-cols-[256px_1fr]">
+        <aside className="hidden border-r border-[var(--color-hairline)] bg-[var(--color-surface)] lg:flex lg:flex-col">
+          <div className="px-7 pt-9 pb-7 border-b border-[var(--color-hairline)]">
+            <div className="flex items-baseline gap-2">
+              <div className="h-3 w-3 bg-[var(--color-todai)]" aria-hidden />
+              <div className="serif text-[26px] font-semibold leading-none tracking-[-0.01em]">
+                {t.brand.name}
+              </div>
             </div>
-            <div>
-              <div className="text-lg font-semibold tracking-[-0.03em]">{t.brand.name}</div>
-              <div className="text-xs font-medium text-slate-500">{t.brand.subtitle}</div>
+            <div className="mono mt-3 text-[10.5px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
+              {t.brand.subtitle}
             </div>
           </div>
 
-          <div className="mb-4 flex h-10 items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/80 px-3 text-sm text-slate-400">
-            <Search className="h-4 w-4" />
-            {t.search}
-          </div>
-
-          <nav className="space-y-1">
-            {NAV_ORDER.map((key) => {
+          <nav className="flex-1 px-3 py-5">
+            {NAV_ORDER.map((key, idx) => {
               const Icon = navIcons[key];
               const active = key === activePage;
               return (
                 <button
                   key={key}
                   onClick={() => onNavigate(key)}
-                  className={`flex h-11 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold transition ${
+                  className={`group relative flex h-11 w-full items-center gap-3 px-4 text-left text-[13.5px] transition-colors ${
                     active
-                      ? "bg-slate-950 text-white shadow-lg shadow-slate-950/10"
-                      : "text-slate-500 hover:bg-white hover:text-slate-950"
+                      ? "text-[var(--color-ink)]"
+                      : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {t.nav[key]}
+                  <span
+                    className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 transition-opacity ${
+                      active ? "bg-[var(--color-todai)] opacity-100" : "opacity-0"
+                    }`}
+                    aria-hidden
+                  />
+                  <span className="mono text-[10px] text-[var(--color-subtle)] tabular w-5">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <Icon className="h-4 w-4 text-[var(--color-subtle)] group-hover:text-[var(--color-muted)]" />
+                  <span className={active ? "font-semibold" : "font-medium"}>{t.nav[key]}</span>
                 </button>
               );
             })}
           </nav>
 
-          <div className="absolute bottom-5 left-4 right-4">
-            <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-sm">
-              <div className="text-sm font-semibold">{t.asiaShanghai}</div>
-              <div className="mt-1 text-xs leading-5 text-slate-500">{t.privateMode}</div>
-              <select
-                value={lang}
-                onChange={(event) => setLang(event.target.value as LangCode)}
-                className="mt-4 h-9 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
-                aria-label="language"
-              >
-                {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
-                  <option key={code} value={code}>
-                    {LANG_LABELS[code]}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={clearToken}
-                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
-              >
-                <LogOut className="h-4 w-4" />
-                {t.logout}
-              </button>
+          <div className="border-t border-[var(--color-hairline)] px-7 py-6">
+            <div className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-subtle)]">
+              {t.asiaShanghai}
             </div>
+            <div className="mt-2 text-[12px] leading-5 text-[var(--color-muted)]">{t.privateMode}</div>
+            <select
+              value={lang}
+              onChange={(event) => setLang(event.target.value as LangCode)}
+              className="mt-4 h-9 w-full border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-3 text-[12.5px] font-medium text-[var(--color-ink)] focus:border-[var(--color-todai)] focus:outline-none"
+              aria-label="language"
+            >
+              {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
+                <option key={code} value={code}>
+                  {LANG_LABELS[code]}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={clearToken}
+              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] text-[12.5px] font-medium text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)]"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              {t.logout}
+            </button>
           </div>
         </aside>
 
         <main className="min-w-0">
-          <header className="sticky top-0 z-20 border-b border-white/70 bg-white/55 px-4 py-3 backdrop-blur-xl sm:px-7 lg:hidden">
+          <header className="sticky top-0 z-20 border-b border-[var(--color-hairline)] bg-[var(--color-paper)]/95 px-4 py-3 backdrop-blur sm:px-7 lg:hidden">
             <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold">{t.brand.name}</div>
+              <div className="flex items-baseline gap-2">
+                <div className="h-2.5 w-2.5 bg-[var(--color-todai)]" />
+                <div className="serif text-[18px] font-semibold">{t.brand.name}</div>
+              </div>
               <div className="flex items-center gap-2">
                 <select
                   value={lang}
                   onChange={(event) => setLang(event.target.value as LangCode)}
-                  className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold"
+                  className="h-9 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-2 text-[12px] font-medium"
                   aria-label="language"
                 >
                   {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
@@ -151,7 +157,7 @@ export function AppShell({
                 <select
                   value={activePage}
                   onChange={(event) => onNavigate(event.target.value as PageKey)}
-                  className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold"
+                  className="h-9 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-2 text-[12px] font-medium"
                   aria-label="page"
                 >
                   {NAV_ORDER.map((key) => (
@@ -163,7 +169,7 @@ export function AppShell({
               </div>
             </div>
           </header>
-          <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:px-7 sm:py-8 lg:px-10">{children}</div>
+          <div className="mx-auto w-full max-w-[1320px] px-4 py-8 sm:px-8 sm:py-12 lg:px-14">{children}</div>
         </main>
       </div>
     </div>
