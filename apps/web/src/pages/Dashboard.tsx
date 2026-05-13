@@ -15,6 +15,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { UniversityCarousel } from "../components/UniversityCarousel";
 import { useAuth } from "../contexts/AuthContext";
 import { fetchDashboard } from "../lib/api";
 import { compactNumber, formatDate } from "../lib/format";
@@ -30,7 +31,7 @@ const metricConfig = [
   { key: "timeline_tasks", label: "任务", icon: CalendarClock, tone: "from-rose-500 to-pink-400" },
 ] as const;
 
-export function Dashboard() {
+export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string) => void }) {
   const { token, clearToken } = useAuth();
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,8 @@ export function Dashboard() {
 
   return (
     <div className="space-y-7">
+      <UniversityCarousel onSelect={onOpenUniversity} />
+
       <section className="relative overflow-hidden rounded-[34px] border border-white/80 bg-white/75 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7">
         <div className="absolute right-8 top-6 hidden h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl sm:block" />
         <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
