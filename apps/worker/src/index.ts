@@ -1,6 +1,6 @@
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import type { Env } from "./env";
-import { HttpError, JSON_HEADERS, htmlResponse, json } from "./http";
+import { HttpError, JSON_HEADERS, json } from "./http";
 import { requireApiToken, requireCron } from "./auth";
 import { initializeDatabase } from "./db/schema";
 import { listRows } from "./db/queries";
@@ -9,7 +9,6 @@ import { dashboard } from "./routes/dashboard";
 import { acceptCandidate, ignoreCandidate } from "./routes/review";
 import { handleCrud } from "./routes/crud";
 import { runIngest } from "./ingest";
-import APP_HTML from "./console/app.html";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -19,8 +18,11 @@ export default {
 
     const url = new URL(request.url);
     try {
-      if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
-        return htmlResponse(APP_HTML);
+      if (!url.pathname.startsWith("/api/")) {
+        if (!env.ASSETS) {
+          return json({ error: "Assets binding is not configured" }, 500);
+        }
+        return env.ASSETS.fetch(request);
       }
 
       if (url.pathname === "/api/health") {

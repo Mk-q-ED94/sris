@@ -42,6 +42,14 @@ jobs:
         run: |
           node -e "const fs=require('fs'); const p='apps/worker/wrangler.jsonc'; const id=process.env.CLOUDFLARE_D1_DATABASE_ID; const s=fs.readFileSync(p,'utf8').replace(/REPLACE_WITH_D1_DATABASE_ID/g, id).replace(/REPLACE_WITH_STAGING_D1_DATABASE_ID/g, id); fs.writeFileSync(p,s);"
 
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm install --no-audit --no-fund
+
+      - name: Build web app
+        working-directory: apps/web
+        run: npm run build
+
       - name: Install Worker dependencies
         working-directory: apps/worker
         run: npm install --no-audit --no-fund

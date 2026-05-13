@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "description": "SGU Research Intelligence System — Cloudflare Worker + D1",
   "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
     "dev": "npm --prefix apps/worker run dev",
     "deploy": "npm --prefix apps/worker run deploy",
     "typecheck": "npm --prefix apps/worker run typecheck",
     "test": "npm --prefix apps/worker run test",
-    "check": "npm run typecheck && npm run test"
+    "check": "npm run build:web && npm run typecheck && npm run test"
   },
   "engines": {
     "node": ">=22.0.0",

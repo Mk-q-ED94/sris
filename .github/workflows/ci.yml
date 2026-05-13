@@ -12,9 +12,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-    defaults:
-      run:
-        working-directory: apps/worker
     steps:
       - uses: actions/checkout@v4
 
@@ -22,18 +19,32 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: apps/worker/package-lock.json
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/worker/package-lock.json
 
-      - name: Install dependencies
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm install --no-audit --no-fund
+
+      - name: Build web app
+        working-directory: apps/web
+        run: npm run build
+
+      - name: Install Worker dependencies
+        working-directory: apps/worker
         run: npm install --no-audit --no-fund
 
       - name: Type-check
+        working-directory: apps/worker
         run: npm run typecheck
 
       - name: Unit tests
+        working-directory: apps/worker
         run: npm test
 
       - name: Wrangler dry-run (production config)
+        working-directory: apps/worker
         env:
           CLOUDFLARE_D1_DATABASE_ID: 00000000-0000-0000-0000-000000000000
         run: |
