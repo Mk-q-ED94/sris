@@ -33,76 +33,31 @@ a {
   text-decoration: none;
 }
 
-.university-hero-bleed {
-  isolation: isolate;
+.university-rail-mask {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 5%, #000 95%, transparent 100%);
 }
 
-.university-carousel-mask {
-  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
-  perspective: 1200px;
+.university-rail-track {
+  animation: university-rail-scroll 50s linear infinite;
 }
 
-.university-edge-blur {
-  pointer-events: none;
-  position: absolute;
-  top: 8px;
-  bottom: 18px;
-  z-index: 4;
-  width: min(18vw, 190px);
-  backdrop-filter: blur(12px);
-}
-
-.university-edge-blur-left {
-  left: -1px;
-  background: linear-gradient(90deg, #f6f8fb 0%, rgba(246, 248, 251, 0.86) 38%, transparent 100%);
-}
-
-.university-edge-blur-right {
-  right: -1px;
-  background: linear-gradient(270deg, #f6f8fb 0%, rgba(246, 248, 251, 0.86) 38%, transparent 100%);
-}
-
-.university-carousel-track {
-  animation: university-carousel-scroll 42s linear infinite;
-}
-
-.university-carousel-mask:hover .university-carousel-track {
+.university-rail-mask:hover .university-rail-track {
   animation-play-state: paused;
 }
 
-.university-card {
-  transform-style: preserve-3d;
-}
-
-.university-card > div:first-child {
-  transform: rotateY(-7deg) translateZ(0);
-}
-
-.university-card:nth-child(2n) > div:first-child {
-  transform: rotateY(5deg) translateZ(0);
-}
-
-.university-card:hover > div:first-child {
-  transform: rotateY(0deg) translateZ(18px);
-}
-
-.university-reflection {
-  transform: rotateX(60deg) translateY(-14px) scale(0.95);
-  transform-origin: top center;
-}
-
-@keyframes university-carousel-scroll {
+@keyframes university-rail-scroll {
   from {
     transform: translateX(0);
   }
   to {
-    transform: translateX(calc(-50% - 16px));
+    transform: translateX(calc(-50% - 8px));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .university-carousel-track {
+  .university-rail-track {
     animation: none;
   }
 }
