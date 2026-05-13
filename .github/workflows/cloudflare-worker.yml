@@ -29,19 +29,27 @@ jobs:
         env:
           CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
 
-      - name: Apply migrations and deploy Worker
+      - name: Create Worker secrets file
+        run: |
+          node -e "const fs=require('fs'); fs.writeFileSync('apps/worker/.secrets.json', JSON.stringify({ API_TOKEN: process.env.API_TOKEN, CRON_SECRET: process.env.CRON_SECRET }));"
+        env:
+          API_TOKEN: ${{ secrets.SRIS_API_TOKEN }}
+          CRON_SECRET: ${{ secrets.SRIS_CRON_SECRET }}
+
+      - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/worker
           packageManager: npm
-          secrets: |
-            API_TOKEN
-            CRON_SECRET
-          command: |
-            d1 migrations apply sris-db --remote
-            deploy
-        env:
-          API_TOKEN: ${{ secrets.SRIS_API_TOKEN }}
-          CRON_SECRET: ${{ secrets.SRIS_CRON_SECRET }}
+          command: d1 migrations apply sris-db --remote
+
+      - name: Deploy Worker with secrets
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/worker
+          packageManager: npm
+          command: deploy --secrets-file .secrets.json
