@@ -5,12 +5,10 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock3,
-  Database,
   FlaskConical,
   GraduationCap,
   Inbox,
   RefreshCw,
-  Sparkles,
   University,
   UsersRound,
 } from "lucide-react";
@@ -23,14 +21,14 @@ import { compactNumber, formatDate } from "../lib/format";
 import type { Locale, MetricKey } from "../i18n/locales";
 import type { DashboardSummary, Paper, PaperCandidate, TimelineTask } from "../types/sris";
 
-const metricConfig: Array<{ key: MetricKey; icon: React.ComponentType<{ className?: string }>; tone: string }> = [
-  { key: "universities", icon: University, tone: "from-sky-500 to-cyan-400" },
-  { key: "programs", icon: GraduationCap, tone: "from-indigo-500 to-blue-400" },
-  { key: "professors", icon: UsersRound, tone: "from-violet-500 to-fuchsia-400" },
-  { key: "labs", icon: FlaskConical, tone: "from-emerald-500 to-teal-400" },
-  { key: "papers", icon: BookOpen, tone: "from-slate-700 to-slate-500" },
-  { key: "pending_candidates", icon: Inbox, tone: "from-amber-500 to-orange-400" },
-  { key: "timeline_tasks", icon: CalendarClock, tone: "from-rose-500 to-pink-400" },
+const metricConfig: Array<{ key: MetricKey; icon: React.ComponentType<{ className?: string }> }> = [
+  { key: "universities", icon: University },
+  { key: "programs", icon: GraduationCap },
+  { key: "professors", icon: UsersRound },
+  { key: "labs", icon: FlaskConical },
+  { key: "papers", icon: BookOpen },
+  { key: "pending_candidates", icon: Inbox },
+  { key: "timeline_tasks", icon: CalendarClock },
 ];
 
 export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string) => void }) {
@@ -68,18 +66,19 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
 
   if (error) {
     return (
-      <div className="grid min-h-[70vh] place-items-center">
-        <div className="w-full max-w-xl rounded-[32px] border border-red-100 bg-white p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-            <Activity className="h-5 w-5" />
+      <div className="grid min-h-[60vh] place-items-center">
+        <div className="w-full max-w-xl border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] p-10 text-center">
+          <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center bg-[var(--color-todai-soft)] text-[var(--color-todai)]">
+            <Activity className="h-4 w-4" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-[-0.03em]">{t.dashboardLoadFailed}</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">{error}</p>
+          <div className="section-index">Error</div>
+          <h1 className="serif mt-2 text-[24px] font-semibold tracking-[-0.01em]">{t.dashboardLoadFailed}</h1>
+          <p className="mt-2 text-[13px] leading-6 text-[var(--color-muted)]">{error}</p>
           <div className="mt-6 flex justify-center gap-3">
-            <button onClick={load} className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white">
+            <button onClick={load} className="h-10 bg-[var(--color-ink)] px-5 text-[12.5px] font-medium text-white hover:bg-[var(--color-todai)]">
               {t.retry}
             </button>
-            <button onClick={clearToken} className="h-11 rounded-2xl bg-slate-100 px-5 text-sm font-semibold text-slate-700">
+            <button onClick={clearToken} className="h-10 border border-[var(--color-hairline-strong)] px-5 text-[12.5px] font-medium text-[var(--color-muted)] hover:text-[var(--color-ink)]">
               {t.reenterToken}
             </button>
           </div>
@@ -89,22 +88,24 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
   }
 
   return (
-    <div className="space-y-7">
-      <section className="relative overflow-hidden rounded-[34px] border border-white/80 bg-white/75 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7">
-        <div className="absolute right-8 top-6 hidden h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl sm:block" />
-        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+    <div className="space-y-14">
+      {/* Hero */}
+      <section>
+        <div className="flex items-center gap-3">
+          <span className="rule-accent" />
+          <span className="section-index">01 — Overview</span>
+        </div>
+        <div className="mt-6 grid gap-10 xl:grid-cols-[1.4fr_1fr] xl:items-end">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-500">
-              <Sparkles className="h-4 w-4 text-cyan-600" />
-              {t.cockpitChip}
-            </div>
-            <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.055em] text-slate-950 sm:text-6xl">
+            <h1 className="serif text-[44px] font-semibold leading-[1.08] tracking-[-0.02em] text-[var(--color-ink)] sm:text-[64px]">
               {t.heroTitle}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500 sm:text-lg">{t.heroBody}</p>
+            <p className="mt-5 max-w-2xl text-[15px] leading-[1.85] text-[var(--color-muted)] sm:text-[16px]">
+              {t.heroBody}
+            </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[520px]">
-            <HeroStat label={t.hero.pending} value={data?.counts.pending_candidates ?? 0} helper={t.hero.pendingHelper} />
+          <div className="grid grid-cols-3 gap-0 border-y border-[var(--color-hairline-strong)]">
+            <HeroStat label={t.hero.pending} value={data?.counts.pending_candidates ?? 0} helper={t.hero.pendingHelper} accent />
             <HeroStat label={t.hero.tasks90d} value={data?.upcoming_tasks.length ?? 0} helper={t.hero.tasksHelper} />
             <HeroStat label={t.hero.completion} value={`${completion}%`} helper={t.hero.completionHelper} />
           </div>
@@ -113,49 +114,71 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
 
       <UniversityCarousel onSelect={onOpenUniversity} />
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-        {metricConfig.map((metric) => {
-          const Icon = metric.icon;
-          const value = data?.counts[metric.key] ?? 0;
-          return (
-            <div
-              key={metric.key}
-              className="group rounded-[26px] border border-white/80 bg-white/75 p-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(15,23,42,0.08)]"
-            >
-              <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br ${metric.tone} text-white shadow-lg shadow-slate-950/10`}>
-                <Icon className="h-4 w-4" />
+      {/* Metrics */}
+      <section>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="section-index">03 — Database</span>
+            <span className="h-px w-12 bg-[var(--color-hairline-strong)]" />
+            <span className="mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-subtle)]">
+              {loading ? "loading" : "current"}
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 border border-[var(--color-hairline)] sm:grid-cols-3 lg:grid-cols-7">
+          {metricConfig.map((metric, idx) => {
+            const Icon = metric.icon;
+            const value = data?.counts[metric.key] ?? 0;
+            const isAccent = metric.key === "pending_candidates" && value > 0;
+            return (
+              <div
+                key={metric.key}
+                className={`relative border-b border-r border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-colors hover:bg-[var(--color-paper)] [&:nth-child(7n)]:border-r-0 ${
+                  idx >= metricConfig.length - (metricConfig.length % 7 || 7) ? "lg:border-b-0" : ""
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-subtle)]">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <Icon className={`h-3.5 w-3.5 ${isAccent ? "text-[var(--color-todai)]" : "text-[var(--color-subtle)]"}`} />
+                </div>
+                <div className={`serif mt-5 text-[36px] font-semibold leading-none tabular tracking-[-0.02em] ${isAccent ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
+                  {loading ? "—" : compactNumber(value)}
+                </div>
+                <div className="mt-2 text-[12.5px] text-[var(--color-muted)]">{t.metrics[metric.key]}</div>
               </div>
-              <div className="text-2xl font-semibold tracking-[-0.03em]">{loading ? "…" : compactNumber(value)}</div>
-              <div className="mt-1 text-sm font-medium text-slate-500">{t.metrics[metric.key]}</div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.35fr_0.75fr]">
+      {/* Recent papers + Timeline */}
+      <section className="grid gap-8 xl:grid-cols-[1.45fr_1fr]">
         <Panel
+          index="04"
           title={t.panels.recentPapers[0]}
           subtitle={t.panels.recentPapers[1]}
           action={
-            <button onClick={load} className="inline-flex h-9 items-center gap-2 rounded-2xl bg-slate-100 px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
-              <RefreshCw className="h-4 w-4" />
+            <button onClick={load} className="mono inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)] transition-colors hover:text-[var(--color-todai)]">
+              <RefreshCw className="h-3 w-3" />
               {t.refresh}
             </button>
           }
         >
           <PaperList papers={data?.recent_papers ?? []} loading={loading} t={t} />
         </Panel>
-
-        <Panel title={t.panels.timeline[0]} subtitle={t.panels.timeline[1]}>
+        <Panel index="05" title={t.panels.timeline[0]} subtitle={t.panels.timeline[1]}>
           <Timeline tasks={data?.upcoming_tasks ?? []} loading={loading} t={t} />
         </Panel>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[0.82fr_1fr]">
-        <Panel title={t.panels.review[0]} subtitle={t.panels.review[1]}>
+      {/* Review + System status */}
+      <section className="grid gap-8 xl:grid-cols-[1fr_1.1fr]">
+        <Panel index="06" title={t.panels.review[0]} subtitle={t.panels.review[1]}>
           <CandidateList candidates={data?.pending_candidates ?? []} loading={loading} t={t} />
         </Panel>
-        <Panel title={t.panels.status[0]} subtitle={t.panels.status[1]}>
+        <Panel index="07" title={t.panels.status[0]} subtitle={t.panels.status[1]}>
           <SystemStatus data={data} loading={loading} t={t} />
         </Panel>
       </section>
@@ -163,37 +186,54 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
   );
 }
 
-function HeroStat({ label, value, helper }: { label: string; value: number | string; helper: string }) {
+function HeroStat({
+  label,
+  value,
+  helper,
+  accent,
+}: {
+  label: string;
+  value: number | string;
+  helper: string;
+  accent?: boolean;
+}) {
   return (
-    <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-4">
-      <div className="text-2xl font-semibold tracking-[-0.03em]">{value}</div>
-      <div className="mt-1 text-sm font-semibold text-slate-700">{label}</div>
-      <div className="mt-1 text-xs text-slate-400">{helper}</div>
+    <div className="border-l border-[var(--color-hairline)] px-5 py-5 first:border-l-0">
+      <div className={`serif text-[28px] font-semibold leading-none tabular tracking-[-0.02em] ${accent ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
+        {value}
+      </div>
+      <div className="mt-3 text-[12.5px] font-medium text-[var(--color-ink)]">{label}</div>
+      <div className="mono mt-1 text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-subtle)]">
+        {helper}
+      </div>
     </div>
   );
 }
 
 function Panel({
+  index,
   title,
   subtitle,
   action,
   children,
 }: {
+  index: string;
   title: string;
   subtitle: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[30px] border border-white/80 bg-white/78 shadow-[0_20px_70px_rgba(15,23,42,0.07)] backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-200/70 px-5 py-4">
+    <div className="border border-[var(--color-hairline)] bg-[var(--color-surface)]">
+      <div className="flex items-end justify-between gap-4 border-b border-[var(--color-hairline)] px-6 py-5">
         <div>
-          <h2 className="text-lg font-semibold tracking-[-0.03em]">{title}</h2>
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          <div className="section-index">{index}</div>
+          <h2 className="serif mt-2 text-[20px] font-semibold tracking-[-0.01em]">{title}</h2>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{subtitle}</p>
         </div>
         {action}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="px-6 py-5">{children}</div>
     </div>
   );
 }
@@ -202,32 +242,42 @@ function PaperList({ papers, loading, t }: { papers: Paper[]; loading: boolean; 
   if (loading) return <SkeletonRows />;
   if (!papers.length) return <EmptyState title={t.noPapersTitle} helper={t.noPapersHelper} />;
   return (
-    <div className="space-y-3">
+    <ul className="divide-y divide-[var(--color-hairline)]">
       {papers.slice(0, 6).map((paper) => (
-        <a
-          key={paper.id}
-          href={paper.url}
-          className="group block rounded-3xl border border-slate-200/70 bg-slate-50/70 p-4 transition hover:border-cyan-200 hover:bg-white hover:shadow-lg hover:shadow-cyan-950/5"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="line-clamp-2 text-sm font-semibold leading-6 text-slate-900">{paper.title}</h3>
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500">{paper.authors.join(", ") || t.unknownAuthors}</p>
+        <li key={paper.id} className="py-4 first:pt-0 last:pb-0">
+          <a href={paper.url} target="_blank" rel="noreferrer" className="group block">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-2 text-[14.5px] font-medium leading-[1.5] text-[var(--color-ink)] group-hover:text-[var(--color-todai)]">
+                  {paper.title}
+                </h3>
+                <p className="mt-1.5 line-clamp-1 text-[12.5px] text-[var(--color-muted)]">
+                  {paper.authors.join(", ") || t.unknownAuthors}
+                </p>
+                {paper.keywords.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {paper.keywords.slice(0, 4).map((keyword) => (
+                      <span
+                        key={keyword}
+                        className="mono inline-flex h-5 items-center bg-[var(--color-isct-soft)] px-1.5 text-[10px] uppercase tracking-[0.12em] text-[var(--color-isct)]"
+                      >
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex flex-shrink-0 flex-col items-end gap-2 text-[11px]">
+                <span className="mono uppercase tracking-[0.16em] text-[var(--color-subtle)]">
+                  {paper.venue ?? paper.source ?? "arXiv"} {paper.year ? `· ${paper.year}` : ""}
+                </span>
+                <ArrowUpRight className="h-3.5 w-3.5 text-[var(--color-subtle)] transition-colors group-hover:text-[var(--color-todai)]" />
+              </div>
             </div>
-            <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:text-cyan-600" />
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge>{paper.venue ?? paper.source ?? "arXiv"}</Badge>
-            {paper.year ? <Badge>{paper.year}</Badge> : null}
-            {paper.keywords.slice(0, 3).map((keyword) => (
-              <Badge key={keyword} tone="blue">
-                {keyword}
-              </Badge>
-            ))}
-          </div>
-        </a>
+          </a>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -235,30 +285,41 @@ function Timeline({ tasks, loading, t }: { tasks: TimelineTask[]; loading: boole
   if (loading) return <SkeletonRows />;
   if (!tasks.length) return <EmptyState title={t.noTasksTitle} helper={t.noTasksHelper} />;
   return (
-    <div className="space-y-3">
+    <ul className="divide-y divide-[var(--color-hairline)]">
       {tasks.slice(0, 7).map((task) => {
         const priorityKey = (task.priority === "high" || task.priority === "low" ? task.priority : "medium") as
           | "high"
           | "medium"
           | "low";
+        const Icon = task.status === "done" ? CheckCircle2 : Clock3;
         return (
-          <div key={task.id} className="flex gap-3 rounded-3xl border border-slate-200/70 bg-slate-50/70 p-4">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
-              {task.status === "done" ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <Clock3 className="h-4 w-4" />}
-            </div>
+          <li key={task.id} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+            <Icon
+              className={`mt-0.5 h-4 w-4 flex-shrink-0 ${
+                task.status === "done" ? "text-emerald-600" : "text-[var(--color-subtle)]"
+              }`}
+            />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="truncate text-sm font-semibold text-slate-900">{task.title}</h3>
-                <Badge tone={priorityKey === "high" ? "amber" : "slate"}>{t.priorities[priorityKey]}</Badge>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="truncate text-[14px] font-medium text-[var(--color-ink)]">{task.title}</h3>
+                <span
+                  className={`mono inline-flex h-5 flex-shrink-0 items-center px-1.5 text-[10px] uppercase tracking-[0.16em] ${
+                    priorityKey === "high"
+                      ? "bg-[var(--color-todai-soft)] text-[var(--color-todai)]"
+                      : "bg-[var(--color-paper)] text-[var(--color-muted)]"
+                  }`}
+                >
+                  {t.priorities[priorityKey]}
+                </span>
               </div>
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="mono mt-1.5 text-[11px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
                 {task.task_type ?? "Task"} · {formatDate(task.deadline, t.dateLocale, t.notSet)}
               </div>
             </div>
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
 
@@ -266,18 +327,23 @@ function CandidateList({ candidates, loading, t }: { candidates: PaperCandidate[
   if (loading) return <SkeletonRows />;
   if (!candidates.length) return <EmptyState title={t.reviewClearedTitle} helper={t.reviewClearedHelper} />;
   return (
-    <div className="space-y-3">
+    <ul className="divide-y divide-[var(--color-hairline)]">
       {candidates.slice(0, 5).map((candidate) => (
-        <div key={candidate.id} className="rounded-3xl border border-amber-100 bg-amber-50/60 p-4">
-          <div className="mb-2 flex flex-wrap gap-2">
-            <Badge tone="amber">{candidate.source ?? "arXiv"}</Badge>
-            <Badge>{formatDate(candidate.published_at, t.dateLocale, t.notSet)}</Badge>
+        <li key={candidate.id} className="py-4 first:pt-0 last:pb-0">
+          <div className="mono flex items-center gap-2 text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-todai)]">
+            <span>{candidate.source ?? "arXiv"}</span>
+            <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
+            <span className="text-[var(--color-subtle)]">{formatDate(candidate.published_at, t.dateLocale, t.notSet)}</span>
           </div>
-          <h3 className="line-clamp-2 text-sm font-semibold leading-6">{candidate.title}</h3>
-          <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{candidate.abstract}</p>
-        </div>
+          <h3 className="mt-2 line-clamp-2 text-[14.5px] font-medium leading-[1.5] text-[var(--color-ink)]">
+            {candidate.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-[12.5px] leading-[1.65] text-[var(--color-muted)]">
+            {candidate.abstract}
+          </p>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -290,45 +356,42 @@ function SystemStatus({ data, loading, t }: { data: DashboardSummary | null; loa
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <ul className="divide-y divide-[var(--color-hairline)]">
       {items.map((item) => (
-        <div key={item.label} className="rounded-3xl border border-slate-200/70 bg-slate-50/70 p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold">{item.label}</span>
-            <span className={`h-2.5 w-2.5 rounded-full ${item.ok ? "bg-emerald-500" : "bg-slate-300"}`} />
+        <li key={item.label} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
+          <div className="flex items-center gap-3">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${item.ok ? "bg-emerald-500" : "bg-[var(--color-subtle)]"}`}
+            />
+            <span className="text-[13px] font-medium text-[var(--color-ink)]">{item.label}</span>
           </div>
-          <div className="mt-2 text-xs text-slate-500">{item.value}</div>
-        </div>
+          <span className="mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-muted)]">
+            {item.value}
+          </span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
-}
-
-function Badge({ children, tone = "slate" }: { children: React.ReactNode; tone?: "slate" | "blue" | "amber" }) {
-  const classes = {
-    slate: "border-slate-200 bg-white text-slate-500",
-    blue: "border-cyan-100 bg-cyan-50 text-cyan-700",
-    amber: "border-amber-100 bg-amber-100/80 text-amber-700",
-  };
-  return <span className={`inline-flex h-6 items-center rounded-full border px-2.5 text-xs font-semibold ${classes[tone]}`}>{children}</span>;
 }
 
 function EmptyState({ title, helper }: { title: string; helper: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
-      <Database className="mx-auto h-6 w-6 text-slate-300" />
-      <div className="mt-3 text-sm font-semibold text-slate-700">{title}</div>
-      <div className="mt-1 text-xs text-slate-400">{helper}</div>
+    <div className="border border-dashed border-[var(--color-hairline-strong)] bg-[var(--color-paper)] px-6 py-12 text-center">
+      <div className="serif text-[16px] font-semibold text-[var(--color-ink)]">{title}</div>
+      <div className="mt-1.5 text-[12.5px] text-[var(--color-muted)]">{helper}</div>
     </div>
   );
 }
 
 function SkeletonRows() {
   return (
-    <div className="space-y-3">
+    <ul className="divide-y divide-[var(--color-hairline)]">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="h-20 animate-pulse rounded-3xl bg-slate-100" />
+        <li key={index} className="py-4">
+          <div className="h-4 w-3/5 animate-pulse bg-[var(--color-paper)]" />
+          <div className="mt-2 h-3 w-2/5 animate-pulse bg-[var(--color-paper)]" />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
