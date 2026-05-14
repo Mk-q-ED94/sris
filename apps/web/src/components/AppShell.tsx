@@ -60,6 +60,8 @@ export function AppShell({
 }) {
   const { clearToken } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const activeIndex = NAV_ORDER.indexOf(activePage);
+  const activeLabel = t.nav[activePage];
 
   return (
     <div className="min-h-[100dvh] bg-[var(--color-paper)] text-[var(--color-ink)]">
@@ -112,29 +114,11 @@ export function AppShell({
               {t.asiaShanghai}
             </div>
             <div className="mt-2 text-[12px] leading-5 text-[var(--color-muted)]">{t.privateMode}</div>
-            <select
-              value={lang}
-              onChange={(event) => setLang(event.target.value as LangCode)}
-              className="mt-4 h-9 w-full border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-3 text-[12.5px] font-medium text-[var(--color-ink)] focus:border-[var(--color-todai)] focus:outline-none"
-              aria-label="language"
-            >
-              {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
-                <option key={code} value={code}>
-                  {LANG_LABELS[code]}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={clearToken}
-              className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] text-[12.5px] font-medium text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)]"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              {t.logout}
-            </button>
           </div>
         </aside>
 
         <main className="min-w-0">
+          {/* Mobile header */}
           <header className="sticky top-0 z-20 border-b border-[var(--color-hairline)] bg-[var(--color-paper)]/95 px-4 py-3 backdrop-blur sm:px-7 lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-baseline gap-2">
@@ -142,18 +126,6 @@ export function AppShell({
                 <div className="serif text-[18px] font-semibold">{t.brand.name}</div>
               </div>
               <div className="flex items-center gap-2">
-                <select
-                  value={lang}
-                  onChange={(event) => setLang(event.target.value as LangCode)}
-                  className="h-9 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-2 text-[12px] font-medium"
-                  aria-label="language"
-                >
-                  {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
-                    <option key={code} value={code}>
-                      {LANG_LABELS[code]}
-                    </option>
-                  ))}
-                </select>
                 <select
                   value={activePage}
                   onChange={(event) => onNavigate(event.target.value as PageKey)}
@@ -166,9 +138,67 @@ export function AppShell({
                     </option>
                   ))}
                 </select>
+                <select
+                  value={lang}
+                  onChange={(event) => setLang(event.target.value as LangCode)}
+                  className="h-9 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-2 text-[12px] font-medium"
+                  aria-label="language"
+                >
+                  {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
+                    <option key={code} value={code}>
+                      {LANG_LABELS[code]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={clearToken}
+                  className="grid h-9 w-9 place-items-center border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)]"
+                  aria-label={t.logout}
+                  title={t.logout}
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </header>
+
+          {/* Desktop header */}
+          <header className="sticky top-0 z-20 hidden border-b border-[var(--color-hairline)] bg-[var(--color-paper)]/95 backdrop-blur lg:block">
+            <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 px-8 py-4 lg:px-14">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-subtle)] tabular">
+                  {String(activeIndex + 1).padStart(2, "0")}
+                </span>
+                <span className="h-px w-6 bg-[var(--color-hairline-strong)]" aria-hidden />
+                <span className="serif truncate text-[15px] font-medium tracking-[-0.005em] text-[var(--color-ink)]">
+                  {activeLabel}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={lang}
+                  onChange={(event) => setLang(event.target.value as LangCode)}
+                  className="h-9 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-3 text-[12.5px] font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-todai)] focus:border-[var(--color-todai)] focus:outline-none"
+                  aria-label="language"
+                >
+                  {(Object.keys(LANG_LABELS) as LangCode[]).map((code) => (
+                    <option key={code} value={code}>
+                      {LANG_LABELS[code]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={clearToken}
+                  className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-3 text-[12.5px] font-medium text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)]"
+                  title={t.logout}
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden xl:inline">{t.logout}</span>
+                </button>
+              </div>
+            </div>
+          </header>
+
           <div className="mx-auto w-full max-w-[1320px] px-4 py-8 sm:px-8 sm:py-12 lg:px-14">{children}</div>
         </main>
       </div>

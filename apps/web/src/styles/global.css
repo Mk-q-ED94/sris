@@ -102,32 +102,22 @@ a {
 }
 
 /* University rail */
-.uni-rail-mask {
-  overflow: hidden;
+.uni-rail-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
   mask-image: linear-gradient(90deg, transparent 0, #000 4%, #000 96%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 4%, #000 96%, transparent 100%);
 }
 
-.uni-rail-track {
-  animation: uni-rail-scroll 60s linear infinite;
-}
-
-.uni-rail-mask:hover .uni-rail-track {
-  animation-play-state: paused;
-}
-
-@keyframes uni-rail-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(-50% - 12px));
-  }
+.uni-rail-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .uni-rail-track {
-    animation: none;
+  .uni-rail-scroll {
+    scroll-behavior: auto;
   }
 }
 
