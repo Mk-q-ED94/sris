@@ -1,4 +1,4 @@
-import type { DashboardSummary } from "../types/sris";
+import type { DashboardSummary, QuickCaptureResponse, SearchResponse, TimelineTask } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -14,9 +14,14 @@ export function clearStoredToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-async function request<T>(path: string, token: string): Promise<T> {
+async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init.headers || {}),
+    },
   });
   if (!response.ok) {
     let message = response.statusText;
@@ -38,6 +43,37 @@ export function fetchDashboard(token: string): Promise<DashboardSummary> {
     }
     throw error;
   });
+}
+
+export function fetchTimeline(token: string): Promise<TimelineTask[]> {
+  return request<TimelineTask[]>("/api/timeline", token).catch((error: unknown) => {
+    if (import.meta.env.DEV) {
+      return mockTimeline;
+    }
+    throw error;
+  });
+}
+
+export function searchGlobal(token: string, query: string): Promise<SearchResponse> {
+  const url = `/api/search?q=${encodeURIComponent(query)}`;
+  return request<SearchResponse>(url, token).catch((error: unknown) => {
+    if (import.meta.env.DEV) {
+      return mockSearch(query);
+    }
+    throw error;
+  });
+}
+
+export function quickCapture(token: string, payload: { url: string; title?: string; selection?: string; notes?: string }): Promise<QuickCaptureResponse> {
+  return request<QuickCaptureResponse>("/api/quick-capture", token, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function buildIcalUrl(token: string): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/api/timeline.ics?token=${encodeURIComponent(token)}`;
 }
 
 const mockDashboard: DashboardSummary = {
@@ -132,3 +168,31 @@ const mockDashboard: DashboardSummary = {
     { label: "Timezone", value: "Asia/Shanghai" },
   ],
 };
+
+const today = new Date();
+today.setUTCHours(0, 0, 0, 0);
+const addDays = (d: Date, n: number) => {
+  const copy = new Date(d);
+  copy.setUTCDate(copy.getUTCDate() + n);
+  return copy.toISOString().slice(0, 10);
+};
+
+const mockTimeline: TimelineTask[] = [
+  { id: "task-1", title: "TOEFL window planning checkpoint", deadline: addDays(today, 18), priority: "high", status: "todo", task_type: "TOEFL", created_at: addDays(today, -7), updated_at: addDays(today, -2) },
+  { id: "task-2", title: "Draft SOP research direction", deadline: addDays(today, 38), priority: "high", status: "doing", task_type: "SOP", created_at: addDays(today, -12), updated_at: addDays(today, -1) },
+  { id: "task-3", title: "Ask recommender · Prof. X", deadline: addDays(today, 52), priority: "medium", status: "todo", task_type: "Recommendation", created_at: addDays(today, -3), updated_at: addDays(today, -3) },
+  { id: "task-4", title: "UTokyo IST 报名材料整理", deadline: addDays(today, 78), priority: "medium", status: "todo", task_type: "Application", created_at: addDays(today, -5), updated_at: addDays(today, -5) },
+  { id: "task-5", title: "Science Tokyo CS-IGP submission", deadline: addDays(today, 96), priority: "high", status: "todo", task_type: "Application", created_at: addDays(today, -1), updated_at: addDays(today, -1) },
+  { id: "task-6", title: "JLPT N1 mock test", deadline: addDays(today, -4), priority: "low", status: "done", task_type: "JLPT", created_at: addDays(today, -28), updated_at: addDays(today, -4) },
+];
+
+function mockSearch(query: string): SearchResponse {
+  const q = query.toLowerCase();
+  const hits = [
+    { type: "university" as const, id: "utokyo", title: "The University of Tokyo", subtitle: "Tokyo", hint: "AI, CS, Systems, Information Science and Technology" },
+    { type: "professor" as const, id: "prof-1", title: "Prof. Yamamoto", subtitle: "Information Science", hint: "[\"distributed training\",\"LLM inference\"]" },
+    { type: "lab" as const, id: "lab-ai-systems", title: "AI Systems Lab", subtitle: "https://example.com", hint: "[\"systems\",\"distributed training\"]" },
+    { type: "candidate" as const, id: "candidate-1", title: "Program-Level Matching Signals", subtitle: "arXiv CS.CL", hint: "Candidate awaiting manual review." },
+  ].filter((h) => !q || h.title.toLowerCase().includes(q) || (h.subtitle ?? "").toLowerCase().includes(q));
+  return { query, hits };
+}

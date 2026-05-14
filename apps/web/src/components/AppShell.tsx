@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Radar,
+  Search,
   University,
   UsersRound,
 } from "lucide-react";
@@ -52,16 +53,20 @@ const NAV_ORDER: PageKey[] = [
 export function AppShell({
   activePage,
   onNavigate,
+  onOpenSearch,
   children,
 }: {
   activePage: PageKey;
   onNavigate: (page: PageKey) => void;
+  onOpenSearch?: () => void;
   children: React.ReactNode;
 }) {
   const { clearToken } = useAuth();
   const { t, lang, setLang } = useI18n();
   const activeIndex = NAV_ORDER.indexOf(activePage);
   const activeLabel = t.nav[activePage];
+  const shortcutHint =
+    typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl+K";
 
   return (
     <div className="min-h-[100dvh] bg-[var(--color-paper)] text-[var(--color-ink)]">
@@ -77,6 +82,20 @@ export function AppShell({
             <div className="mono mt-3 text-[10.5px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
               {t.brand.subtitle}
             </div>
+          </div>
+
+          <div className="px-5 pt-5">
+            <button
+              type="button"
+              onClick={onOpenSearch}
+              className="group flex h-10 w-full items-center gap-2 border border-[var(--color-hairline)] bg-[var(--color-paper)] px-3 text-left text-[12.5px] text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)] focus-visible:border-[var(--color-todai)] focus-visible:text-[var(--color-todai)] focus-visible:outline-none"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="flex-1 truncate">{t.search}</span>
+              <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-subtle)] group-hover:text-[var(--color-todai)]">
+                {shortcutHint}
+              </span>
+            </button>
           </div>
 
           <nav className="flex-1 px-3 py-5">
