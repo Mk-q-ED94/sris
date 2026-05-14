@@ -37,6 +37,8 @@ export type TimelineTask = {
   status: string;
   task_type?: string | null;
   notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type DashboardSummary = {
@@ -46,3 +48,18 @@ export type DashboardSummary = {
   upcoming_tasks: TimelineTask[];
   recent_updates: Array<{ label: string; value: string }>;
 };
+
+export type SearchHit = {
+  type: "university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task";
+  id: string;
+  title: string;
+  subtitle: string | null;
+  hint: string | null;
+};
+
+export type SearchResponse = {
+  query: string;
+  hits: SearchHit[];
+};
+
+export type QuickCaptureResponse = { id: string; status: string };

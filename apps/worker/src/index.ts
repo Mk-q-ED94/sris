@@ -1,13 +1,16 @@
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import type { Env } from "./env";
 import { HttpError, JSON_HEADERS, json } from "./http";
-import { requireApiToken, requireCron } from "./auth";
+import { requireApiToken, requireApiTokenOrQuery, requireCron } from "./auth";
 import { initializeDatabase } from "./db/schema";
 import { listRows } from "./db/queries";
 import { normalizeCandidate } from "./db/normalize";
 import { dashboard } from "./routes/dashboard";
 import { acceptCandidate, ignoreCandidate } from "./routes/review";
 import { handleCrud } from "./routes/crud";
+import { buildTimelineIcs } from "./routes/ical";
+import { globalSearch } from "./routes/search";
+import { quickCapture, type QuickCapturePayload } from "./routes/quickcapture";
 import { runIngest } from "./ingest";
 
 export default {
@@ -39,10 +42,33 @@ export default {
         return json(await runIngest(env.DB));
       }
 
+      // iCal feed accepts ?token=API_TOKEN so calendar clients without
+      // an Authorization header can subscribe.
+      if (url.pathname === "/api/timeline.ics" && request.method === "GET") {
+        requireApiTokenOrQuery(request, env);
+        const ics = await buildTimelineIcs(env.DB, url.origin);
+        return new Response(ics, {
+          headers: {
+            "content-type": "text/calendar; charset=utf-8",
+            "cache-control": "private, max-age=60",
+          },
+        });
+      }
+
       requireApiToken(request, env);
 
       if (url.pathname === "/api/dashboard" && request.method === "GET") {
         return json(await dashboard(env.DB));
+      }
+
+      if (url.pathname === "/api/search" && request.method === "GET") {
+        const q = url.searchParams.get("q") || "";
+        return json({ query: q, hits: await globalSearch(env.DB, q) });
+      }
+
+      if (url.pathname === "/api/quick-capture" && request.method === "POST") {
+        const payload = (await request.json()) as QuickCapturePayload;
+        return json(await quickCapture(env.DB, payload), 201);
       }
 
       if (url.pathname === "/api/review/papers" && request.method === "GET") {
@@ -66,6 +92,13 @@ export default {
       return json({ error: "Not found" }, 404);
     } catch (error) {
       if (error instanceof HttpError) return json({ error: error.message }, error.status);
+      if (error && typeof error === "object" && "status" in error) {
+        const tagged = error as { status?: unknown; message?: unknown };
+        if (typeof tagged.status === "number") {
+          const msg = typeof tagged.message === "string" ? tagged.message : "Bad request";
+          return json({ error: msg }, tagged.status);
+        }
+      }
       console.error("worker: unhandled error", error);
       const message = error instanceof Error ? error.message : "Internal error";
       return json({ error: message }, 500);

@@ -1,58 +1,116 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell, type PageKey } from "./components/AppShell";
+import { GlobalSearch } from "./components/GlobalSearch";
 import { TokenGate } from "./components/TokenGate";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { Capture } from "./pages/Capture";
 import { Dashboard } from "./pages/Dashboard";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { Sources } from "./pages/Sources";
+import { Timeline } from "./pages/Timeline";
 import { UniversityDetail } from "./pages/UniversityDetail";
+
+const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "papers", "review", "timeline", "sources"];
+
+interface HashRoute {
+  page: PageKey | "capture";
+  universityId: string | null;
+  capturePrefill: { url: string; title: string; notes: string } | null;
+}
+
+function parseHashRoute(): HashRoute {
+  const raw = window.location.hash.slice(1);
+  if (raw.startsWith("capture")) {
+    const queryIndex = raw.indexOf("?");
+    const search = queryIndex >= 0 ? raw.slice(queryIndex + 1) : "";
+    const params = new URLSearchParams(search);
+    return {
+      page: "capture",
+      universityId: null,
+      capturePrefill: {
+        url: params.get("url") ?? "",
+        title: params.get("title") ?? "",
+        notes: params.get("text") ?? "",
+      },
+    };
+  }
+  const [page = "dashboard", universityId = null] = raw.split("/");
+  return {
+    page: VALID_PAGES.includes(page as PageKey) ? (page as PageKey) : "dashboard",
+    universityId,
+    capturePrefill: null,
+  };
+}
 
 function AppContent() {
   const { isAuthed } = useAuth();
-  const initialRoute = parseHashRoute();
-  const [activePage, setActivePage] = useState<PageKey>(() => initialRoute.page);
-  const [selectedUniversityId, setSelectedUniversityId] = useState<string | null>(() => initialRoute.universityId);
+  const initial = parseHashRoute();
+  const [route, setRoute] = useState<HashRoute>(initial);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
-    function syncHashRoute() {
-      const route = parseHashRoute();
-      setActivePage(route.page);
-      setSelectedUniversityId(route.universityId);
+    function sync() {
+      setRoute(parseHashRoute());
     }
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
 
-    window.addEventListener("hashchange", syncHashRoute);
-    return () => window.removeEventListener("hashchange", syncHashRoute);
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const cmd = e.metaKey || e.ctrlKey;
+      if (cmd && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const navigate = useCallback((nextPage: PageKey, universityId?: string) => {
+    setRoute({
+      page: nextPage,
+      universityId: universityId ?? null,
+      capturePrefill: null,
+    });
+    window.history.replaceState(null, "", universityId ? `#${nextPage}/${universityId}` : `#${nextPage}`);
+  }, []);
+
+  const closeCapture = useCallback(() => {
+    setRoute({ page: "dashboard", universityId: null, capturePrefill: null });
+    window.history.replaceState(null, "", "#dashboard");
   }, []);
 
   const page = useMemo(() => {
-    if (activePage === "dashboard") return <Dashboard onOpenUniversity={(id) => navigate("universities", id)} />;
-    if (activePage === "universities" && selectedUniversityId) {
-      return <UniversityDetail universityId={selectedUniversityId} onBack={() => navigate("dashboard")} />;
+    if (route.page === "capture" && route.capturePrefill) {
+      return <Capture prefill={route.capturePrefill} onClose={closeCapture} />;
     }
-    return <PlaceholderPage page={activePage} />;
-  }, [activePage, selectedUniversityId]);
-
-  function navigate(nextPage: PageKey, universityId?: string) {
-    setActivePage(nextPage);
-    setSelectedUniversityId(universityId ?? null);
-    window.history.replaceState(null, "", universityId ? `#${nextPage}/${universityId}` : `#${nextPage}`);
-  }
+    if (route.page === "dashboard") return <Dashboard onOpenUniversity={(id) => navigate("universities", id)} />;
+    if (route.page === "universities" && route.universityId) {
+      return <UniversityDetail universityId={route.universityId} onBack={() => navigate("dashboard")} />;
+    }
+    if (route.page === "timeline") return <Timeline />;
+    if (route.page === "sources") return <Sources />;
+    return <PlaceholderPage page={route.page as PageKey} />;
+  }, [route, navigate, closeCapture]);
 
   if (!isAuthed) return <TokenGate />;
 
-  return (
-    <AppShell activePage={activePage} onNavigate={navigate}>
-      {page}
-    </AppShell>
-  );
-}
+  const activePage: PageKey = route.page === "capture" ? "dashboard" : (route.page as PageKey);
 
-function parseHashRoute(): { page: PageKey; universityId: string | null } {
-  const [page = "dashboard", universityId = null] = window.location.hash.slice(1).split("/");
-  const validPages: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "papers", "review", "timeline", "sources"];
-  return {
-    page: validPages.includes(page as PageKey) ? (page as PageKey) : "dashboard",
-    universityId,
-  };
+  return (
+    <>
+      <AppShell
+        activePage={activePage}
+        onNavigate={(next) => navigate(next)}
+        onOpenSearch={() => setSearchOpen(true)}
+      >
+        {page}
+      </AppShell>
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
+  );
 }
 
 export function App() {

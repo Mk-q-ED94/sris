@@ -8,6 +8,9 @@ export interface Locale {
   metaTitle: string;
   brand: { name: string; subtitle: string };
   search: string;
+  searchPlaceholder: string;
+  searchEmpty: string;
+  searchHint: string;
   asiaShanghai: string;
   privateMode: string;
   logout: string;
@@ -36,6 +39,7 @@ export interface Locale {
   carouselHint: string;
   metrics: Record<MetricKey, string>;
   priorities: Record<"high" | "medium" | "low", string>;
+  taskStatuses: Record<"todo" | "doing" | "done", string>;
   status: { db: string; arxiv: string; ai: string; cron: string; connected: string; checking: string; aiReserved: string; cronSchedule: string; pendingFmt: (n: number) => string };
   nav: Record<PageKey, string>;
   pages: Record<PageKey, { title: string; description: string }>;
@@ -60,6 +64,45 @@ export interface Locale {
     placeholder: string;
     submit: string;
   };
+  timeline: {
+    title: string;
+    description: string;
+    windowMonths: (n: number) => string;
+    prev: string;
+    next: string;
+    today: string;
+    noTasks: string;
+    legend: string;
+    legendHigh: string;
+    legendMedium: string;
+    legendDone: string;
+  };
+  sources: {
+    title: string;
+    description: string;
+    icalTitle: string;
+    icalBody: string;
+    icalAction: string;
+    icalCopied: string;
+    captureTitle: string;
+    captureBody: string;
+    captureHint: string;
+    captureCopy: string;
+    captureCopied: string;
+    arxivTitle: string;
+    arxivBody: string;
+  };
+  capture: {
+    title: string;
+    body: string;
+    urlLabel: string;
+    titleLabel: string;
+    notesLabel: string;
+    submit: string;
+    success: string;
+    cancel: string;
+  };
+  entityType: Record<"university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task", string>;
 }
 
 export type MetricKey =
@@ -83,7 +126,10 @@ export const LOCALES: Record<LangCode, Locale> = {
     dateLocale: "zh-CN",
     metaTitle: "SRIS",
     brand: { name: "SRIS", subtitle: "Research Intelligence" },
-    search: "Quick filter",
+    search: "全局搜索",
+    searchPlaceholder: "搜索院校 / 教授 / 实验室 / 论文 / 任务…",
+    searchEmpty: "没有匹配结果",
+    searchHint: "Ctrl/⌘ + K 唤起",
     asiaShanghai: "Asia/Shanghai",
     privateMode: "Cloudflare Worker + D1 · private mode",
     logout: "退出 token",
@@ -105,14 +151,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     cockpitChip: "Research intelligence cockpit",
     heroTitle: "SGU / AI 修士申请总览",
     heroBody: "把院校、教授、实验室、论文雷达和申请任务压缩成一个可扫描的每日控制台。",
-    hero: {
-      pending: "待确认论文",
-      tasks90d: "90 天任务",
-      completion: "完成率",
-      pendingHelper: "Review queue",
-      tasksHelper: "Application timeline",
-      completionHelper: "Upcoming window",
-    },
+    hero: { pending: "待确认论文", tasks90d: "90 天任务", completion: "完成率", pendingHelper: "Review queue", tasksHelper: "Application timeline", completionHelper: "Upcoming window" },
     panels: {
       recentPapers: ["近期论文", "已进入正式库的研究信号"],
       timeline: ["申请窗口", "未来 90 天高优先级动作"],
@@ -122,38 +161,11 @@ export const LOCALES: Record<LangCode, Locale> = {
     carouselTagline: "Target schools",
     carouselTitle: "目标院校快速入口",
     carouselHint: "自动轮播 · 点击进入院校信息",
-    metrics: {
-      universities: "院校",
-      programs: "项目",
-      professors: "教授",
-      labs: "实验室",
-      papers: "论文",
-      pending_candidates: "待确认",
-      timeline_tasks: "任务",
-    },
+    metrics: { universities: "院校", programs: "项目", professors: "教授", labs: "实验室", papers: "论文", pending_candidates: "待确认", timeline_tasks: "任务" },
     priorities: { high: "高", medium: "中", low: "低" },
-    status: {
-      db: "D1 数据库",
-      arxiv: "arXiv Radar",
-      ai: "AI 摘要",
-      cron: "Cloudflare Cron",
-      connected: "Connected",
-      checking: "Checking",
-      aiReserved: "Interface reserved",
-      cronSchedule: "Daily 23:15 UTC",
-      pendingFmt: (n) => `${n} pending`,
-    },
-    nav: {
-      dashboard: "总览",
-      universities: "院校",
-      professors: "教授",
-      labs: "实验室",
-      programs: "项目",
-      papers: "论文雷达",
-      review: "待确认",
-      timeline: "时间线",
-      sources: "数据源",
-    },
+    taskStatuses: { todo: "待办", doing: "进行中", done: "已完成" },
+    status: { db: "D1 数据库", arxiv: "arXiv Radar", ai: "AI 摘要", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
+    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", papers: "论文雷达", review: "待确认", timeline: "时间线", sources: "数据源" },
     pages: {
       dashboard: { title: "总览", description: "Dashboard" },
       universities: { title: "院校", description: "目标院校数据库会在下一轮迁移到 React 表格视图。" },
@@ -162,8 +174,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       programs: { title: "项目", description: "SGU 项目与 deadline 管理将接入同一套筛选交互。" },
       papers: { title: "论文雷达", description: "已确认论文库会改成高密度研究表格。" },
       review: { title: "待确认", description: "Review Queue 会保留接受/忽略流程,并升级成卡片队列。" },
-      timeline: { title: "时间线", description: "申请任务会改成更清晰的时间轴和优先级视图。" },
-      sources: { title: "数据源", description: "arXiv RSS 与关键词设置会迁移到配置页面。" },
+      timeline: { title: "时间线", description: "TOEFL / JLPT / SOP / 推荐信 / 申请 DDL 的 Gantt 视图。" },
+      sources: { title: "数据源", description: "arXiv RSS、iCal 订阅、浏览器抽取刷。" },
     },
     placeholderNote: "当前大改先完成总览页,后续页面会逐个迁移。",
     university: {
@@ -186,13 +198,55 @@ export const LOCALES: Record<LangCode, Locale> = {
       placeholder: "Paste your private token",
       submit: "Enter dashboard",
     },
+    timeline: {
+      title: "申请时间线",
+      description: "未来 N 个月的任务横向甘特图。",
+      windowMonths: (n) => `未来 ${n} 个月`,
+      prev: "上一段",
+      next: "下一段",
+      today: "今日",
+      noTasks: "时间窗口内暂无任务。",
+      legend: "图例",
+      legendHigh: "高优先级",
+      legendMedium: "普通",
+      legendDone: "已完成",
+    },
+    sources: {
+      title: "数据源 / 集成",
+      description: "arXiv 采集、日历订阅、浏览器一键抓取。",
+      icalTitle: "iCal 订阅",
+      icalBody: "把这个 URL 添加到 Google / Apple Calendar 后,所有 DDL 自动同步到你的原生日历并接收提醒。注意:URL 含 token,请勿外泄。",
+      icalAction: "复制订阅链接",
+      icalCopied: "已复制",
+      captureTitle: "浏览器抽取刷",
+      captureBody: "把下面这段 JavaScript 拖到浏览器收藏栏作为书签。点击书签时,当前页面 URL + 选中文本会进入 SRIS 待确认队列。",
+      captureHint: "提示:Safari 需要在偏好设置里启用「显示开发菜单」后才能编辑书签 JS。",
+      captureCopy: "复制 bookmarklet",
+      captureCopied: "已复制",
+      arxivTitle: "arXiv 关键词源",
+      arxivBody: "在 radar_sources 表里维护查询和关键词,Worker 的 cron 每天 23:15 UTC 自动跑一遍。",
+    },
+    capture: {
+      title: "保存到 SRIS",
+      body: "确认信息无误后保存到待确认队列。可以在 Review 页面继续处理。",
+      urlLabel: "URL",
+      titleLabel: "标题",
+      notesLabel: "备注 / 选中文本",
+      submit: "保存",
+      success: "已保存到待确认队列",
+      cancel: "取消",
+    },
+    entityType: { university: "院校", program: "项目", professor: "教授", lab: "实验室", paper: "论文", candidate: "候选", task: "任务" },
   },
   en: {
     htmlLang: "en",
     dateLocale: "en-US",
     metaTitle: "SRIS",
     brand: { name: "SRIS", subtitle: "Research Intelligence" },
-    search: "Quick filter",
+    search: "Global search",
+    searchPlaceholder: "Search universities / professors / labs / papers / tasks…",
+    searchEmpty: "No matching results",
+    searchHint: "Ctrl/⌘ + K to open",
     asiaShanghai: "Asia/Shanghai",
     privateMode: "Cloudflare Worker + D1 · private mode",
     logout: "Sign out",
@@ -214,14 +268,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     cockpitChip: "Research intelligence cockpit",
     heroTitle: "SGU / AI Master application overview",
     heroBody: "Compress universities, professors, labs, the paper radar, and application tasks into one scannable daily console.",
-    hero: {
-      pending: "Pending papers",
-      tasks90d: "90-day tasks",
-      completion: "Completion",
-      pendingHelper: "Review queue",
-      tasksHelper: "Application timeline",
-      completionHelper: "Upcoming window",
-    },
+    hero: { pending: "Pending papers", tasks90d: "90-day tasks", completion: "Completion", pendingHelper: "Review queue", tasksHelper: "Application timeline", completionHelper: "Upcoming window" },
     panels: {
       recentPapers: ["Recent papers", "Research signals already in the main library"],
       timeline: ["Application window", "High-priority moves in the next 90 days"],
@@ -231,38 +278,11 @@ export const LOCALES: Record<LangCode, Locale> = {
     carouselTagline: "Target schools",
     carouselTitle: "Target university quick entry",
     carouselHint: "Auto-scrolling · click to open",
-    metrics: {
-      universities: "Universities",
-      programs: "Programs",
-      professors: "Professors",
-      labs: "Labs",
-      papers: "Papers",
-      pending_candidates: "Review",
-      timeline_tasks: "Tasks",
-    },
+    metrics: { universities: "Universities", programs: "Programs", professors: "Professors", labs: "Labs", papers: "Papers", pending_candidates: "Review", timeline_tasks: "Tasks" },
     priorities: { high: "High", medium: "Medium", low: "Low" },
-    status: {
-      db: "D1 database",
-      arxiv: "arXiv radar",
-      ai: "AI summary",
-      cron: "Cloudflare cron",
-      connected: "Connected",
-      checking: "Checking",
-      aiReserved: "Interface reserved",
-      cronSchedule: "Daily 23:15 UTC",
-      pendingFmt: (n) => `${n} pending`,
-    },
-    nav: {
-      dashboard: "Dashboard",
-      universities: "Universities",
-      professors: "Professors",
-      labs: "Labs",
-      programs: "Programs",
-      papers: "Paper radar",
-      review: "Review",
-      timeline: "Timeline",
-      sources: "Sources",
-    },
+    taskStatuses: { todo: "Todo", doing: "Doing", done: "Done" },
+    status: { db: "D1 database", arxiv: "arXiv radar", ai: "AI summary", cron: "Cloudflare cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
+    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", papers: "Paper radar", review: "Review", timeline: "Timeline", sources: "Sources" },
     pages: {
       dashboard: { title: "Dashboard", description: "Dashboard" },
       universities: { title: "Universities", description: "The target-university database moves to a React table view next." },
@@ -271,8 +291,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       programs: { title: "Programs", description: "SGU programs and deadlines will share the same filtering interactions." },
       papers: { title: "Paper radar", description: "The accepted-papers library will become a dense research table." },
       review: { title: "Review", description: "Review queue keeps accept/ignore but upgrades to a card layout." },
-      timeline: { title: "Timeline", description: "Application tasks move to a clearer timeline + priority view." },
-      sources: { title: "Sources", description: "arXiv RSS and keyword settings will move to a configuration page." },
+      timeline: { title: "Timeline", description: "Gantt view of TOEFL / JLPT / SOP / recommendation / application DDLs." },
+      sources: { title: "Sources", description: "arXiv RSS, iCal subscription, browser quick-capture." },
     },
     placeholderNote: "The redesign starts from the dashboard; other pages are migrated in subsequent passes.",
     university: {
@@ -295,13 +315,55 @@ export const LOCALES: Record<LangCode, Locale> = {
       placeholder: "Paste your private token",
       submit: "Enter dashboard",
     },
+    timeline: {
+      title: "Application timeline",
+      description: "Horizontal Gantt view of tasks across the next several months.",
+      windowMonths: (n) => `Next ${n} months`,
+      prev: "Previous",
+      next: "Next",
+      today: "Today",
+      noTasks: "No tasks in the current window.",
+      legend: "Legend",
+      legendHigh: "High priority",
+      legendMedium: "Normal",
+      legendDone: "Done",
+    },
+    sources: {
+      title: "Sources & integrations",
+      description: "arXiv ingest, calendar subscription, one-click web capture.",
+      icalTitle: "iCal subscription",
+      icalBody: "Add this URL to Google / Apple Calendar to receive every deadline natively. The URL contains your token — do not share.",
+      icalAction: "Copy subscription URL",
+      icalCopied: "Copied",
+      captureTitle: "Browser quick-capture",
+      captureBody: "Drag the snippet below to your bookmarks bar. Clicking the bookmark sends the current page URL + selection to the SRIS review queue.",
+      captureHint: "Note: Safari requires the Develop menu to be enabled before you can edit bookmark JavaScript.",
+      captureCopy: "Copy bookmarklet",
+      captureCopied: "Copied",
+      arxivTitle: "arXiv keyword sources",
+      arxivBody: "Maintain queries and keywords in `radar_sources`; the Worker cron runs every day at 23:15 UTC.",
+    },
+    capture: {
+      title: "Save to SRIS",
+      body: "Confirm the details, then push it into the review queue.",
+      urlLabel: "URL",
+      titleLabel: "Title",
+      notesLabel: "Notes / selected text",
+      submit: "Save",
+      success: "Saved to the review queue",
+      cancel: "Cancel",
+    },
+    entityType: { university: "University", program: "Program", professor: "Professor", lab: "Lab", paper: "Paper", candidate: "Candidate", task: "Task" },
   },
   ja: {
     htmlLang: "ja",
     dateLocale: "ja-JP",
     metaTitle: "SRIS",
     brand: { name: "SRIS", subtitle: "Research Intelligence" },
-    search: "クイック検索",
+    search: "全文検索",
+    searchPlaceholder: "大学 / 教授 / 研究室 / 論文 / タスクを検索…",
+    searchEmpty: "一致する結果がありません",
+    searchHint: "Ctrl/⌘ + K で開く",
     asiaShanghai: "Asia/Shanghai",
     privateMode: "Cloudflare Worker + D1 · プライベートモード",
     logout: "トークン解除",
@@ -323,14 +385,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     cockpitChip: "Research intelligence cockpit",
     heroTitle: "SGU / AI 修士出願ダッシュボード",
     heroBody: "大学・教授・研究室・論文レーダー・出願タスクを一つのスキャン可能なコンソールに集約。",
-    hero: {
-      pending: "未確認論文",
-      tasks90d: "90 日タスク",
-      completion: "完了率",
-      pendingHelper: "Review queue",
-      tasksHelper: "Application timeline",
-      completionHelper: "Upcoming window",
-    },
+    hero: { pending: "未確認論文", tasks90d: "90 日タスク", completion: "完了率", pendingHelper: "Review queue", tasksHelper: "Application timeline", completionHelper: "Upcoming window" },
     panels: {
       recentPapers: ["最近の論文", "正式登録済みの研究シグナル"],
       timeline: ["出願ウィンドウ", "今後 90 日の優先タスク"],
@@ -340,38 +395,11 @@ export const LOCALES: Record<LangCode, Locale> = {
     carouselTagline: "Target schools",
     carouselTitle: "志望校クイックエントリー",
     carouselHint: "自動スクロール · クリックで詳細",
-    metrics: {
-      universities: "大学",
-      programs: "プログラム",
-      professors: "教授",
-      labs: "研究室",
-      papers: "論文",
-      pending_candidates: "レビュー",
-      timeline_tasks: "タスク",
-    },
+    metrics: { universities: "大学", programs: "プログラム", professors: "教授", labs: "研究室", papers: "論文", pending_candidates: "レビュー", timeline_tasks: "タスク" },
     priorities: { high: "高", medium: "中", low: "低" },
-    status: {
-      db: "D1 データベース",
-      arxiv: "arXiv レーダー",
-      ai: "AI サマリ",
-      cron: "Cloudflare Cron",
-      connected: "Connected",
-      checking: "Checking",
-      aiReserved: "Interface reserved",
-      cronSchedule: "毎日 23:15 UTC",
-      pendingFmt: (n) => `${n} pending`,
-    },
-    nav: {
-      dashboard: "ダッシュボード",
-      universities: "大学",
-      professors: "教授",
-      labs: "研究室",
-      programs: "プログラム",
-      papers: "論文レーダー",
-      review: "レビュー",
-      timeline: "タイムライン",
-      sources: "ソース",
-    },
+    taskStatuses: { todo: "未着手", doing: "進行中", done: "完了" },
+    status: { db: "D1 データベース", arxiv: "arXiv レーダー", ai: "AI サマリ", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "毎日 23:15 UTC", pendingFmt: (n) => `${n} pending` },
+    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", papers: "論文レーダー", review: "レビュー", timeline: "タイムライン", sources: "ソース" },
     pages: {
       dashboard: { title: "ダッシュボード", description: "Dashboard" },
       universities: { title: "大学", description: "志望校データベースは次回 React テーブルに移行します。" },
@@ -380,8 +408,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       programs: { title: "プログラム", description: "SGU プログラムと締切は同じフィルタ UI を共有します。" },
       papers: { title: "論文レーダー", description: "登録済み論文ライブラリは高密度の研究テーブルになります。" },
       review: { title: "レビュー", description: "レビュー待ちは accept/ignore のままカード形式に進化します。" },
-      timeline: { title: "タイムライン", description: "出願タスクはより明確なタイムライン + 優先度ビューに移行します。" },
-      sources: { title: "ソース", description: "arXiv RSS とキーワード設定は設定ページに移行します。" },
+      timeline: { title: "タイムライン", description: "TOEFL / JLPT / SOP / 推薦状 / 出願締切のガントビュー。" },
+      sources: { title: "ソース", description: "arXiv RSS、iCal 購読、ブラウザクイックキャプチャ。" },
     },
     placeholderNote: "総覧から大改修を始め、他ページは順次移行します。",
     university: {
@@ -404,5 +432,44 @@ export const LOCALES: Record<LangCode, Locale> = {
       placeholder: "プライベートトークンを貼り付け",
       submit: "ダッシュボードへ",
     },
+    timeline: {
+      title: "出願タイムライン",
+      description: "今後数ヶ月のタスクを横方向のガントで一覧。",
+      windowMonths: (n) => `今後 ${n} ヶ月`,
+      prev: "前へ",
+      next: "次へ",
+      today: "今日",
+      noTasks: "現在の表示ウィンドウにタスクはありません。",
+      legend: "凡例",
+      legendHigh: "高優先",
+      legendMedium: "通常",
+      legendDone: "完了",
+    },
+    sources: {
+      title: "ソース・連携",
+      description: "arXiv 取り込み・カレンダー購読・ワンクリック取り込み。",
+      icalTitle: "iCal 購読",
+      icalBody: "この URL を Google / Apple カレンダーに追加すると、全ての締切がネイティブカレンダーに同期されます。URL にはトークンが含まれます — 共有しないでください。",
+      icalAction: "購読 URL をコピー",
+      icalCopied: "コピーしました",
+      captureTitle: "ブラウザクイックキャプチャ",
+      captureBody: "下のスニペットをブックマークバーにドラッグしてください。ブックマークをクリックすると、現在のページ URL と選択テキストが SRIS のレビューキューに送られます。",
+      captureHint: "注意: Safari ではブックマークの JavaScript を編集するために「開発」メニューを有効化する必要があります。",
+      captureCopy: "ブックマークレットをコピー",
+      captureCopied: "コピーしました",
+      arxivTitle: "arXiv キーワードソース",
+      arxivBody: "`radar_sources` でクエリとキーワードを管理します。Worker の cron が毎日 23:15 UTC に実行します。",
+    },
+    capture: {
+      title: "SRIS に保存",
+      body: "内容を確認してレビューキューに送ります。",
+      urlLabel: "URL",
+      titleLabel: "タイトル",
+      notesLabel: "メモ / 選択テキスト",
+      submit: "保存",
+      success: "レビューキューに保存しました",
+      cancel: "キャンセル",
+    },
+    entityType: { university: "大学", program: "プログラム", professor: "教授", lab: "研究室", paper: "論文", candidate: "候補", task: "タスク" },
   },
 };
