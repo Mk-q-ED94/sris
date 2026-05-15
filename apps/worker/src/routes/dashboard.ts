@@ -24,6 +24,20 @@ export interface DashboardResult {
   recent_updates: { label: string; value: string }[];
   coverage: CoverageItem[];
   gaps: GapItem[];
+  resource_type_counts: Record<string, number>;
+  stale_sources: Record<string, unknown>[];
+  today_briefing: {
+    new_captures: number;
+    high_priority_gaps: number;
+    stale_sources: number;
+    pending_review: number;
+  };
+  university_stats: Array<{
+    id: string;
+    resource_count: number;
+    gap_count: number;
+    latest_update: string | null;
+  }>;
 }
 
 export async function dashboard(db: D1Database): Promise<DashboardResult> {
@@ -52,8 +66,48 @@ export async function dashboard(db: D1Database): Promise<DashboardResult> {
   const upcomingTasks = upcomingTasksRows.map((row) => normalizeRow(row, []));
 
   const manualCaptures = await countRows(db, "paper_candidates", "source = ? and status = ?", ["manual", "pending"]);
+  const resourceTypeRows = await db
+    .prepare("select resource_type, count(*) as cnt from paper_candidates where status = 'pending' group by resource_type")
+    .all<{ resource_type: string; cnt: number }>();
+  const resource_type_counts: Record<string, number> = {};
+  for (const row of resourceTypeRows.results || []) {
+    resource_type_counts[row.resource_type] = row.cnt;
+  }
   const coverage = buildCoverage(counts, manualCaptures);
   const gaps = await buildGaps(db, counts);
+  const staleSourcesRows = await db
+    .prepare("select id, name, source_type, university_id, last_run_at from radar_sources where enabled = 1 and (last_run_at is null or last_run_at < datetime('now', '-7 day')) order by last_run_at asc limit 5")
+    .all<Record<string, unknown>>();
+  const stale_sources = (staleSourcesRows.results || []).map((r) => normalizeRow(r, []));
+
+  const newCapturesRow = await db
+    .prepare("select count(*) as cnt from paper_candidates where date(created_at) = date('now')")
+    .first<{ cnt: number }>();
+  const highPriorityGaps = gaps.filter((g) => g.priority === "high").length;
+  const staleSourcesCount = (staleSourcesRows.results || []).length;
+
+  const universityStats: DashboardResult["university_stats"] = [];
+  const allUniversities = await listRows(db, "universities", null, [], "name asc");
+  for (const uni of allUniversities) {
+    const uniId = String(uni.id);
+    const resCount = await countRows(db, "intelligence_resources", "university_id = ?", [uniId]);
+    const progCount = await countRows(db, "programs", "university_id = ?", [uniId]);
+    const profCount = await countRows(db, "professors", "university_id = ?", [uniId]);
+    const labCount = await countRows(db, "labs", "university_id = ?", [uniId]);
+    let gapCount = 0;
+    if (progCount === 0) gapCount++;
+    if (profCount === 0 && labCount === 0) gapCount++;
+    const latestRow = await db
+      .prepare("select max(created_at) as latest from (select created_at from paper_candidates where university_id = ? union all select created_at from intelligence_resources where university_id = ?)")
+      .bind(uniId, uniId)
+      .first<{ latest: string | null }>();
+    universityStats.push({
+      id: uniId,
+      resource_count: resCount,
+      gap_count: gapCount,
+      latest_update: latestRow?.latest ?? null,
+    });
+  }
 
   return {
     counts,
@@ -67,6 +121,15 @@ export async function dashboard(db: D1Database): Promise<DashboardResult> {
     ],
     coverage,
     gaps,
+    resource_type_counts,
+    stale_sources,
+    today_briefing: {
+      new_captures: newCapturesRow?.cnt ?? 0,
+      high_priority_gaps: highPriorityGaps,
+      stale_sources: staleSourcesCount,
+      pending_review: counts.pending_candidates ?? 0,
+    },
+    university_stats: universityStats,
   };
 }
 
@@ -86,23 +149,37 @@ function buildCoverage(counts: Record<string, number>, manualCaptures: number): 
   });
 }
 
-async function buildGaps(db: D1Database, counts: Record<string, number>): Promise<GapItem[]> {
+async function buildGaps(db: D1Database, counts: Record<string, number>, singleUniId?: string): Promise<GapItem[]> {
   const gaps: GapItem[] = [];
 
   // Per-university gap detection
-  const universities = await listRows(db, "universities", null, [], "name asc");
+  const universities = singleUniId
+    ? await listRows(db, "universities", "id = ?", [singleUniId], "name asc")
+    : await listRows(db, "universities", null, [], "name asc");
   for (const uni of universities) {
     const uniId = String(uni.id);
     const uniName = String(uni.name);
     const profCount = await countRows(db, "professors", "university_id = ?", [uniId]);
     const labCount = await countRows(db, "labs", "university_id = ?", [uniId]);
     const progCount = await countRows(db, "programs", "university_id = ?", [uniId]);
+    const resourceCount = await countRows(db, "intelligence_resources", "university_id = ?", [uniId]);
+    const admissionCount = await countRows(db, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "admission_notice"]);
+    const experienceCount = await countRows(db, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "experience_post"]);
 
     if (progCount === 0) {
       gaps.push({ label_key: "no_programs_for", priority: "high", university_id: uniId, university_name: uniName });
     }
     if (profCount === 0 && labCount === 0) {
       gaps.push({ label_key: "no_professors_for", priority: "high", university_id: uniId, university_name: uniName });
+    }
+    if (resourceCount < 3) {
+      gaps.push({ label_key: "few_resources_for", priority: "medium", university_id: uniId, university_name: uniName });
+    }
+    if (admissionCount === 0) {
+      gaps.push({ label_key: "no_admission_for", priority: "medium", university_id: uniId, university_name: uniName });
+    }
+    if (experienceCount === 0) {
+      gaps.push({ label_key: "no_experience_for", priority: "low", university_id: uniId, university_name: uniName });
     }
   }
 

@@ -83,7 +83,7 @@ async function tryInsertCandidate(
     const now = new Date().toISOString();
     await db
       .prepare(
-        "insert into paper_candidates (id,source_id,source,title,authors,abstract,url,published_at,matched_keywords,raw_payload,status,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "insert into paper_candidates (id,source_id,source,title,authors,abstract,url,published_at,matched_keywords,raw_payload,status,resource_type,domain_source,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
       .bind(
         crypto.randomUUID(),
@@ -97,6 +97,8 @@ async function tryInsertCandidate(
         JSON.stringify(matches),
         JSON.stringify(paper.raw_payload),
         "pending",
+        "paper",
+        null,
         now,
         now,
       )

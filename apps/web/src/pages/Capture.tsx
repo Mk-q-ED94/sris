@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, Zap } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { quickCapture } from "../lib/api";
+import { quickCapture, fetchUniversities, fetchPrograms } from "../lib/api";
+import type { Program, ResourceType, University } from "../types/sris";
 
 interface CapturePrefill {
   url: string;
@@ -10,7 +11,12 @@ interface CapturePrefill {
   notes: string;
 }
 
-function classifyUrl(url: string): string | null {
+const RESOURCE_TYPES: ResourceType[] = [
+  "paper", "lab_page", "professor_page", "program_page", "official_page",
+  "admission_notice", "experience_post", "video", "other",
+];
+
+function classifyUrl(url: string): { resource_type: ResourceType; source: string } | null {
   try {
     const u = new URL(url);
     const host = u.hostname;
@@ -18,25 +24,33 @@ function classifyUrl(url: string): string | null {
 
     if (host.endsWith(".ac.jp")) {
       if (path.includes("/lab") || path.includes("/research") || path.includes("/kenkyu"))
-        return "lab-page";
+        return { resource_type: "lab_page", source: "lab-page" };
       if (path.includes("/faculty") || path.includes("/member") || path.includes("/staff") || path.includes("/professor"))
-        return "professor-page";
+        return { resource_type: "professor_page", source: "professor-page" };
       if (path.includes("/program") || path.includes("/admission") || path.includes("/apply") || path.includes("/nyushi"))
-        return "program-page";
+        return { resource_type: path.includes("/admission") || path.includes("/nyushi") ? "admission_notice" : "program_page", source: "program-page" };
       if (path.includes("/course") || path.includes("/curriculum"))
-        return "course-page";
-      return "university-page";
+        return { resource_type: "program_page", source: "course-page" };
+      return { resource_type: "official_page", source: "university-page" };
     }
 
-    if (host.includes("arxiv.org")) return "arxiv";
-    if (host.includes("scholar.google")) return "scholar";
-    if (host.includes("dblp")) return "dblp";
-    if (host.includes("semanticscholar")) return "semantic-scholar";
+    if (host.includes("arxiv.org")) return { resource_type: "paper", source: "arxiv" };
+    if (host.includes("scholar.google")) return { resource_type: "paper", source: "scholar" };
+    if (host.includes("dblp")) return { resource_type: "paper", source: "dblp" };
+    if (host.includes("semanticscholar")) return { resource_type: "paper", source: "semantic-scholar" };
+    if (host.includes("youtube.com") || host.includes("youtu.be") || host.includes("bilibili.com"))
+      return { resource_type: "video", source: host };
+    if (host.includes("zhihu.com") || host.includes("reddit.com") || host.includes("medium.com"))
+      return { resource_type: "experience_post", source: host };
 
     return null;
   } catch {
     return null;
   }
+}
+
+function extractDomain(url: string): string | null {
+  try { return new URL(url).hostname; } catch { return null; }
 }
 
 export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose: () => void }) {
@@ -45,11 +59,41 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
   const [url, setUrl] = useState(prefill.url);
   const [title, setTitle] = useState(prefill.title);
   const [notes, setNotes] = useState(prefill.notes);
+  const [resourceType, setResourceType] = useState<ResourceType>("other");
+  const [universityId, setUniversityId] = useState("");
+  const [programId, setProgramId] = useState("");
+  const [confidence, setConfidence] = useState("");
+  const [relevanceNote, setRelevanceNote] = useState("");
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const classification = useMemo(() => classifyUrl(url.trim()), [url]);
+  const domain = useMemo(() => extractDomain(url.trim()), [url]);
+
+  // Auto-set resource type from classification
+  useEffect(() => {
+    if (classification && !url.startsWith(prefill.url)) {
+      setResourceType(classification.resource_type);
+    } else if (classification && prefill.url === "") {
+      setResourceType(classification.resource_type);
+    }
+  }, [classification, url, prefill.url]);
+
+  // Load universities
+  useEffect(() => {
+    fetchUniversities(token).then(setUniversities).catch(() => {});
+  }, [token]);
+
+  // Load programs when university changes
+  useEffect(() => {
+    if (!universityId) { setPrograms([]); setProgramId(""); return; }
+    fetchPrograms(token).then((progs) => {
+      setPrograms(progs.filter((p) => p.university_id === universityId));
+    }).catch(() => { setPrograms([]); });
+  }, [token, universityId]);
 
   useEffect(() => {
     setUrl(prefill.url);
@@ -63,7 +107,16 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
     setSubmitting(true);
     setError(null);
     try {
-      await quickCapture(token, { url: url.trim(), title: title.trim() || undefined, notes: notes.trim() || undefined });
+      await quickCapture(token, {
+        url: url.trim(),
+        title: title.trim() || undefined,
+        notes: notes.trim() || undefined,
+        resource_type: resourceType,
+        university_id: universityId || undefined,
+        program_id: programId || undefined,
+        confidence: confidence || undefined,
+        relevance_note: relevanceNote.trim() || undefined,
+      });
       setDone(true);
       window.setTimeout(onClose, 1200);
     } catch (err) {
@@ -111,10 +164,30 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
             <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-[var(--color-todai)]">
               <Zap className="h-3 w-3" />
               <span className="mono uppercase tracking-[0.12em]">{t.capture.classificationLabel}</span>
-              <span className="font-medium">{t.capture.classifiedTypes[classification] ?? classification}</span>
+              <span className="font-medium">{t.capture.classifiedTypes[classification.resource_type] ?? classification.resource_type}</span>
             </div>
           ) : null}
+          {domain && (
+            <div className="mt-1 text-[10.5px] text-[var(--color-subtle)]">
+              {t.capture.domainLabel}: {domain}
+            </div>
+          )}
         </Field>
+
+        <Field label={t.capture.resourceTypeLabel}>
+          <select
+            value={resourceType}
+            onChange={(e) => setResourceType(e.target.value as ResourceType)}
+            className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
+          >
+            {RESOURCE_TYPES.map((rt) => (
+              <option key={rt} value={rt}>
+                {t.capture.classifiedTypes[rt] ?? rt}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <Field label={t.capture.titleLabel}>
           <input
             value={title}
@@ -123,11 +196,67 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
             className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
           />
         </Field>
+
+        <Field label={t.capture.universityLabel}>
+          <select
+            value={universityId}
+            onChange={(e) => setUniversityId(e.target.value)}
+            className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
+          >
+            <option value="">—</option>
+            {universities.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+        </Field>
+
+        {universityId && programs.length > 0 && (
+          <Field label={t.capture.programLabel}>
+            <select
+              value={programId}
+              onChange={(e) => setProgramId(e.target.value)}
+              className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
+            >
+              <option value="">—</option>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>{p.program_name}</option>
+              ))}
+            </select>
+          </Field>
+        )}
+
+        <Field label={t.capture.relevanceNoteLabel}>
+          <input
+            value={relevanceNote}
+            onChange={(e) => setRelevanceNote(e.target.value)}
+            type="text"
+            className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
+          />
+        </Field>
+
+        <Field label={t.capture.confidenceLabel}>
+          <div className="flex gap-3 pt-2">
+            {(["high", "medium", "low"] as const).map((level) => (
+              <label key={level} className="flex items-center gap-1.5 text-[13px] text-[var(--color-muted)]">
+                <input
+                  type="radio"
+                  name="confidence"
+                  value={level}
+                  checked={confidence === level}
+                  onChange={() => setConfidence(level)}
+                  className="accent-[var(--color-todai)]"
+                />
+                {level === "high" ? t.review2.confidenceHigh : level === "low" ? t.review2.confidenceLow : t.review2.confidenceMedium}
+              </label>
+            ))}
+          </div>
+        </Field>
+
         <Field label={t.capture.notesLabel}>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            rows={5}
+            rows={3}
             className="block w-full resize-y border border-[var(--color-hairline-strong)] bg-[var(--color-paper)] p-3 text-[13.5px] leading-6 outline-none transition-colors focus:border-[var(--color-todai)]"
           />
         </Field>

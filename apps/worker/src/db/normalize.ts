@@ -27,3 +27,7 @@ export function normalizePaper(row: Record<string, unknown>): Record<string, unk
 export function normalizeCandidate(row: Record<string, unknown>): Record<string, unknown> {
   return normalizeRow(row, ["authors", "matched_keywords", "raw_payload"]);
 }
+
+export function normalizeIntelligenceCandidate(row: Record<string, unknown>): Record<string, unknown> {
+  return normalizeRow(row, ["authors", "matched_keywords", "raw_payload"]);
+}

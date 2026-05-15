@@ -102,6 +102,13 @@ export const TABLES: Record<string, TableConfig> = {
     table: "radar_sources",
     order: "name asc",
     jsonFields: ["keywords"],
-    createFields: ["name", "source_type", "url", "query", "keywords", "enabled"],
+    createFields: ["name", "source_type", "url", "query", "keywords", "enabled", "university_id", "confidence", "check_frequency"],
+  },
+  resources: {
+    path: "/api/resources",
+    table: "intelligence_resources",
+    order: "created_at desc",
+    jsonFields: [],
+    createFields: ["candidate_id", "title", "url", "resource_type", "source", "university_id", "program_id", "professor_id", "lab_id", "confidence", "decision_impact", "relevance_note", "domain_source"],
   },
 };

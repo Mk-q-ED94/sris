@@ -1,4 +1,4 @@
-import type { DashboardSummary, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, SearchResponse, TimelineTask, University } from "../types/sris";
+import type { DashboardSummary, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceType, SearchResponse, TimelineTask, University, UniversityGap } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -54,17 +54,21 @@ export function fetchTimeline(token: string): Promise<TimelineTask[]> {
   });
 }
 
-export function searchGlobal(token: string, query: string): Promise<SearchResponse> {
-  const url = `/api/search?q=${encodeURIComponent(query)}`;
+export function searchGlobal(token: string, query: string, filter?: { type?: string; university_id?: string }): Promise<SearchResponse> {
+  const params = new URLSearchParams();
+  params.set("q", query);
+  if (filter?.type) params.set("type", filter.type);
+  if (filter?.university_id) params.set("university_id", filter.university_id);
+  const url = `/api/search?${params.toString()}`;
   return request<SearchResponse>(url, token).catch((error: unknown) => {
     if (import.meta.env.DEV) {
-      return mockSearch(query);
+      return mockSearch(query, filter?.type);
     }
     throw error;
   });
 }
 
-export function quickCapture(token: string, payload: { url: string; title?: string; selection?: string; notes?: string }): Promise<QuickCaptureResponse> {
+export function quickCapture(token: string, payload: { url: string; title?: string; selection?: string; notes?: string; resource_type?: string; university_id?: string; program_id?: string; professor_id?: string; relevance_note?: string; confidence?: string }): Promise<QuickCaptureResponse> {
   return request<QuickCaptureResponse>("/api/quick-capture", token, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -104,6 +108,8 @@ export type UniversityDetail = {
   programs: Program[];
   professors: Professor[];
   labs: Lab[];
+  resources: IntelligenceResource[];
+  gaps: UniversityGap[];
   paper_count: number;
   task_count: number;
 };
@@ -115,19 +121,98 @@ export function fetchUniversityDetail(token: string, id: string): Promise<Univer
   });
 }
 
-export function fetchReviewCandidates(token: string): Promise<PaperCandidate[]> {
-  return request<PaperCandidate[]>("/api/review/papers", token).catch((error: unknown) => {
-    if (import.meta.env.DEV) return mockCandidates;
+export type RadarSource = {
+  id: string;
+  name: string;
+  source_type: string;
+  url?: string | null;
+  query?: string | null;
+  keywords: string[];
+  enabled: boolean;
+  last_run_at?: string | null;
+  university_id?: string | null;
+  confidence?: string | null;
+  check_frequency?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export function fetchRadarSources(token: string): Promise<RadarSource[]> {
+  return request<RadarSource[]>("/api/radar-sources", token).catch((error: unknown) => {
+    if (import.meta.env.DEV) return mockRadarSources;
     throw error;
   });
 }
 
-export function acceptCandidate(token: string, id: string): Promise<void> {
-  return request(`/api/review/papers/${id}/accept`, token, { method: "POST" }).then(() => {});
+export function createRadarSource(token: string, payload: Record<string, unknown>): Promise<RadarSource> {
+  return request<RadarSource>("/api/radar-sources", token, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateRadarSource(token: string, id: string, payload: Record<string, unknown>): Promise<RadarSource> {
+  return request<RadarSource>(`/api/radar-sources/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteRadarSource(token: string, id: string): Promise<void> {
+  return request(`/api/radar-sources/${id}`, token, { method: "DELETE" }).then(() => {});
+}
+
+export interface ReviewFilter {
+  status?: string;
+  resource_type?: string;
+  university_id?: string;
+  source?: string;
+}
+
+export function fetchReviewCandidates(token: string, filter?: ReviewFilter): Promise<IntelligenceCandidate[]> {
+  const params = new URLSearchParams();
+  if (filter?.status) params.set("status", filter.status);
+  if (filter?.resource_type) params.set("resource_type", filter.resource_type);
+  if (filter?.university_id) params.set("university_id", filter.university_id);
+  if (filter?.source) params.set("source", filter.source);
+  const qs = params.toString();
+  const path = `/api/review/candidates${qs ? `?${qs}` : ""}`;
+  return request<IntelligenceCandidate[]>(path, token).catch((error: unknown) => {
+    if (import.meta.env.DEV) {
+      let results = [...mockCandidates];
+      if (filter?.status && filter.status !== "pending") results = results.filter((c) => c.status === filter.status);
+      if (filter?.resource_type) results = results.filter((c) => c.resource_type === filter.resource_type);
+      if (filter?.university_id) results = results.filter((c) => c.university_id === filter.university_id);
+      return results;
+    }
+    throw error;
+  });
+}
+
+export function acceptCandidate(token: string, id: string, links?: { university_id?: string; program_id?: string; professor_id?: string }): Promise<void> {
+  return request(`/api/review/candidates/${id}/accept`, token, {
+    method: "POST",
+    body: links ? JSON.stringify(links) : undefined,
+  }).then(() => {});
 }
 
 export function ignoreCandidate(token: string, id: string): Promise<void> {
-  return request(`/api/review/papers/${id}/ignore`, token, { method: "POST" }).then(() => {});
+  return request(`/api/review/candidates/${id}/ignore`, token, { method: "POST" }).then(() => {});
+}
+
+export function markForLaterCandidate(token: string, id: string): Promise<void> {
+  return request(`/api/review/candidates/${id}/later`, token, { method: "POST" }).then(() => {});
+}
+
+export function promoteCandidate(token: string, id: string): Promise<void> {
+  return request(`/api/review/candidates/${id}/promote`, token, { method: "POST" }).then(() => {});
+}
+
+export function linkCandidate(token: string, id: string, links: { university_id?: string; program_id?: string; professor_id?: string }): Promise<void> {
+  return request(`/api/review/candidates/${id}/link`, token, {
+    method: "PATCH",
+    body: JSON.stringify(links),
+  }).then(() => {});
 }
 
 export function createTask(token: string, payload: Record<string, unknown>): Promise<TimelineTask> {
@@ -186,6 +271,7 @@ const mockDashboard: DashboardSummary = {
     {
       id: "candidate-1",
       source: "arXiv CS.CL",
+      resource_type: "paper",
       title: "Program-Level Matching Signals for International CS Applications",
       authors: ["R. Tanaka", "Q. Li"],
       abstract: "Candidate record awaiting manual review.",
@@ -197,6 +283,7 @@ const mockDashboard: DashboardSummary = {
     {
       id: "candidate-2",
       source: "arXiv CS.LG",
+      resource_type: "paper",
       title: "Benchmarks for Lab-Scale Research Planning Agents",
       authors: ["N. Suzuki", "E. Wong"],
       abstract: "Candidate record awaiting manual review.",
@@ -250,6 +337,23 @@ const mockDashboard: DashboardSummary = {
     { label_key: "no_professors_for", priority: "high" as const, university_id: "tsukuba", university_name: "University of Tsukuba" },
     { label_key: "none", priority: "low" as const },
   ],
+  resource_type_counts: { paper: 4, lab_page: 1, professor_page: 1, other: 1 },
+  stale_sources: [
+    { id: "source-ai-agents", name: "arXiv AI Agents", source_type: "arxiv", last_run_at: "2026-05-01T12:00:00Z" },
+  ],
+  today_briefing: {
+    new_captures: 3,
+    high_priority_gaps: 2,
+    stale_sources: 1,
+    pending_review: 7,
+  },
+  university_stats: [
+    { id: "utokyo", resource_count: 2, gap_count: 0, latest_update: "2026-05-14T10:00:00Z" },
+    { id: "science-tokyo", resource_count: 1, gap_count: 1, latest_update: "2026-05-13T08:00:00Z" },
+    { id: "osaka", resource_count: 1, gap_count: 0, latest_update: "2026-05-10T14:00:00Z" },
+    { id: "tohoku", resource_count: 0, gap_count: 1, latest_update: null },
+    { id: "tsukuba", resource_count: 0, gap_count: 1, latest_update: null },
+  ],
 };
 
 const today = new Date();
@@ -269,14 +373,18 @@ const mockTimeline: TimelineTask[] = [
   { id: "task-6", title: "JLPT N1 mock test", deadline: addDays(today, -4), priority: "low", status: "done", task_type: "JLPT", created_at: addDays(today, -28), updated_at: addDays(today, -4) },
 ];
 
-function mockSearch(query: string): SearchResponse {
+function mockSearch(query: string, typeFilter?: string): SearchResponse {
   const q = query.toLowerCase();
   const hits = [
     { type: "university" as const, id: "utokyo", title: "The University of Tokyo", subtitle: "Tokyo", hint: "AI, CS, Systems, Information Science and Technology" },
     { type: "professor" as const, id: "prof-1", title: "Prof. Yamamoto", subtitle: "Information Science", hint: "[\"distributed training\",\"LLM inference\"]" },
     { type: "lab" as const, id: "lab-ai-systems", title: "AI Systems Lab", subtitle: "https://example.com", hint: "[\"systems\",\"distributed training\"]" },
     { type: "candidate" as const, id: "candidate-1", title: "Program-Level Matching Signals", subtitle: "arXiv CS.CL", hint: "Candidate awaiting manual review." },
-  ].filter((h) => !q || h.title.toLowerCase().includes(q) || (h.subtitle ?? "").toLowerCase().includes(q));
+    { type: "resource" as const, id: "res-1", title: "UTokyo IST Admission Guide 2026", subtitle: "admission_notice · high", hint: "UTokyo" },
+  ].filter((h) => {
+    if (typeFilter && h.type !== typeFilter) return false;
+    return !q || h.title.toLowerCase().includes(q) || (h.subtitle ?? "").toLowerCase().includes(q);
+  });
   return { query, hits };
 }
 
@@ -306,20 +414,39 @@ const mockPrograms: Program[] = [
   { id: "program-osaka-ist", university_id: "osaka", program_name: "Information Science and Technology Program", degree: "Master", language: "English", deadline: "2026-09-01", requirements: "SOP, English score, recommendation letters", scholarship: "JASSO scholarship", tuition: 535800, website: "https://example.com/osaka-ist" },
 ];
 
-const mockCandidates: PaperCandidate[] = [
-  { id: "cand-1", source: "arXiv CS.AI", title: "Retrieval-Augmented Scientific Discovery with Agentic Review Loops", authors: ["M. Chen", "A. Patel"], abstract: "We propose a framework for scientific discovery that combines retrieval-augmented generation with agentic review cycles.", url: "https://arxiv.org/abs/2605.00001", published_at: "2026-05-12T08:30:00Z", matched_keywords: ["RAG", "agents", "scientific discovery"], status: "pending" },
-  { id: "cand-2", source: "arXiv CS.LG", title: "Efficient Long-Context Inference via Sparse Attention Patterns", authors: ["Y. Kim", "S. Lee"], abstract: "This paper introduces a sparse attention mechanism that reduces memory usage by 60% during long-context inference.", url: "https://arxiv.org/abs/2605.00002", published_at: "2026-05-11T14:45:00Z", matched_keywords: ["inference", "long context", "efficiency"], status: "pending" },
-  { id: "cand-3", source: "manual", title: "MLSys 2026 Conference Call for Papers", authors: [], abstract: "MLSys 2026 is now accepting papers on systems for machine learning.", url: "https://mlsys.org/2026", published_at: "2026-05-10T00:00:00Z", matched_keywords: ["conference", "ML systems"], status: "pending" },
+const mockCandidates: IntelligenceCandidate[] = [
+  { id: "cand-1", source: "arXiv CS.AI", resource_type: "paper", title: "Retrieval-Augmented Scientific Discovery with Agentic Review Loops", authors: ["M. Chen", "A. Patel"], abstract: "We propose a framework for scientific discovery that combines retrieval-augmented generation with agentic review cycles.", url: "https://arxiv.org/abs/2605.00001", published_at: "2026-05-12T08:30:00Z", matched_keywords: ["RAG", "agents", "scientific discovery"], status: "pending" },
+  { id: "cand-2", source: "arXiv CS.LG", resource_type: "paper", title: "Efficient Long-Context Inference via Sparse Attention Patterns", authors: ["Y. Kim", "S. Lee"], abstract: "This paper introduces a sparse attention mechanism that reduces memory usage by 60% during long-context inference.", url: "https://arxiv.org/abs/2605.00002", published_at: "2026-05-11T14:45:00Z", matched_keywords: ["inference", "long context", "efficiency"], status: "pending" },
+  { id: "cand-3", source: "manual", resource_type: "other", title: "MLSys 2026 Conference Call for Papers", authors: [], abstract: "MLSys 2026 is now accepting papers on systems for machine learning.", url: "https://mlsys.org/2026", published_at: "2026-05-10T00:00:00Z", matched_keywords: ["conference", "ML systems"], status: "pending" },
+  { id: "cand-4", source: "lab-page", resource_type: "lab_page", title: "AI Systems Lab — UTokyo IIS", authors: [], abstract: "Research on distributed training and LLM inference systems.", url: "https://www.iis.u-tokyo.ac.jp/labs/ai-systems/", published_at: "2026-05-09T00:00:00Z", matched_keywords: ["lab", "auto-classified", "bookmark"], status: "pending", university_id: "utokyo", domain_source: "www.iis.u-tokyo.ac.jp" },
+  { id: "cand-5", source: "professor-page", resource_type: "professor_page", title: "Prof. Tanaka — Distributed Systems Group", authors: [], abstract: "Faculty profile for Prof. Tanaka, Science Tokyo.", url: "https://www.isct.ac.jp/faculty/tanaka", published_at: "2026-05-08T00:00:00Z", matched_keywords: ["professor", "auto-classified", "bookmark"], status: "pending", university_id: "science-tokyo", domain_source: "www.isct.ac.jp" },
+  { id: "cand-6", source: "arxiv", resource_type: "paper", title: "Multi-Agent Coordination for Research Planning", authors: ["K. Yamada", "R. Smith"], abstract: "We study how multiple AI agents can coordinate research planning tasks.", url: "https://arxiv.org/abs/2605.00004", published_at: "2026-05-07T12:00:00Z", matched_keywords: ["agents", "planning", "coordination"], status: "pending" },
 ];
 
 function mockUniversityDetail(id: string): UniversityDetail {
   const uni = mockUniversities.find((u) => u.id === id) ?? mockUniversities[0]!;
+  const uniId = uni.id;
   return {
     university: uni,
-    programs: mockPrograms.filter((p) => p.university_id === uni.id),
-    professors: mockProfessors.filter((p) => p.university_id === uni.id),
-    labs: mockLabs.filter((l) => l.university_id === uni.id),
+    programs: mockPrograms.filter((p) => p.university_id === uniId),
+    professors: mockProfessors.filter((p) => p.university_id === uniId),
+    labs: mockLabs.filter((l) => l.university_id === uniId),
+    resources: mockResources.filter((r) => r.university_id === uniId),
+    gaps: [{ label_key: "few_resources_for", priority: "medium" }],
     paper_count: 12,
     task_count: 3,
   };
 }
+
+const mockResources: IntelligenceResource[] = [
+  { id: "res-1", title: "UTokyo IST Admission Guide 2026", url: "https://www.i.u-tokyo.ac.jp/eng/admission/", resource_type: "admission_notice", source: "manual", university_id: "utokyo", confidence: "high", created_at: "2026-05-01T00:00:00Z" },
+  { id: "res-2", title: "Science Tokyo CS-IGP Experience Post", url: "https://example.com/experience/cs-igp", resource_type: "experience_post", source: "manual", university_id: "science-tokyo", confidence: "medium", created_at: "2026-04-28T00:00:00Z" },
+  { id: "res-3", title: "Osaka IST Faculty Page", url: "https://example.com/osaka-ist-faculty", resource_type: "official_page", source: "capture", university_id: "osaka", confidence: "high", created_at: "2026-04-20T00:00:00Z" },
+];
+
+const mockRadarSources: RadarSource[] = [
+  { id: "source-ai-systems", name: "arXiv AI Systems", source_type: "arxiv", query: "machine learning systems", keywords: ["systems", "inference", "training", "distributed", "GPU"], enabled: true, last_run_at: "2026-05-14T23:15:00Z", confidence: "high", check_frequency: "daily" },
+  { id: "source-llm-inference", name: "arXiv LLM Inference", source_type: "arxiv", query: "large language model inference", keywords: ["inference", "serving", "latency", "throughput", "LLM"], enabled: true, last_run_at: "2026-05-14T23:15:00Z", confidence: "high", check_frequency: "daily" },
+  { id: "source-ai-agents", name: "arXiv AI Agents", source_type: "arxiv", query: "AI agents planning tool use", keywords: ["agent", "planning", "tool use", "reasoning"], enabled: true, last_run_at: "2026-05-01T12:00:00Z", confidence: "medium", check_frequency: "weekly" },
+  { id: "source-utokyo-official", name: "UTokyo Official", source_type: "official", url: "https://www.u-tokyo.ac.jp/en/", keywords: [], enabled: true, university_id: "utokyo", confidence: "high", check_frequency: "weekly", last_run_at: null },
+];

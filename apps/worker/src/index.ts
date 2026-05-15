@@ -4,9 +4,9 @@ import { HttpError, JSON_HEADERS, json } from "./http";
 import { requireApiToken, requireApiTokenOrQuery, requireCron } from "./auth";
 import { initializeDatabase } from "./db/schema";
 import { listRows, countRows } from "./db/queries";
-import { normalizeCandidate, normalizeRow } from "./db/normalize";
+import { normalizeCandidate, normalizeIntelligenceCandidate, normalizeRow } from "./db/normalize";
 import { dashboard } from "./routes/dashboard";
-import { acceptCandidate, ignoreCandidate } from "./routes/review";
+import { acceptCandidate, ignoreCandidate, linkCandidate, markForLaterCandidate, promoteCandidate } from "./routes/review";
 import { handleCrud } from "./routes/crud";
 import { buildTimelineIcs } from "./routes/ical";
 import { globalSearch } from "./routes/search";
@@ -63,7 +63,9 @@ export default {
 
       if (url.pathname === "/api/search" && request.method === "GET") {
         const q = url.searchParams.get("q") || "";
-        return json({ query: q, hits: await globalSearch(env.DB, q) });
+        const typeFilter = url.searchParams.get("type") || undefined;
+        const uniFilter = url.searchParams.get("university_id") || undefined;
+        return json({ query: q, hits: await globalSearch(env.DB, q, { type: typeFilter, university_id: uniFilter }) });
       }
 
       if (url.pathname === "/api/quick-capture" && request.method === "POST") {
@@ -71,19 +73,41 @@ export default {
         return json(await quickCapture(env.DB, payload), 201);
       }
 
-      if (url.pathname === "/api/review/papers" && request.method === "GET") {
-        const rows = await listRows(env.DB, "paper_candidates", "status = ?", ["pending"], "published_at desc");
-        return json(rows.map(normalizeCandidate));
+      if ((url.pathname === "/api/review/papers" || url.pathname === "/api/review/candidates") && request.method === "GET") {
+        const conditions: string[] = [];
+        const params: unknown[] = [];
+        const status = url.searchParams.get("status") || "pending";
+        conditions.push("status = ?");
+        params.push(status);
+        const resourceType = url.searchParams.get("resource_type");
+        if (resourceType) { conditions.push("resource_type = ?"); params.push(resourceType); }
+        const universityId = url.searchParams.get("university_id");
+        if (universityId) { conditions.push("university_id = ?"); params.push(universityId); }
+        const sourceFilter = url.searchParams.get("source");
+        if (sourceFilter) { conditions.push("source = ?"); params.push(sourceFilter); }
+        const where = conditions.join(" AND ");
+        const rows = await listRows(env.DB, "paper_candidates", where, params, "created_at desc");
+        return json(rows.map(normalizeIntelligenceCandidate));
       }
 
-      const acceptMatch = url.pathname.match(/^\/api\/review\/papers\/([^/]+)\/accept$/);
-      if (acceptMatch && request.method === "POST") {
-        return json(await acceptCandidate(env.DB, acceptMatch[1]!));
+      const reviewIdMatch = url.pathname.match(/^\/api\/review\/(?:papers|candidates)\/([^/]+)\/(accept|ignore|later|promote)$/);
+      if (reviewIdMatch && request.method === "POST") {
+        const id = reviewIdMatch[1]!;
+        const action = reviewIdMatch[2]!;
+        if (action === "accept") {
+          let links: { university_id?: string; program_id?: string; professor_id?: string } | undefined;
+          try { links = await request.json() as typeof links; } catch { /* no body */ }
+          return json(await acceptCandidate(env.DB, id, links));
+        }
+        if (action === "ignore") return json(await ignoreCandidate(env.DB, id));
+        if (action === "later") return json(await markForLaterCandidate(env.DB, id));
+        if (action === "promote") return json(await promoteCandidate(env.DB, id));
       }
 
-      const ignoreMatch = url.pathname.match(/^\/api\/review\/papers\/([^/]+)\/ignore$/);
-      if (ignoreMatch && request.method === "POST") {
-        return json(await ignoreCandidate(env.DB, ignoreMatch[1]!));
+      const linkMatch = url.pathname.match(/^\/api\/review\/candidates\/([^/]+)\/link$/);
+      if (linkMatch && request.method === "PATCH") {
+        const links = (await request.json()) as { university_id?: string; program_id?: string; professor_id?: string };
+        return json(await linkCandidate(env.DB, linkMatch[1]!, links));
       }
 
       const uniDetailMatch = url.pathname.match(/^\/api\/universities\/([^/]+)$/);
@@ -96,7 +120,25 @@ export default {
         const labs = (await listRows(env.DB, "labs", "university_id = ?", [uniId], "lab_name asc")).map((r) => normalizeRow(r, ["research_keywords", "recent_papers"]));
         const paperCount = await countRows(env.DB, "papers");
         const taskCount = await countRows(env.DB, "timeline_tasks", "related_university_id = ?", [uniId]);
-        return json({ university: normalizeRow(university, []), programs, professors, labs, paper_count: paperCount, task_count: taskCount });
+        const resources = (await listRows(env.DB, "intelligence_resources", "university_id = ?", [uniId], "created_at desc")).map((r) => normalizeRow(r, []));
+
+        const profCount = professors.length;
+        const labCount = labs.length;
+        const progCount = programs.length;
+        const resourceCount = resources.length;
+        const admissionCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "admission_notice"]);
+        const experienceCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "experience_post"]);
+
+        interface GapItem { label_key: string; priority: "high" | "medium" | "low"; }
+        const gaps: GapItem[] = [];
+        if (progCount === 0) gaps.push({ label_key: "no_programs_for", priority: "high" });
+        if (profCount === 0 && labCount === 0) gaps.push({ label_key: "no_professors_for", priority: "high" });
+        if (resourceCount < 3) gaps.push({ label_key: "few_resources_for", priority: "medium" });
+        if (admissionCount === 0) gaps.push({ label_key: "no_admission_for", priority: "medium" });
+        if (experienceCount === 0) gaps.push({ label_key: "no_experience_for", priority: "low" });
+        if (!gaps.length) gaps.push({ label_key: "none", priority: "low" });
+
+        return json({ university: normalizeRow(university, []), programs, professors, labs, resources, gaps, paper_count: paperCount, task_count: taskCount });
       }
 
       const crudResponse = await handleCrud(env.DB, request, url.pathname);

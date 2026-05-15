@@ -45,6 +45,7 @@ type ResourceStreamItem = {
   status: string;
   url?: string;
   keywords: string[];
+  resource_type?: string;
 };
 type ApplicationSignals = {
   completion: number;
@@ -60,6 +61,8 @@ type IntelligenceInsights = {
   coverage: CoverageItem[];
   gaps: GapItem[];
   stream: ResourceStreamItem[];
+  resourceTypeCounts: Record<string, number>;
+  staleSources: Array<{ id: string; name: string; source_type: string; university_id?: string | null; last_run_at?: string | null }>;
   application: ApplicationSignals;
 };
 
@@ -136,15 +139,16 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
               {t.dashboard2.heroBody}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-0 border-y border-[var(--color-hairline-strong)]">
-            <HeroStat label={t.dashboard2.heroStatInbox} value={insights.inboxTotal} helper="Review queue" accent />
-            <HeroStat label={t.dashboard2.heroStatEntries} value={(data?.counts.papers ?? 0) + insights.inboxTotal} helper="Papers + candidates" />
-            <HeroStat label={t.dashboard2.heroStatSources} value={insights.sourceCounts.length} helper="Source mix" />
+          <div className="grid grid-cols-2 gap-0 border-y border-[var(--color-hairline-strong)]">
+            <HeroStat label={t.dashboard2.briefingNewCaptures} value={data?.today_briefing?.new_captures ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.new_captures ?? 0) > 0} />
+            <HeroStat label={t.dashboard2.briefingHighGaps} value={data?.today_briefing?.high_priority_gaps ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.high_priority_gaps ?? 0) > 0} />
+            <HeroStat label={t.dashboard2.briefingStaleSources} value={data?.today_briefing?.stale_sources ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.stale_sources ?? 0) > 0} />
+            <HeroStat label={t.dashboard2.briefingPendingReview} value={data?.today_briefing?.pending_review ?? 0} helper={t.dashboard2.briefingLabel} accent={false} />
           </div>
         </div>
       </section>
 
-      <UniversityCarousel onSelect={onOpenUniversity} />
+      <UniversityCarousel onSelect={onOpenUniversity} universityStats={data?.university_stats ?? []} />
 
       <section className="grid gap-8 xl:grid-cols-[1.25fr_0.95fr]">
         <IntelligenceInbox insights={insights} loading={loading} onRefresh={load} t={t} />
@@ -287,6 +291,18 @@ function IntelligenceInbox({
             <BriefStat label={t.dashboard2.inboxManualCaptures} value={loading ? "—" : insights.manualCaptures.length} />
             <BriefStat label={t.dashboard2.inboxSourceTypes} value={loading ? "—" : insights.sourceCounts.length} />
           </div>
+          {!loading && Object.keys(insights.resourceTypeCounts).length > 0 && (
+            <div className="mt-4">
+              <div className="mono mb-2 text-[10px] uppercase tracking-[0.2em] text-[var(--color-subtle)]">{t.dashboard2.inboxByType}</div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(insights.resourceTypeCounts).map(([type, count]) => (
+                  <span key={type} className="mono inline-flex h-5 items-center bg-[var(--color-paper)] border border-[var(--color-hairline)] px-1.5 text-[10px] uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                    {t.capture.classifiedTypes[type] ?? type}: {count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="p-6">
           <div className="mb-4 flex items-center gap-2">
@@ -305,6 +321,25 @@ function IntelligenceInbox({
             ) : null}
             {loading ? <li className="py-3 text-[13px] text-[var(--color-muted)]">{t.dashboard2.inboxLoadingSource}</li> : null}
           </ul>
+          {!loading && insights.staleSources.length > 0 && (
+            <div className="mt-4 border-t border-[var(--color-hairline)] pt-4">
+              <div className="mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-[var(--color-todai)]" />
+                <span className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-todai)]">{t.dashboard2.staleSourcesTitle}</span>
+              </div>
+              <p className="mb-2 text-[11.5px] leading-5 text-[var(--color-muted)]">{t.dashboard2.staleSourcesBody}</p>
+              <ul className="divide-y divide-[var(--color-hairline)]">
+                {insights.staleSources.map((src) => (
+                  <li key={src.id} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                    <span className="truncate text-[12px] text-[var(--color-ink)]">{src.name}</span>
+                    <span className="mono shrink-0 text-[9px] uppercase tracking-[0.12em] text-[var(--color-subtle)]">
+                      {src.last_run_at ? formatDate(src.last_run_at, t.dateLocale, "") : t.sources.neverRun}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -433,7 +468,11 @@ function ResourceStream({ insights, loading, t }: { insights: IntelligenceInsigh
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="mono mb-2 flex flex-wrap items-center gap-2 text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
-                      <span className={item.type === "paper" ? "text-[var(--color-isct)]" : "text-[var(--color-todai)]"}>{streamTypeLabel(item.type)}</span>
+                      {item.resource_type && item.resource_type !== "paper" ? (
+                        <span className="text-[var(--color-todai)]">{t.capture.classifiedTypes[item.resource_type] ?? item.resource_type}</span>
+                      ) : (
+                        <span className={item.type === "paper" ? "text-[var(--color-isct)]" : "text-[var(--color-todai)]"}>{streamTypeLabel(item.type)}</span>
+                      )}
                       <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
                       <span>{item.source}</span>
                       <span>{formatDate(item.date, t.dateLocale, t.notSet)}</span>
@@ -549,6 +588,8 @@ function buildIntelligenceInsights(data: DashboardSummary | null, completion: nu
     coverage: data?.coverage ?? [],
     gaps: data?.gaps ?? [],
     stream: buildResourceStream(candidates, papers),
+    resourceTypeCounts: data?.resource_type_counts ?? {},
+    staleSources: data?.stale_sources ?? [],
     application: {
       completion,
       nextTask: sortedActive[0] ?? null,
@@ -571,9 +612,13 @@ function coverageLabel(key: string, d2: Locale["dashboard2"]): { label: string; 
 }
 
 function gapLabel(gap: GapItem, d2: Locale["dashboard2"]): { title: string; detail: string } {
+  const name = gap.university_name ?? "";
   switch (gap.label_key) {
-    case "no_programs_for": return { title: d2.gapNoProgramsFor(gap.university_name ?? ""), detail: d2.gapNoProgramsForDetail(gap.university_name ?? "") };
-    case "no_professors_for": return { title: d2.gapNoProfessorsFor(gap.university_name ?? ""), detail: d2.gapNoProfessorsForDetail(gap.university_name ?? "") };
+    case "no_programs_for": return { title: d2.gapNoProgramsFor(name), detail: d2.gapNoProgramsForDetail(name) };
+    case "no_professors_for": return { title: d2.gapNoProfessorsFor(name), detail: d2.gapNoProfessorsForDetail(name) };
+    case "few_resources_for": return { title: d2.gapFewResourcesFor(name), detail: d2.gapFewResourcesForDetail(name) };
+    case "no_admission_for": return { title: d2.gapNoAdmissionFor(name), detail: d2.gapNoAdmissionForDetail(name) };
+    case "no_experience_for": return { title: d2.gapNoExperienceFor(name), detail: d2.gapNoExperienceForDetail(name) };
     case "few_universities": return { title: d2.gapFewUniversities, detail: d2.gapFewUniversitiesDetail };
     case "no_papers": return { title: d2.gapNoPapers, detail: d2.gapNoPapersDetail };
     case "candidate_backlog": return { title: d2.gapCandidateBacklog, detail: d2.gapCandidateBacklogDetail };
@@ -593,6 +638,7 @@ function buildResourceStream(candidates: PaperCandidate[], papers: Paper[]): Res
     status: candidate.status || "pending",
     url: candidate.url,
     keywords: candidate.matched_keywords || [],
+    resource_type: candidate.resource_type || "paper",
   }));
   const paperItems: ResourceStreamItem[] = papers.map((paper) => ({
     id: paper.id,
@@ -603,6 +649,7 @@ function buildResourceStream(candidates: PaperCandidate[], papers: Paper[]): Res
     status: "in library",
     url: paper.url,
     keywords: paper.keywords || [],
+    resource_type: "paper",
   }));
   return [...candidateItems, ...paperItems].sort((a, b) => dateScore(b.date) - dateScore(a.date));
 }

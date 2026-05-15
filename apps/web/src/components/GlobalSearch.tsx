@@ -11,6 +11,8 @@ interface GlobalSearchProps {
   onClose: () => void;
 }
 
+type TypeFilter = "all" | "university" | "program" | "professor" | "lab" | "paper" | "resource" | "task";
+
 const HIT_PAGE: Record<SearchHit["type"], PageKey> = {
   university: "universities",
   professor: "professors",
@@ -19,6 +21,7 @@ const HIT_PAGE: Record<SearchHit["type"], PageKey> = {
   paper: "papers",
   candidate: "review",
   task: "timeline",
+  resource: "universities",
 };
 
 export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & { onNavigate?: (page: PageKey, id?: string) => void }) {
@@ -27,6 +30,7 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [loading, setLoading] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
     if (open) {
       setQuery("");
       setHits([]);
+      setTypeFilter("all");
       window.setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -57,7 +62,8 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
     setLoading(true);
     const handle = window.setTimeout(async () => {
       try {
-        const res = await searchGlobal(token, trimmed);
+        const filter = typeFilter === "all" ? undefined : { type: typeFilter };
+        const res = await searchGlobal(token, trimmed, filter);
         setHits(res.hits);
       } catch {
         setHits([]);
@@ -66,9 +72,20 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
       }
     }, 220);
     return () => window.clearTimeout(handle);
-  }, [query, token, open]);
+  }, [query, token, open, typeFilter]);
 
   if (!open) return null;
+
+  const filterChips: Array<{ key: TypeFilter; label: string }> = [
+    { key: "all", label: t.searchFilterAll },
+    { key: "university", label: t.searchFilterUniversity },
+    { key: "program", label: t.searchFilterProgram },
+    { key: "professor", label: t.searchFilterProfessor },
+    { key: "lab", label: t.searchFilterLab },
+    { key: "paper", label: t.searchFilterPaper },
+    { key: "resource", label: t.searchFilterResource },
+    { key: "task", label: t.searchFilterTask },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]">
@@ -96,6 +113,23 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
           </button>
         </div>
 
+        <div className="flex flex-wrap gap-1.5 border-b border-[var(--color-hairline)] px-5 py-2.5">
+          {filterChips.map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => setTypeFilter(chip.key)}
+              className={`mono text-[9px] uppercase tracking-[0.12em] px-2 py-1 border transition-colors ${
+                typeFilter === chip.key
+                  ? "border-[var(--color-todai)] text-[var(--color-todai)] bg-[var(--color-todai-soft)]"
+                  : "border-[var(--color-hairline)] text-[var(--color-muted)] hover:border-[var(--color-hairline-strong)]"
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
         <div className="max-h-[60vh] overflow-y-auto">
           {loading && hits.length === 0 ? (
             <div className="px-5 py-10 text-center text-[12.5px] text-[var(--color-subtle)]">{t.loading}</div>
@@ -112,7 +146,7 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
                   onClick={() => {
                     const page = HIT_PAGE[hit.type];
                     if (page && onNavigate) {
-                      if (hit.type === "university") {
+                      if (hit.type === "university" || hit.type === "resource") {
                         onNavigate("universities", hit.id);
                       } else {
                         onNavigate(page);
@@ -123,9 +157,18 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="line-clamp-1 text-[14px] font-medium text-[var(--color-ink)]">{hit.title}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="line-clamp-1 text-[14px] font-medium text-[var(--color-ink)]">{hit.title}</div>
+                      </div>
                       {hit.subtitle ? (
-                        <div className="line-clamp-1 mt-0.5 text-[12px] text-[var(--color-muted)]">{hit.subtitle}</div>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <span className="line-clamp-1 text-[12px] text-[var(--color-muted)]">{hit.subtitle}</span>
+                          {hit.type === "resource" && hit.subtitle && (
+                            <span className="mono inline-flex h-4 shrink-0 items-center bg-[var(--color-todai-soft)] px-1 text-[8px] uppercase tracking-[0.1em] text-[var(--color-todai)]">
+                              {hit.subtitle.split(" · ")[0]}
+                            </span>
+                          )}
+                        </div>
                       ) : null}
                       {hit.hint ? (
                         <div className="line-clamp-1 mt-1 text-[11.5px] text-[var(--color-subtle)]">{hit.hint}</div>

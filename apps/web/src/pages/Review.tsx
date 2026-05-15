@@ -1,24 +1,60 @@
-import { CheckCircle2, Inbox, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Inbox, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { acceptCandidate, fetchReviewCandidates, ignoreCandidate } from "../lib/api";
+import {
+  acceptCandidate,
+  fetchReviewCandidates,
+  fetchUniversities,
+  ignoreCandidate,
+  markForLaterCandidate,
+  promoteCandidate,
+  type ReviewFilter,
+} from "../lib/api";
 import { formatDate } from "../lib/format";
-import type { PaperCandidate } from "../types/sris";
+import type { IntelligenceCandidate, ResourceType, University } from "../types/sris";
+
+const RESOURCE_TYPES: ResourceType[] = [
+  "paper", "lab_page", "professor_page", "program_page", "official_page",
+  "admission_notice", "experience_post", "video", "other",
+];
+
+const TYPE_COLORS: Record<string, string> = {
+  paper: "bg-[var(--color-isct-soft)] text-[var(--color-isct)]",
+  lab_page: "bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
+  professor_page: "bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
+  program_page: "bg-emerald-50 text-emerald-700",
+  official_page: "bg-sky-50 text-sky-700",
+  admission_notice: "bg-amber-50 text-amber-700",
+  experience_post: "bg-purple-50 text-purple-700",
+  video: "bg-rose-50 text-rose-700",
+  other: "bg-gray-50 text-gray-600",
+};
 
 export function Review() {
   const { token, clearToken } = useAuth();
   const { t } = useI18n();
-  const [candidates, setCandidates] = useState<PaperCandidate[]>([]);
+  const [candidates, setCandidates] = useState<IntelligenceCandidate[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"pending" | "later">("pending");
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterUni, setFilterUni] = useState<string>("");
+
+  useEffect(() => {
+    fetchUniversities(token).then(setUniversities).catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchReviewCandidates(token)
+    const filter: ReviewFilter = { status: tab };
+    if (filterType) filter.resource_type = filterType;
+    if (filterUni) filter.university_id = filterUni;
+    fetchReviewCandidates(token, filter)
       .then((result) => {
         if (!cancelled) setCandidates(result);
       })
@@ -32,13 +68,17 @@ export function Review() {
     return () => {
       cancelled = true;
     };
-  }, [token, clearToken]);
+  }, [token, tab, filterType, filterUni, clearToken]);
+
+  function removeCandidate(id: string) {
+    setCandidates((prev) => prev.filter((c) => c.id !== id));
+  }
 
   async function handleAccept(id: string) {
     setActionId(id);
     try {
       await acceptCandidate(token, id);
-      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      removeCandidate(id);
     } catch {
       // Keep the card on failure
     } finally {
@@ -50,13 +90,39 @@ export function Review() {
     setActionId(id);
     try {
       await ignoreCandidate(token, id);
-      setCandidates((prev) => prev.filter((c) => c.id !== id));
+      removeCandidate(id);
     } catch {
       // Keep the card on failure
     } finally {
       setActionId(null);
     }
   }
+
+  async function handleLater(id: string) {
+    setActionId(id);
+    try {
+      await markForLaterCandidate(token, id);
+      removeCandidate(id);
+    } catch {
+      // Keep the card on failure
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handlePromote(id: string) {
+    setActionId(id);
+    try {
+      await promoteCandidate(token, id);
+      removeCandidate(id);
+    } catch {
+      // Keep the card on failure
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  const uniMap = new Map(universities.map((u) => [u.id, u.name]));
 
   if (error) {
     return (
@@ -87,6 +153,53 @@ export function Review() {
         </p>
       </section>
 
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-3 border-y border-[var(--color-hairline)] py-4">
+        {/* Tab toggle */}
+        <div className="flex border border-[var(--color-hairline)]">
+          <button
+            type="button"
+            onClick={() => setTab("pending")}
+            className={`px-4 py-2 text-[12px] font-medium transition-colors ${tab === "pending" ? "bg-[var(--color-ink)] text-white" : "bg-[var(--color-surface)] text-[var(--color-muted)] hover:text-[var(--color-ink)]"}`}
+          >
+            {t.review2.pendingTab}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("later")}
+            className={`px-4 py-2 text-[12px] font-medium transition-colors ${tab === "later" ? "bg-[var(--color-ink)] text-white" : "bg-[var(--color-surface)] text-[var(--color-muted)] hover:text-[var(--color-ink)]"}`}
+          >
+            {t.review2.laterTab}
+          </button>
+        </div>
+
+        {/* Resource type filter */}
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="h-9 border border-[var(--color-hairline)] bg-[var(--color-surface)] px-3 text-[12px] text-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-todai)]"
+        >
+          <option value="">{t.review2.allTypes}</option>
+          {RESOURCE_TYPES.map((rt) => (
+            <option key={rt} value={rt}>
+              {t.capture.classifiedTypes[rt] ?? rt}
+            </option>
+          ))}
+        </select>
+
+        {/* University filter */}
+        <select
+          value={filterUni}
+          onChange={(e) => setFilterUni(e.target.value)}
+          className="h-9 border border-[var(--color-hairline)] bg-[var(--color-surface)] px-3 text-[12px] text-[var(--color-muted)] outline-none transition-colors focus:border-[var(--color-todai)]"
+        >
+          <option value="">{t.review2.allUniversities}</option>
+          {universities.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+      </div>
+
       {loading ? (
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -95,8 +208,12 @@ export function Review() {
         </div>
       ) : candidates.length === 0 ? (
         <div className="border border-dashed border-[var(--color-hairline-strong)] bg-[var(--color-paper)] px-6 py-16 text-center">
-          <div className="serif text-[18px] font-semibold text-[var(--color-ink)]">{t.review2.noResults}</div>
-          <div className="mt-1.5 text-[13px] text-[var(--color-muted)]">{t.review2.noResultsHelper}</div>
+          <div className="serif text-[18px] font-semibold text-[var(--color-ink)]">
+            {tab === "later" ? t.review2.noLaterResults : t.review2.noResults}
+          </div>
+          <div className="mt-1.5 text-[13px] text-[var(--color-muted)]">
+            {tab === "later" ? t.review2.noLaterResultsHelper : t.review2.noResultsHelper}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
@@ -107,22 +224,45 @@ export function Review() {
                 <div className="px-6 py-5">
                   <div className="mono mb-3 flex flex-wrap items-center gap-2 text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
                     <Inbox className="h-3 w-3 text-[var(--color-todai)]" />
-                    <span className="text-[var(--color-todai)]">{candidate.source ?? "candidate"}</span>
+                    <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${TYPE_COLORS[candidate.resource_type] ?? TYPE_COLORS.other!}`}>
+                      {t.capture.classifiedTypes[candidate.resource_type] ?? candidate.resource_type}
+                    </span>
+                    <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
+                    <span>{candidate.source ?? "candidate"}</span>
                     <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
                     <span>{formatDate(candidate.published_at, t.dateLocale, t.notSet)}</span>
+                    {candidate.domain_source && (
+                      <>
+                        <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
+                        <span>{candidate.domain_source}</span>
+                      </>
+                    )}
                   </div>
                   <h2 className="serif text-[20px] font-semibold tracking-[-0.01em] text-[var(--color-ink)]">
                     {candidate.title}
                   </h2>
+                  {candidate.university_id && uniMap.has(candidate.university_id) && (
+                    <p className="mt-1.5 text-[12.5px] text-[var(--color-todai)]">
+                      {uniMap.get(candidate.university_id)}
+                    </p>
+                  )}
                   {candidate.authors.length > 0 && (
                     <p className="mt-2 line-clamp-1 text-[12.5px] text-[var(--color-muted)]">
                       {candidate.authors.join(", ")}
                     </p>
                   )}
-                  {candidate.abstract && (
+                  {(candidate.abstract || candidate.relevance_note) && (
                     <p className="mt-3 line-clamp-3 text-[13.5px] leading-[1.7] text-[var(--color-muted)]">
-                      {candidate.abstract}
+                      {candidate.relevance_note || candidate.abstract}
                     </p>
+                  )}
+                  {candidate.confidence && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--color-subtle)]">
+                      <span className="mono uppercase tracking-[0.12em]">{t.capture.confidenceLabel}:</span>
+                      <span className={candidate.confidence === "high" ? "text-emerald-600" : candidate.confidence === "low" ? "text-[var(--color-todai)]" : "text-[var(--color-muted)]"}>
+                        {candidate.confidence === "high" ? t.review2.confidenceHigh : candidate.confidence === "low" ? t.review2.confidenceLow : t.review2.confidenceMedium}
+                      </span>
+                    </div>
                   )}
                   {candidate.matched_keywords.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -135,21 +275,33 @@ export function Review() {
                   )}
                   <div className="mt-5 flex items-center gap-3 border-t border-[var(--color-hairline)] pt-4">
                     <button
-                      onClick={() => handleAccept(candidate.id)}
+                      onClick={() => tab === "later" ? handlePromote(candidate.id) : handleAccept(candidate.id)}
                       disabled={acting}
                       className="inline-flex h-9 items-center gap-2 bg-[var(--color-ink)] px-4 text-[12px] font-medium text-white transition-colors hover:bg-[var(--color-todai)] disabled:opacity-50"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      {acting ? t.review2.accepting : t.review2.accept}
+                      {tab === "later" ? (acting ? t.review2.latering : t.review2.promote) : (acting ? t.review2.accepting : t.review2.accept)}
                     </button>
-                    <button
-                      onClick={() => handleIgnore(candidate.id)}
-                      disabled={acting}
-                      className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-4 text-[12px] font-medium text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-50"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      {acting ? t.review2.ignoring : t.review2.ignore}
-                    </button>
+                    {tab === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleLater(candidate.id)}
+                          disabled={acting}
+                          className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-4 text-[12px] font-medium text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-50"
+                        >
+                          <Clock className="h-3.5 w-3.5" />
+                          {acting ? t.review2.latering : t.review2.later}
+                        </button>
+                        <button
+                          onClick={() => handleIgnore(candidate.id)}
+                          disabled={acting}
+                          className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-4 text-[12px] font-medium text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-50"
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                          {acting ? t.review2.ignoring : t.review2.ignore}
+                        </button>
+                      </>
+                    )}
                     {candidate.url && (
                       <a
                         href={candidate.url}

@@ -1,15 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { featuredUniversities } from "../data/universities";
 import { useI18n } from "../contexts/I18nContext";
+import type { UniversityStat } from "../types/sris";
 
 const SCROLL_SPEED_PX_PER_SEC = 28;
 const MANUAL_PAUSE_MS = 6000;
 const MANUAL_TRANSITION_MS = 420;
 const GAP_PX = 20;
 
-export function UniversityCarousel({ onSelect }: { onSelect: (id: string) => void }) {
+export function UniversityCarousel({ onSelect, universityStats }: { onSelect: (id: string) => void; universityStats?: UniversityStat[] }) {
   const { t } = useI18n();
+  const statsMap = useMemo(() => {
+    const m = new Map<string, UniversityStat>();
+    if (universityStats) for (const s of universityStats) m.set(s.id, s);
+    return m;
+  }, [universityStats]);
   const trackRef = useRef<HTMLDivElement>(null);
   const posRef = useRef(0);
   const rafRef = useRef<number | null>(null);
@@ -173,7 +179,29 @@ export function UniversityCarousel({ onSelect }: { onSelect: (id: string) => voi
                   </div>
                 </div>
                 <div className="mt-3 flex items-center justify-between text-[12.5px]">
-                  <span className="line-clamp-1 text-[var(--color-muted)]">{university.name}</span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="line-clamp-1 text-[var(--color-muted)]">{university.name}</span>
+                    {statsMap.get(university.id) && (() => {
+                      const stat = statsMap.get(university.id)!;
+                      return (
+                        <>
+                          <span className="mono inline-flex h-4 shrink-0 items-center bg-[var(--color-paper)] border border-[var(--color-hairline)] px-1 text-[8px] uppercase tracking-[0.1em] text-[var(--color-muted)]">
+                            {t.dashboard2.cardResources(stat.resource_count)}
+                          </span>
+                          {stat.gap_count > 0 && (
+                            <span className="mono inline-flex h-4 shrink-0 items-center bg-[var(--color-todai-soft)] border border-[var(--color-todai)]/30 px-1 text-[8px] uppercase tracking-[0.1em] text-[var(--color-todai)]">
+                              {t.dashboard2.cardGaps(stat.gap_count)}
+                            </span>
+                          )}
+                          {stat.latest_update && (
+                            <span className="mono shrink-0 text-[8px] uppercase tracking-[0.1em] text-[var(--color-subtle)]">
+                              {t.dashboard2.cardUpdated(daysBetween(stat.latest_update))}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                   <span className="mono inline-flex items-center gap-1 text-[var(--color-todai)] opacity-0 transition-opacity group-hover:opacity-100">
                     OPEN
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -186,4 +214,10 @@ export function UniversityCarousel({ onSelect }: { onSelect: (id: string) => voi
       </div>
     </section>
   );
+}
+
+function daysBetween(isoDate: string): number {
+  const then = new Date(isoDate.slice(0, 10) + "T00:00:00Z").getTime();
+  const now = Date.now();
+  return Math.max(0, Math.floor((now - then) / 86_400_000));
 }

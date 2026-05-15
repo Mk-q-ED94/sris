@@ -11,6 +11,14 @@ export interface Locale {
   searchPlaceholder: string;
   searchEmpty: string;
   searchHint: string;
+  searchFilterAll: string;
+  searchFilterUniversity: string;
+  searchFilterProgram: string;
+  searchFilterProfessor: string;
+  searchFilterLab: string;
+  searchFilterPaper: string;
+  searchFilterResource: string;
+  searchFilterTask: string;
   asiaShanghai: string;
   privateMode: string;
   logout: string;
@@ -101,6 +109,22 @@ export interface Locale {
     captureCopied: string;
     arxivTitle: string;
     arxivBody: string;
+    sourceNameLabel: string;
+    sourceTypeLabel: string;
+    universityLabel: string;
+    confidenceLabel: string;
+    checkFrequencyLabel: string;
+    keywordsLabel: string;
+    enabledLabel: string;
+    lastRunLabel: string;
+    newSource: string;
+    editSource: string;
+    deleteSource: string;
+    sourceTypes: Record<string, string>;
+    staleWarning: string;
+    neverRun: string;
+    staleSourcesTitle: string;
+    staleSourcesBody: string;
   };
   capture: {
     title: string;
@@ -113,6 +137,12 @@ export interface Locale {
     cancel: string;
     classificationLabel: string;
     classifiedTypes: Record<string, string>;
+    resourceTypeLabel: string;
+    universityLabel: string;
+    programLabel: string;
+    confidenceLabel: string;
+    relevanceNoteLabel: string;
+    domainLabel: string;
   };
   professors: {
     title: string;
@@ -162,6 +192,7 @@ export interface Locale {
     inboxSourceTypes: string;
     inboxLoadingSource: string;
     inboxEmptySource: string;
+    inboxByType: string;
     gapsTitle: string;
     gapsSubtitle: string;
     gapsLoading: string;
@@ -214,9 +245,26 @@ export interface Locale {
     gapNoProgramsForDetail: (name: string) => string;
     gapNoProfessorsFor: (name: string) => string;
     gapNoProfessorsForDetail: (name: string) => string;
+    gapFewResourcesFor: (name: string) => string;
+    gapFewResourcesForDetail: (name: string) => string;
+    gapNoAdmissionFor: (name: string) => string;
+    gapNoAdmissionForDetail: (name: string) => string;
+    gapNoExperienceFor: (name: string) => string;
+    gapNoExperienceForDetail: (name: string) => string;
+    staleSourcesTitle: string;
+    staleSourcesBody: string;
     heroStatInbox: string;
     heroStatEntries: string;
     heroStatSources: string;
+    briefingLabel: string;
+    briefingNewCaptures: string;
+    briefingHighGaps: string;
+    briefingStaleSources: string;
+    briefingPendingReview: string;
+    cardResources: (n: number) => string;
+    cardGaps: (n: number) => string;
+    cardUpdated: (n: number) => string;
+    cardNever: string;
   };
   review2: {
     title: string;
@@ -227,8 +275,23 @@ export interface Locale {
     ignoring: string;
     accepted: string;
     ignored: string;
+    later: string;
+    latering: string;
+    promote: string;
     noResults: string;
     noResultsHelper: string;
+    noLaterResults: string;
+    noLaterResultsHelper: string;
+    filterResourceType: string;
+    filterUniversity: string;
+    filterStatus: string;
+    pendingTab: string;
+    laterTab: string;
+    allTypes: string;
+    allUniversities: string;
+    confidenceHigh: string;
+    confidenceMedium: string;
+    confidenceLow: string;
   };
   universityDetail: {
     programsTitle: string;
@@ -242,8 +305,13 @@ export interface Locale {
     noLabs: string;
     deadline: string;
     researchKeywords: string;
+    gapsTitle: string;
+    gapsSubtitle: string;
+    resourcesTitle: string;
+    noResources: string;
+    captureHint: string;
   };
-  entityType: Record<"university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task", string>;
+  entityType: Record<"university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task" | "resource", string>;
 }
 
 export type MetricKey =
@@ -268,9 +336,17 @@ export const LOCALES: Record<LangCode, Locale> = {
     metaTitle: "SRIS",
     brand: { name: "SRIS", subtitle: "Research Intelligence" },
     search: "全局搜索",
-    searchPlaceholder: "搜索院校 / 教授 / 实验室 / 论文 / 任务…",
+    searchPlaceholder: "搜索院校 / 教授 / 实验室 / 论文 / 资源 / 任务…",
     searchEmpty: "没有匹配结果",
     searchHint: "Ctrl/⌘ + K 唤起",
+    searchFilterAll: "全部",
+    searchFilterUniversity: "院校",
+    searchFilterProgram: "项目",
+    searchFilterProfessor: "教授",
+    searchFilterLab: "实验室",
+    searchFilterPaper: "论文",
+    searchFilterResource: "资源",
+    searchFilterTask: "任务",
     asiaShanghai: "Asia/Shanghai",
     privateMode: "Cloudflare Worker + D1 · private mode",
     logout: "退出 token",
@@ -376,6 +452,22 @@ export const LOCALES: Record<LangCode, Locale> = {
       captureCopied: "已复制",
       arxivTitle: "arXiv 关键词源",
       arxivBody: "在 radar_sources 表里维护查询和关键词,Worker 的 cron 每天 23:15 UTC 自动跑一遍。",
+      sourceNameLabel: "名称",
+      sourceTypeLabel: "类型",
+      universityLabel: "院校",
+      confidenceLabel: "可信度",
+      checkFrequencyLabel: "检查频率",
+      keywordsLabel: "关键词",
+      enabledLabel: "启用",
+      lastRunLabel: "上次运行",
+      newSource: "新建数据源",
+      editSource: "编辑",
+      deleteSource: "删除",
+      sourceTypes: { arxiv: "arXiv", official: "官方网站", program_page: "项目页面", professor_page: "教授页面", lab_page: "实验室页面", admission: "招生信息", scholar: "Google Scholar", forum: "论坛", video: "视频" },
+      staleWarning: "超过 7 天未检查",
+      neverRun: "从未运行",
+      staleSourcesTitle: "数据源停滞",
+      staleSourcesBody: "以下数据源超过 7 天未运行,可能错过新信息。",
     },
     capture: {
       title: "保存到 SRIS",
@@ -397,7 +489,18 @@ export const LOCALES: Record<LangCode, Locale> = {
         scholar: "Google Scholar",
         dblp: "DBLP 论文",
         "semantic-scholar": "Semantic Scholar",
+        official_page: "官方页面",
+        admission_notice: "招生公告",
+        experience_post: "经验帖",
+        video: "视频",
+        other: "其他",
       },
+      resourceTypeLabel: "资源类型",
+      universityLabel: "目标院校",
+      programLabel: "关联项目",
+      confidenceLabel: "可信度",
+      relevanceNoteLabel: "相关性备注",
+      domainLabel: "来源域名",
     },
     professors: {
       title: "教授与导师",
@@ -447,6 +550,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       inboxSourceTypes: "来源类型",
       inboxLoadingSource: "正在统计来源…",
       inboxEmptySource: "暂无来源数据，先运行采集或用浏览器捕获入口保存资源。",
+      inboxByType: "按类型",
       gapsTitle: "信息缺口",
       gapsSubtitle: "用来发现哪些领域还没有足够资料支撑判断",
       gapsLoading: "正在扫描信息缺口…",
@@ -499,9 +603,26 @@ export const LOCALES: Record<LangCode, Locale> = {
       gapNoProgramsForDetail: (name) => `${name} 还缺少项目名、申请窗口和材料要求，直接影响决策质量。`,
       gapNoProfessorsFor: (name) => `${name} 教授/实验室线索不足`,
       gapNoProfessorsForDetail: (name) => `${name} 尚无教授或实验室数据，信息差最大。`,
+      gapFewResourcesFor: (name) => `${name} 情报资源偏少`,
+      gapFewResourcesForDetail: (name) => `${name} 的已确认资源不足 3 条，建议补充招生公告或经验帖。`,
+      gapNoAdmissionFor: (name) => `${name} 缺少招生公告`,
+      gapNoAdmissionForDetail: (name) => `${name} 尚无招生公告类资源，这是申请决策的关键信息。`,
+      gapNoExperienceFor: (name) => `${name} 缺少经验帖`,
+      gapNoExperienceForDetail: (name) => `${name} 尚无申请经验帖，了解前人路径有助于规划。`,
+      staleSourcesTitle: "数据源停滞",
+      staleSourcesBody: "以下数据源超过 7 天未运行，可能错过新信息。",
       heroStatInbox: "情报入口",
       heroStatEntries: "资源条目",
       heroStatSources: "覆盖源",
+      briefingLabel: "今日情报",
+      briefingNewCaptures: "今日新增",
+      briefingHighGaps: "高优先级缺口",
+      briefingStaleSources: "停滞源",
+      briefingPendingReview: "待确认",
+      cardResources: (n) => `${n} 条资源`,
+      cardGaps: (n) => `${n} 个缺口`,
+      cardUpdated: (n) => `${n} 天前更新`,
+      cardNever: "从未更新",
     },
     review2: {
       title: "待确认",
@@ -512,8 +633,23 @@ export const LOCALES: Record<LangCode, Locale> = {
       ignoring: "忽略中…",
       accepted: "已接受",
       ignored: "已忽略",
+      later: "稍后",
+      latering: "标记中…",
+      promote: "恢复待办",
       noResults: "Review Queue 清空",
       noResultsHelper: "新的 arXiv 候选会在定时任务后出现。",
+      noLaterResults: "没有标记为稍后的资源",
+      noLaterResultsHelper: "标记为稍后的资源会出现在这里。",
+      filterResourceType: "资源类型",
+      filterUniversity: "院校",
+      filterStatus: "状态",
+      pendingTab: "待确认",
+      laterTab: "稍后处理",
+      allTypes: "全部类型",
+      allUniversities: "全部院校",
+      confidenceHigh: "高",
+      confidenceMedium: "中",
+      confidenceLow: "低",
     },
     universityDetail: {
       programsTitle: "项目",
@@ -527,8 +663,13 @@ export const LOCALES: Record<LangCode, Locale> = {
       noLabs: "暂无实验室",
       deadline: "截止日期",
       researchKeywords: "研究方向",
+      gapsTitle: "信息缺口",
+      gapsSubtitle: "该院校目前缺少的信息维度",
+      resourcesTitle: "情报资源",
+      noResources: "暂无情报资源",
+      captureHint: "捕获此信息",
     },
-    entityType: { university: "院校", program: "项目", professor: "教授", lab: "实验室", paper: "论文", candidate: "候选", task: "任务" },
+    entityType: { university: "院校", program: "项目", professor: "教授", lab: "实验室", paper: "论文", candidate: "候选", task: "任务", resource: "资源" },
   },
   en: {
     htmlLang: "en",
@@ -536,9 +677,17 @@ export const LOCALES: Record<LangCode, Locale> = {
     metaTitle: "SRIS",
     brand: { name: "SRIS", subtitle: "Research Intelligence" },
     search: "Global search",
-    searchPlaceholder: "Search universities / professors / labs / papers / tasks…",
+    searchPlaceholder: "Search universities / professors / labs / papers / resources / tasks…",
     searchEmpty: "No matching results",
     searchHint: "Ctrl/⌘ + K to open",
+    searchFilterAll: "All",
+    searchFilterUniversity: "University",
+    searchFilterProgram: "Program",
+    searchFilterProfessor: "Professor",
+    searchFilterLab: "Lab",
+    searchFilterPaper: "Paper",
+    searchFilterResource: "Resource",
+    searchFilterTask: "Task",
     asiaShanghai: "Asia/Shanghai",
     privateMode: "Cloudflare Worker + D1 · private mode",
     logout: "Sign out",
@@ -644,6 +793,22 @@ export const LOCALES: Record<LangCode, Locale> = {
       captureCopied: "Copied",
       arxivTitle: "arXiv keyword sources",
       arxivBody: "Maintain queries and keywords in `radar_sources`; the Worker cron runs every day at 23:15 UTC.",
+      sourceNameLabel: "Name",
+      sourceTypeLabel: "Type",
+      universityLabel: "University",
+      confidenceLabel: "Confidence",
+      checkFrequencyLabel: "Check frequency",
+      keywordsLabel: "Keywords",
+      enabledLabel: "Enabled",
+      lastRunLabel: "Last run",
+      newSource: "New source",
+      editSource: "Edit",
+      deleteSource: "Delete",
+      sourceTypes: { arxiv: "arXiv", official: "Official site", program_page: "Program page", professor_page: "Professor page", lab_page: "Lab page", admission: "Admission", scholar: "Google Scholar", forum: "Forum", video: "Video" },
+      staleWarning: "Not checked in 7+ days",
+      neverRun: "Never run",
+      staleSourcesTitle: "Stale sources",
+      staleSourcesBody: "These sources haven't run in over 7 days and may be missing new information.",
     },
     capture: {
       title: "Save to SRIS",
@@ -665,7 +830,18 @@ export const LOCALES: Record<LangCode, Locale> = {
         scholar: "Google Scholar",
         dblp: "DBLP paper",
         "semantic-scholar": "Semantic Scholar",
+        official_page: "Official page",
+        admission_notice: "Admission notice",
+        experience_post: "Experience post",
+        video: "Video",
+        other: "Other",
       },
+      resourceTypeLabel: "Resource type",
+      universityLabel: "Target university",
+      programLabel: "Related program",
+      confidenceLabel: "Confidence",
+      relevanceNoteLabel: "Relevance note",
+      domainLabel: "Source domain",
     },
     professors: {
       title: "Professors & Advisors",
@@ -715,6 +891,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       inboxSourceTypes: "Source types",
       inboxLoadingSource: "Counting sources…",
       inboxEmptySource: "No source data yet. Run ingestion or use the browser capture to save resources.",
+      inboxByType: "By type",
       gapsTitle: "Information gaps",
       gapsSubtitle: "Discover which areas lack enough evidence for decisions",
       gapsLoading: "Scanning for gaps…",
@@ -767,9 +944,26 @@ export const LOCALES: Record<LangCode, Locale> = {
       gapNoProgramsForDetail: (name) => `Missing program names, application windows, and material requirements for ${name}.`,
       gapNoProfessorsFor: (name) => `${name} lacks professor / lab leads`,
       gapNoProfessorsForDetail: (name) => `No professor or lab data for ${name} — this is where information gaps are largest.`,
+      gapFewResourcesFor: (name) => `${name} has few intelligence resources`,
+      gapFewResourcesForDetail: (name) => `${name} has fewer than 3 confirmed resources — consider adding admission notices or experience posts.`,
+      gapNoAdmissionFor: (name) => `${name} lacks admission notices`,
+      gapNoAdmissionForDetail: (name) => `${name} has no admission notice resources — critical for application decisions.`,
+      gapNoExperienceFor: (name) => `${name} lacks experience posts`,
+      gapNoExperienceForDetail: (name) => `${name} has no application experience posts — understanding predecessors' paths helps planning.`,
+      staleSourcesTitle: "Stale sources",
+      staleSourcesBody: "These sources haven't run in over 7 days and may be missing new information.",
       heroStatInbox: "Inbox",
       heroStatEntries: "Entries",
       heroStatSources: "Sources",
+      briefingLabel: "Today's Intelligence",
+      briefingNewCaptures: "New captures today",
+      briefingHighGaps: "High-priority gaps",
+      briefingStaleSources: "Stale sources",
+      briefingPendingReview: "Pending review",
+      cardResources: (n) => `${n} resources`,
+      cardGaps: (n) => `${n} gaps`,
+      cardUpdated: (n) => `${n}d ago`,
+      cardNever: "Never updated",
     },
     review2: {
       title: "Review",
@@ -780,8 +974,23 @@ export const LOCALES: Record<LangCode, Locale> = {
       ignoring: "Ignoring…",
       accepted: "Accepted",
       ignored: "Ignored",
+      later: "Later",
+      latering: "Marking…",
+      promote: "Re-open",
       noResults: "Review queue clear",
       noResultsHelper: "New arXiv candidates appear after each scheduled run.",
+      noLaterResults: "No items marked for later",
+      noLaterResultsHelper: "Items you mark for later review will appear here.",
+      filterResourceType: "Resource type",
+      filterUniversity: "University",
+      filterStatus: "Status",
+      pendingTab: "Pending",
+      laterTab: "Later",
+      allTypes: "All types",
+      allUniversities: "All universities",
+      confidenceHigh: "High",
+      confidenceMedium: "Medium",
+      confidenceLow: "Low",
     },
     universityDetail: {
       programsTitle: "Programs",
@@ -795,8 +1004,13 @@ export const LOCALES: Record<LangCode, Locale> = {
       noLabs: "No labs",
       deadline: "Deadline",
       researchKeywords: "Research areas",
+      gapsTitle: "Information gaps",
+      gapsSubtitle: "Missing information dimensions for this university",
+      resourcesTitle: "Intelligence resources",
+      noResources: "No intelligence resources",
+      captureHint: "Capture this information",
     },
-    entityType: { university: "University", program: "Program", professor: "Professor", lab: "Lab", paper: "Paper", candidate: "Candidate", task: "Task" },
+    entityType: { university: "University", program: "Program", professor: "Professor", lab: "Lab", paper: "Paper", candidate: "Candidate", task: "Task", resource: "Resource" },
   },
   ja: {
     htmlLang: "ja",
@@ -804,9 +1018,17 @@ export const LOCALES: Record<LangCode, Locale> = {
     metaTitle: "SRIS",
     brand: { name: "SRIS", subtitle: "Research Intelligence" },
     search: "全文検索",
-    searchPlaceholder: "大学 / 教授 / 研究室 / 論文 / タスクを検索…",
+    searchPlaceholder: "大学 / 教授 / 研究室 / 論文 / リソース / タスクを検索…",
     searchEmpty: "一致する結果がありません",
     searchHint: "Ctrl/⌘ + K で開く",
+    searchFilterAll: "すべて",
+    searchFilterUniversity: "大学",
+    searchFilterProgram: "プログラム",
+    searchFilterProfessor: "教授",
+    searchFilterLab: "研究室",
+    searchFilterPaper: "論文",
+    searchFilterResource: "リソース",
+    searchFilterTask: "タスク",
     asiaShanghai: "Asia/Shanghai",
     privateMode: "Cloudflare Worker + D1 · プライベートモード",
     logout: "トークン解除",
@@ -912,6 +1134,22 @@ export const LOCALES: Record<LangCode, Locale> = {
       captureCopied: "コピーしました",
       arxivTitle: "arXiv キーワードソース",
       arxivBody: "`radar_sources` でクエリとキーワードを管理します。Worker の cron が毎日 23:15 UTC に実行します。",
+      sourceNameLabel: "名前",
+      sourceTypeLabel: "タイプ",
+      universityLabel: "大学",
+      confidenceLabel: "信頼度",
+      checkFrequencyLabel: "確認頻度",
+      keywordsLabel: "キーワード",
+      enabledLabel: "有効",
+      lastRunLabel: "最終実行",
+      newSource: "新規ソース",
+      editSource: "編集",
+      deleteSource: "削除",
+      sourceTypes: { arxiv: "arXiv", official: "公式サイト", program_page: "プログラムページ", professor_page: "教授ページ", lab_page: "研究室ページ", admission: "入試情報", scholar: "Google Scholar", forum: "フォーラム", video: "動画" },
+      staleWarning: "7 日以上未チェック",
+      neverRun: "未実行",
+      staleSourcesTitle: "ソース停滞",
+      staleSourcesBody: "これらのソースは 7 日以上実行されておらず、新しい情報を見落としている可能性があります。",
     },
     capture: {
       title: "SRIS に保存",
@@ -933,7 +1171,18 @@ export const LOCALES: Record<LangCode, Locale> = {
         scholar: "Google Scholar",
         dblp: "DBLP 論文",
         "semantic-scholar": "Semantic Scholar",
+        official_page: "公式ページ",
+        admission_notice: "入試公告",
+        experience_post: "体験記",
+        video: "動画",
+        other: "その他",
       },
+      resourceTypeLabel: "リソースタイプ",
+      universityLabel: "対象大学",
+      programLabel: "関連プログラム",
+      confidenceLabel: "信頼度",
+      relevanceNoteLabel: "関連性メモ",
+      domainLabel: "ソースドメイン",
     },
     professors: {
       title: "教授・指導教員",
@@ -983,6 +1232,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       inboxSourceTypes: "ソース種別",
       inboxLoadingSource: "ソースを集計中…",
       inboxEmptySource: "ソースデータなし。取り込みを実行するか、ブラウザキャプチャでリソースを保存してください。",
+      inboxByType: "タイプ別",
       gapsTitle: "情報ギャップ",
       gapsSubtitle: "どの領域の証拠が不足しているかを発見",
       gapsLoading: "ギャップをスキャン中…",
@@ -1035,9 +1285,26 @@ export const LOCALES: Record<LangCode, Locale> = {
       gapNoProgramsForDetail: (name) => `${name} のプログラム名・出願窓口・書類要件が不足。意思決定品質に直接影響します。`,
       gapNoProfessorsFor: (name) => `${name} に教授/研究室の手がかり不足`,
       gapNoProfessorsForDetail: (name) => `${name} の教授・研究室データなし — 情報ギャップが最大の領域です。`,
+      gapFewResourcesFor: (name) => `${name} のインテリジェンスリソースが少ない`,
+      gapFewResourcesForDetail: (name) => `${name} の確認済みリソースが 3 件未満です — 入試公告や体験記の追加を検討してください。`,
+      gapNoAdmissionFor: (name) => `${name} に入試公告なし`,
+      gapNoAdmissionForDetail: (name) => `${name} には入試公告リソースがありません — 出願決定に不可欠な情報です。`,
+      gapNoExperienceFor: (name) => `${name} に体験記なし`,
+      gapNoExperienceForDetail: (name) => `${name} には出願体験記がありません — 先人の道を知ることで計画に役立ちます。`,
+      staleSourcesTitle: "ソース停滞",
+      staleSourcesBody: "これらのソースは 7 日以上実行されておらず、新しい情報を見落としている可能性があります。",
       heroStatInbox: "受信箱",
       heroStatEntries: "エントリ",
       heroStatSources: "ソース",
+      briefingLabel: "今日のインテリジェンス",
+      briefingNewCaptures: "今日の新規",
+      briefingHighGaps: "高優先ギャップ",
+      briefingStaleSources: "停滞ソース",
+      briefingPendingReview: "未確認",
+      cardResources: (n) => `${n} 件リソース`,
+      cardGaps: (n) => `${n} 件ギャップ`,
+      cardUpdated: (n) => `${n} 日前`,
+      cardNever: "未更新",
     },
     review2: {
       title: "レビュー",
@@ -1048,8 +1315,23 @@ export const LOCALES: Record<LangCode, Locale> = {
       ignoring: "無視中…",
       accepted: "承認済み",
       ignored: "無視済み",
+      later: "後で",
+      latering: "マーク中…",
+      promote: "再オープン",
       noResults: "レビューキューは空です",
       noResultsHelper: "新しい候補は次回のスケジュール後に表示されます。",
+      noLaterResults: "後でマークされたアイテムなし",
+      noLaterResultsHelper: "後で確認するためにマークしたアイテムがここに表示されます。",
+      filterResourceType: "リソースタイプ",
+      filterUniversity: "大学",
+      filterStatus: "ステータス",
+      pendingTab: "未確認",
+      laterTab: "後で",
+      allTypes: "全タイプ",
+      allUniversities: "全大学",
+      confidenceHigh: "高",
+      confidenceMedium: "中",
+      confidenceLow: "低",
     },
     universityDetail: {
       programsTitle: "プログラム",
@@ -1063,7 +1345,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       noLabs: "研究室なし",
       deadline: "締切",
       researchKeywords: "研究分野",
+      gapsTitle: "情報ギャップ",
+      gapsSubtitle: "この大学で不足している情報領域",
+      resourcesTitle: "インテリジェンスリソース",
+      noResources: "インテリジェンスリソースなし",
+      captureHint: "この情報をキャプチャ",
     },
-    entityType: { university: "大学", program: "プログラム", professor: "教授", lab: "研究室", paper: "論文", candidate: "候補", task: "タスク" },
+    entityType: { university: "大学", program: "プログラム", professor: "教授", lab: "研究室", paper: "論文", candidate: "候補", task: "タスク", resource: "リソース" },
   },
 };

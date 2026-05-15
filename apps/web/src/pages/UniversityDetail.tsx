@@ -1,11 +1,11 @@
-import { ArrowLeft, ArrowUpRight, BookOpen, CalendarClock, FlaskConical, Globe2, MapPin, UsersRound } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BookOpen, CalendarClock, FlaskConical, Globe2, MapPin, UsersRound, AlertTriangle, FileSearch, Lightbulb } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { featuredUniversities, findFeaturedUniversity } from "../data/universities";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
 import { fetchUniversityDetail } from "../lib/api";
 import { formatDate } from "../lib/format";
-import type { Program, Professor, Lab } from "../types/sris";
+import type { Program, Professor, Lab, IntelligenceResource, UniversityGap } from "../types/sris";
 
 export function UniversityDetail({
   universityId,
@@ -22,6 +22,8 @@ export function UniversityDetail({
   const [programs, setPrograms] = useState<Program[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [labs, setLabs] = useState<Lab[]>([]);
+  const [resources, setResources] = useState<IntelligenceResource[]>([]);
+  const [gaps, setGaps] = useState<UniversityGap[]>([]);
   const [paperCount, setPaperCount] = useState(0);
   const [taskCount, setTaskCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -40,25 +42,33 @@ export function UniversityDetail({
           setPrograms(data.programs);
           setProfessors(data.professors);
           setLabs(data.labs);
+          setResources(data.resources);
+          setGaps(data.gaps);
           setPaperCount(data.paper_count);
           setTaskCount(data.task_count);
         }
       })
-      .catch(() => {
-        // API may fail in dev, show empty sections
-      })
+      .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [token, universityId]);
 
   const uniName = useMemo(() => {
     if (featured) return featured.name;
     return universityId ?? "University";
   }, [featured, universityId]);
+
+  const resourceTypeFilter = useState<string>("all");
+  const activeFilter = resourceTypeFilter[0];
+  const filteredResources = activeFilter === "all"
+    ? resources
+    : resources.filter((r) => r.resource_type === activeFilter);
+  const resourceTypes = useMemo(() => {
+    const types = new Set(resources.map((r) => r.resource_type));
+    return Array.from(types).sort();
+  }, [resources]);
 
   return (
     <div className="space-y-10">
@@ -87,7 +97,6 @@ export function UniversityDetail({
             <InfoCell icon={BookOpen} label={t.university.focus} value={displayFocus} />
           </div>
 
-          {/* Stats row */}
           <div className="mt-6 grid grid-cols-2 border-y border-[var(--color-hairline)]">
             <StatCell label={t.universityDetail.paperCount} value={loading ? "—" : paperCount} />
             <StatCell label={t.universityDetail.taskCount} value={loading ? "—" : taskCount} />
@@ -131,6 +140,36 @@ export function UniversityDetail({
           </div>
         )}
       </section>
+
+      {/* Information Gaps */}
+      {!loading && gaps.length > 0 && gaps[0]?.label_key !== "none" && (
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="rule-accent" />
+            <span className="section-index">{t.universityDetail.gapsTitle}</span>
+          </div>
+          <p className="mb-4 text-[13px] leading-6 text-[var(--color-muted)]">{t.universityDetail.gapsSubtitle}</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {gaps.map((gap) => (
+              <div key={gap.label_key} className="border border-[var(--color-hairline)] bg-[var(--color-surface)] p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className={`h-3.5 w-3.5 ${gap.priority === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-subtle)]"}`} />
+                  <span className={`text-[13px] font-medium ${gap.priority === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
+                    {gapLabel(gap, t)}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">{gap.priority}</span>
+                  <a href={`/#capture`} className="inline-flex items-center gap-1 text-[11px] text-[var(--color-todai)] transition-colors hover:underline">
+                    <Lightbulb className="h-3 w-3" />
+                    {t.universityDetail.captureHint}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Programs section */}
       <section>
@@ -255,9 +294,96 @@ export function UniversityDetail({
           )}
         </div>
       </section>
+
+      {/* Intelligence Resources */}
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="rule-accent" />
+            <span className="section-index">{t.universityDetail.resourcesTitle}</span>
+          </div>
+          {resourceTypes.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => resourceTypeFilter[1]("all")}
+                className={`mono text-[10px] uppercase tracking-[0.12em] px-2 py-1 border ${activeFilter === "all" ? "border-[var(--color-todai)] text-[var(--color-todai)] bg-[var(--color-todai-soft)]" : "border-[var(--color-hairline)] text-[var(--color-muted)]"}`}
+              >
+                All
+              </button>
+              {resourceTypes.map((rt) => (
+                <button
+                  key={rt}
+                  type="button"
+                  onClick={() => resourceTypeFilter[1](rt)}
+                  className={`mono text-[10px] uppercase tracking-[0.12em] px-2 py-1 border ${activeFilter === rt ? "border-[var(--color-todai)] text-[var(--color-todai)] bg-[var(--color-todai-soft)]" : "border-[var(--color-hairline)] text-[var(--color-muted)]"}`}
+                >
+                  {t.capture.classifiedTypes[rt] ?? rt}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {loading ? (
+          <div className="h-32 animate-pulse border border-[var(--color-hairline)] bg-[var(--color-paper)]" />
+        ) : filteredResources.length === 0 ? (
+          <div className="border border-dashed border-[var(--color-hairline-strong)] bg-[var(--color-paper)] px-6 py-10 text-center text-[13px] text-[var(--color-muted)]">
+            {t.universityDetail.noResources}
+          </div>
+        ) : (
+          <ul className="divide-y divide-[var(--color-hairline)] border border-[var(--color-hairline)] bg-[var(--color-surface)]">
+            {filteredResources.map((res) => (
+              <li key={res.id} className="px-6 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="mono inline-flex h-5 items-center bg-[var(--color-todai-soft)] px-1.5 text-[9px] uppercase tracking-[0.12em] text-[var(--color-todai)]">
+                        {t.capture.classifiedTypes[res.resource_type] ?? res.resource_type}
+                      </span>
+                      {res.confidence && (
+                        <span className={`mono text-[9px] uppercase tracking-[0.12em] ${res.confidence === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-subtle)]"}`}>
+                          {res.confidence}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="mt-1.5 text-[14px] font-medium text-[var(--color-ink)]">
+                      <a href={res.url} target="_blank" rel="noreferrer" className="transition-colors hover:text-[var(--color-todai)]">
+                        {res.title}
+                      </a>
+                    </h3>
+                    {res.relevance_note && (
+                      <p className="mt-1 text-[12px] leading-5 text-[var(--color-muted)]">{res.relevance_note}</p>
+                    )}
+                  </div>
+                  {res.created_at && (
+                    <span className="mono shrink-0 text-[10px] uppercase tracking-[0.14em] text-[var(--color-subtle)]">
+                      {formatDate(res.created_at, t.dateLocale, "")}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
+
+function gapLabel(gap: UniversityGap, t: Locale): string {
+  const d2 = t.dashboard2;
+  switch (gap.label_key) {
+    case "no_programs_for": return d2.gapNoProgramsFor(t.university.featured || "");
+    case "no_professors_for": return d2.gapNoProfessorsFor(t.university.featured || "");
+    case "few_resources_for": return d2.gapFewResourcesFor(t.university.featured || "");
+    case "no_admission_for": return d2.gapNoAdmissionFor(t.university.featured || "");
+    case "no_experience_for": return d2.gapNoExperienceFor(t.university.featured || "");
+    case "none": return d2.gapNone;
+    default: return gap.label_key;
+  }
+}
+
+import type { Locale } from "../i18n/locales";
 
 function InfoCell({
   icon: Icon,

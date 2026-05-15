@@ -3,6 +3,17 @@ export type Counts = Record<
   number
 >;
 
+export type ResourceType =
+  | "official_page"
+  | "program_page"
+  | "professor_page"
+  | "lab_page"
+  | "admission_notice"
+  | "paper"
+  | "experience_post"
+  | "video"
+  | "other";
+
 export type Paper = {
   id: string;
   title: string;
@@ -17,9 +28,10 @@ export type Paper = {
   ai_status?: string | null;
 };
 
-export type PaperCandidate = {
+export type IntelligenceCandidate = {
   id: string;
   source?: string | null;
+  resource_type: ResourceType;
   title: string;
   authors: string[];
   abstract?: string | null;
@@ -27,7 +39,18 @@ export type PaperCandidate = {
   published_at?: string | null;
   matched_keywords: string[];
   status: string;
+  university_id?: string | null;
+  program_id?: string | null;
+  professor_id?: string | null;
+  relevance_note?: string | null;
+  decision_impact?: string | null;
+  confidence?: string | null;
+  evidence_type?: string | null;
+  domain_source?: string | null;
+  ignore_reason?: string | null;
 };
+
+export type PaperCandidate = IntelligenceCandidate;
 
 export type TimelineTask = {
   id: string;
@@ -55,18 +78,36 @@ export type GapItem = {
   university_name?: string;
 };
 
+export type TodayBriefing = {
+  new_captures: number;
+  high_priority_gaps: number;
+  stale_sources: number;
+  pending_review: number;
+};
+
+export type UniversityStat = {
+  id: string;
+  resource_count: number;
+  gap_count: number;
+  latest_update: string | null;
+};
+
 export type DashboardSummary = {
   counts: Counts;
   recent_papers: Paper[];
-  pending_candidates: PaperCandidate[];
+  pending_candidates: IntelligenceCandidate[];
   upcoming_tasks: TimelineTask[];
   recent_updates: Array<{ label: string; value: string }>;
   coverage: CoverageItem[];
   gaps: GapItem[];
+  resource_type_counts: Record<string, number>;
+  stale_sources: Array<{ id: string; name: string; source_type: string; university_id?: string | null; last_run_at?: string | null }>;
+  today_briefing: TodayBriefing;
+  university_stats: UniversityStat[];
 };
 
 export type SearchHit = {
-  type: "university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task";
+  type: "university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task" | "resource";
   id: string;
   title: string;
   subtitle: string | null;
@@ -129,6 +170,29 @@ export type Program = {
   notes?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+};
+
+export type IntelligenceResource = {
+  id: string;
+  candidate_id?: string | null;
+  title: string;
+  url: string;
+  resource_type: ResourceType;
+  source?: string | null;
+  university_id?: string | null;
+  program_id?: string | null;
+  professor_id?: string | null;
+  lab_id?: string | null;
+  confidence?: string | null;
+  decision_impact?: string | null;
+  relevance_note?: string | null;
+  domain_source?: string | null;
+  created_at?: string | null;
+};
+
+export type UniversityGap = {
+  label_key: string;
+  priority: "high" | "medium" | "low";
 };
 
 export type QuickCaptureResponse = { id: string; status: string };
