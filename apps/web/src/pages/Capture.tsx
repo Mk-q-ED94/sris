@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Check, Zap } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
 import { quickCapture } from "../lib/api";
@@ -8,6 +8,35 @@ interface CapturePrefill {
   url: string;
   title: string;
   notes: string;
+}
+
+function classifyUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname;
+    const path = u.pathname.toLowerCase();
+
+    if (host.endsWith(".ac.jp")) {
+      if (path.includes("/lab") || path.includes("/research") || path.includes("/kenkyu"))
+        return "lab-page";
+      if (path.includes("/faculty") || path.includes("/member") || path.includes("/staff") || path.includes("/professor"))
+        return "professor-page";
+      if (path.includes("/program") || path.includes("/admission") || path.includes("/apply") || path.includes("/nyushi"))
+        return "program-page";
+      if (path.includes("/course") || path.includes("/curriculum"))
+        return "course-page";
+      return "university-page";
+    }
+
+    if (host.includes("arxiv.org")) return "arxiv";
+    if (host.includes("scholar.google")) return "scholar";
+    if (host.includes("dblp")) return "dblp";
+    if (host.includes("semanticscholar")) return "semantic-scholar";
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose: () => void }) {
@@ -19,6 +48,8 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const classification = useMemo(() => classifyUrl(url.trim()), [url]);
 
   useEffect(() => {
     setUrl(prefill.url);
@@ -76,6 +107,13 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
             required
             className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
           />
+          {classification ? (
+            <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-[var(--color-todai)]">
+              <Zap className="h-3 w-3" />
+              <span className="mono uppercase tracking-[0.12em]">{t.capture.classificationLabel}</span>
+              <span className="font-medium">{t.capture.classifiedTypes[classification] ?? classification}</span>
+            </div>
+          ) : null}
         </Field>
         <Field label={t.capture.titleLabel}>
           <input

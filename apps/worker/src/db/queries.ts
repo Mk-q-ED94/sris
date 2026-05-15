@@ -58,3 +58,52 @@ export async function createRow(
   if (!row) throw new Error(`Failed to read back inserted row in ${config.table}`);
   return normalizeRow(row, config.jsonFields);
 }
+
+export async function updateRow(
+  db: D1Database,
+  config: TableConfig,
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const now = new Date().toISOString();
+  const setClauses: string[] = [];
+  const values: unknown[] = [];
+  for (const field of config.createFields) {
+    if (!(field in payload)) continue;
+    setClauses.push(`${field} = ?`);
+    if (config.jsonFields.includes(field)) {
+      values.push(JSON.stringify(payload[field] ?? []));
+    } else if (field === "enabled") {
+      values.push(payload[field] === false ? 0 : 1);
+    } else {
+      values.push(payload[field] ?? null);
+    }
+  }
+  setClauses.push("updated_at = ?");
+  values.push(now);
+  values.push(id);
+  const result = await db
+    .prepare(`update ${config.table} set ${setClauses.join(", ")} where id = ?`)
+    .bind(...values)
+    .run();
+  if (!result.meta?.changes) throw new Error(`Row ${id} not found in ${config.table}`);
+  const row = await db
+    .prepare(`select * from ${config.table} where id = ?`)
+    .bind(id)
+    .first<Record<string, unknown>>();
+  if (!row) throw new Error(`Failed to read back updated row in ${config.table}`);
+  return normalizeRow(row, config.jsonFields);
+}
+
+export async function deleteRow(
+  db: D1Database,
+  table: string,
+  id: string,
+): Promise<{ ok: true }> {
+  const result = await db
+    .prepare(`delete from ${table} where id = ?`)
+    .bind(id)
+    .run();
+  if (!result.meta?.changes) throw new Error(`Row ${id} not found in ${table}`);
+  return { ok: true };
+}

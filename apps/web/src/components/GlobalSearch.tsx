@@ -3,6 +3,7 @@ import { Search, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
 import { searchGlobal } from "../lib/api";
+import type { PageKey } from "./AppShell";
 import type { SearchHit } from "../types/sris";
 
 interface GlobalSearchProps {
@@ -10,7 +11,17 @@ interface GlobalSearchProps {
   onClose: () => void;
 }
 
-export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
+const HIT_PAGE: Record<SearchHit["type"], PageKey> = {
+  university: "universities",
+  professor: "professors",
+  lab: "labs",
+  program: "programs",
+  paper: "papers",
+  candidate: "review",
+  task: "timeline",
+};
+
+export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & { onNavigate?: (page: PageKey, id?: string) => void }) {
   const { token } = useAuth();
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -95,7 +106,21 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           ) : (
             <ul className="divide-y divide-[var(--color-hairline)]">
               {hits.map((hit) => (
-                <li key={`${hit.type}-${hit.id}`} className="px-5 py-3 hover:bg-[var(--color-paper)]">
+                <li
+                  key={`${hit.type}-${hit.id}`}
+                  className="cursor-pointer px-5 py-3 hover:bg-[var(--color-paper)]"
+                  onClick={() => {
+                    const page = HIT_PAGE[hit.type];
+                    if (page && onNavigate) {
+                      if (hit.type === "university") {
+                        onNavigate("universities", hit.id);
+                      } else {
+                        onNavigate(page);
+                      }
+                    }
+                    onClose();
+                  }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="line-clamp-1 text-[14px] font-medium text-[var(--color-ink)]">{hit.title}</div>

@@ -5,7 +5,11 @@ import { TokenGate } from "./components/TokenGate";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Capture } from "./pages/Capture";
 import { Dashboard } from "./pages/Dashboard";
+import { Labs } from "./pages/Labs";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { Professors } from "./pages/Professors";
+import { Programs } from "./pages/Programs";
+import { Review } from "./pages/Review";
 import { Sources } from "./pages/Sources";
 import { Timeline } from "./pages/Timeline";
 import { UniversityDetail } from "./pages/UniversityDetail";
@@ -92,6 +96,10 @@ function AppContent() {
     }
     if (route.page === "timeline") return <Timeline />;
     if (route.page === "sources") return <Sources />;
+    if (route.page === "professors") return <Professors onNavigate={navigate} />;
+    if (route.page === "labs") return <Labs onNavigate={navigate} />;
+    if (route.page === "programs") return <Programs />;
+    if (route.page === "review") return <Review />;
     return <PlaceholderPage page={route.page as PageKey} />;
   }, [route, navigate, closeCapture]);
 
@@ -108,7 +116,7 @@ function AppContent() {
       >
         {page}
       </AppShell>
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} onNavigate={navigate} />
     </>
   );
 }

@@ -76,6 +76,16 @@ export interface Locale {
     legendHigh: string;
     legendMedium: string;
     legendDone: string;
+    newTask: string;
+    titleLabel: string;
+    deadlineLabel: string;
+    priorityLabel: string;
+    taskTypeLabel: string;
+    notesLabel: string;
+    save: string;
+    cancel: string;
+    delete: string;
+    deleteConfirm: string;
   };
   sources: {
     title: string;
@@ -101,6 +111,137 @@ export interface Locale {
     submit: string;
     success: string;
     cancel: string;
+    classificationLabel: string;
+    classifiedTypes: Record<string, string>;
+  };
+  professors: {
+    title: string;
+    description: string;
+    university: string;
+    researchKeywords: string;
+    email: string;
+    website: string;
+    noResults: string;
+    noResultsHelper: string;
+  };
+  labs: {
+    title: string;
+    description: string;
+    university: string;
+    director: string;
+    researchKeywords: string;
+    recentPapers: string;
+    website: string;
+    noResults: string;
+    noResultsHelper: string;
+  };
+  programs: {
+    title: string;
+    description: string;
+    university: string;
+    degree: string;
+    language: string;
+    deadline: string;
+    requirements: string;
+    scholarship: string;
+    tuition: string;
+    website: string;
+    noResults: string;
+    noResultsHelper: string;
+  };
+  dashboard2: {
+    heroLabel: string;
+    heroTitle: string;
+    heroBody: string;
+    inboxLabel: string;
+    inboxLoading: string;
+    inboxCountFmt: (n: number) => string;
+    inboxBody: string;
+    inboxPending: string;
+    inboxManualCaptures: string;
+    inboxSourceTypes: string;
+    inboxLoadingSource: string;
+    inboxEmptySource: string;
+    gapsTitle: string;
+    gapsSubtitle: string;
+    gapsLoading: string;
+    coverageTitle: string;
+    coverageSubtitle: string;
+    radarTitle: string;
+    radarSubtitle: string;
+    radarEmpty: string;
+    radarEmptyHelper: string;
+    streamTitle: string;
+    streamSubtitle: string;
+    streamEmpty: string;
+    streamEmptyHelper: string;
+    signalsTitle: string;
+    signalsSubtitle: string;
+    signalsBody: string;
+    signalsUrgent: string;
+    signalsOverdue: string;
+    signalsCompletion: string;
+    dbLabel: string;
+    dbLoading: string;
+    dbCurrent: string;
+    coverageUni: string;
+    coverageUniHint: string;
+    coveragePrograms: string;
+    coverageProgramsHint: string;
+    coverageProfessors: string;
+    coverageProfessorsHint: string;
+    coveragePapers: string;
+    coveragePapersHint: string;
+    coverageCaptures: string;
+    coverageCapturesHint: string;
+    coverageTasks: string;
+    coverageTasksHint: string;
+    gapNoPrograms: string;
+    gapNoProgramsDetail: string;
+    gapNoProfessors: string;
+    gapNoProfessorsDetail: string;
+    gapFewUniversities: string;
+    gapFewUniversitiesDetail: string;
+    gapNoPapers: string;
+    gapNoPapersDetail: string;
+    gapCandidateBacklog: string;
+    gapCandidateBacklogDetail: string;
+    gapNoTasks: string;
+    gapNoTasksDetail: string;
+    gapNone: string;
+    gapNoneDetail: string;
+    gapNoProgramsFor: (name: string) => string;
+    gapNoProgramsForDetail: (name: string) => string;
+    gapNoProfessorsFor: (name: string) => string;
+    gapNoProfessorsForDetail: (name: string) => string;
+    heroStatInbox: string;
+    heroStatEntries: string;
+    heroStatSources: string;
+  };
+  review2: {
+    title: string;
+    description: string;
+    accept: string;
+    ignore: string;
+    accepting: string;
+    ignoring: string;
+    accepted: string;
+    ignored: string;
+    noResults: string;
+    noResultsHelper: string;
+  };
+  universityDetail: {
+    programsTitle: string;
+    professorsTitle: string;
+    labsTitle: string;
+    statsTitle: string;
+    paperCount: string;
+    taskCount: string;
+    noPrograms: string;
+    noProfessors: string;
+    noLabs: string;
+    deadline: string;
+    researchKeywords: string;
   };
   entityType: Record<"university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task", string>;
 }
@@ -169,9 +310,9 @@ export const LOCALES: Record<LangCode, Locale> = {
     pages: {
       dashboard: { title: "总览", description: "Dashboard" },
       universities: { title: "院校", description: "目标院校数据库会在下一轮迁移到 React 表格视图。" },
-      professors: { title: "教授", description: "教授和研究方向视图会沿用新的 Apple/Stripe 组件系统。" },
-      labs: { title: "实验室", description: "实验室、关键词和近期论文会在后续页面重构。" },
-      programs: { title: "项目", description: "SGU 项目与 deadline 管理将接入同一套筛选交互。" },
+      professors: { title: "教授", description: "目标院校的教授和导师信息，包括研究方向、联系方式和实验室关联。" },
+      labs: { title: "实验室", description: "实验室和研究组信息，包括研究方向、近期论文和负责人。" },
+      programs: { title: "项目", description: "SGU 英文项目、申请窗口、语言要求和学费信息。" },
       papers: { title: "论文雷达", description: "已确认论文库会改成高密度研究表格。" },
       review: { title: "待确认", description: "Review Queue 会保留接受/忽略流程,并升级成卡片队列。" },
       timeline: { title: "时间线", description: "TOEFL / JLPT / SOP / 推荐信 / 申请 DDL 的 Gantt 视图。" },
@@ -210,6 +351,16 @@ export const LOCALES: Record<LangCode, Locale> = {
       legendHigh: "高优先级",
       legendMedium: "普通",
       legendDone: "已完成",
+      newTask: "新建任务",
+      titleLabel: "标题",
+      deadlineLabel: "截止日期",
+      priorityLabel: "优先级",
+      taskTypeLabel: "类型",
+      notesLabel: "备注",
+      save: "保存",
+      cancel: "取消",
+      delete: "删除",
+      deleteConfirm: "确认删除？",
     },
     sources: {
       title: "数据源 / 集成",
@@ -235,6 +386,147 @@ export const LOCALES: Record<LangCode, Locale> = {
       submit: "保存",
       success: "已保存到待确认队列",
       cancel: "取消",
+      classificationLabel: "已识别",
+      classifiedTypes: {
+        "lab-page": "实验室页面",
+        "professor-page": "教授页面",
+        "program-page": "项目页面",
+        "course-page": "课程页面",
+        "university-page": "大学页面",
+        arxiv: "arXiv 论文",
+        scholar: "Google Scholar",
+        dblp: "DBLP 论文",
+        "semantic-scholar": "Semantic Scholar",
+      },
+    },
+    professors: {
+      title: "教授与导师",
+      description: "目标院校的教授和导师信息，包括研究方向、联系方式和实验室关联。",
+      university: "所属院校",
+      researchKeywords: "研究方向",
+      email: "邮箱",
+      website: "主页",
+      noResults: "暂无教授信息",
+      noResultsHelper: "通过数据源采集或手动添加教授后，这里会展示导师列表。",
+    },
+    labs: {
+      title: "实验室",
+      description: "实验室和研究组信息，包括研究方向、近期论文和负责人。",
+      university: "所属院校",
+      director: "负责人",
+      researchKeywords: "研究方向",
+      recentPapers: "近期论文",
+      website: "主页",
+      noResults: "暂无实验室信息",
+      noResultsHelper: "添加实验室后，这里会展示研究组列表。",
+    },
+    programs: {
+      title: "项目",
+      description: "SGU 英文项目、申请窗口、语言要求和学费信息。",
+      university: "所属院校",
+      degree: "学位",
+      language: "授课语言",
+      deadline: "申请截止",
+      requirements: "申请要求",
+      scholarship: "奖学金",
+      tuition: "学费",
+      website: "项目主页",
+      noResults: "暂无项目信息",
+      noResultsHelper: "添加 SGU 项目后，这里会展示项目列表和截止日期。",
+    },
+    dashboard2: {
+      heroLabel: "Intelligence Library",
+      heroTitle: "打破信息差的研究资源库",
+      heroBody: "总览页现在优先回答：哪些资源刚被捕获、哪些来源覆盖不足、哪些关键词正在出现、哪些材料值得进入正式库。申请时间线和决策信号保留为辅助层。",
+      inboxLabel: "Intelligence Inbox",
+      inboxLoading: "正在整理资源入口",
+      inboxCountFmt: (n) => `${n} 条新资源等待判断价值`,
+      inboxBody: "这里是系统的主入口：arXiv 候选、浏览器捕获、手动保存的链接和近期论文先进入缓冲层，经过人工判断后再沉淀到正式资料库。",
+      inboxPending: "待确认",
+      inboxManualCaptures: "手动捕获",
+      inboxSourceTypes: "来源类型",
+      inboxLoadingSource: "正在统计来源…",
+      inboxEmptySource: "暂无来源数据，先运行采集或用浏览器捕获入口保存资源。",
+      gapsTitle: "信息缺口",
+      gapsSubtitle: "用来发现哪些领域还没有足够资料支撑判断",
+      gapsLoading: "正在扫描信息缺口…",
+      coverageTitle: "来源覆盖",
+      coverageSubtitle: "把资料库从申请清单转向可验证的信息网络",
+      radarTitle: "关键词雷达",
+      radarSubtitle: "从候选论文和正式论文中提取当前高频方向",
+      radarEmpty: "暂无关键词命中",
+      radarEmptyHelper: "候选论文或正式论文进入库后，这里会显示研究方向热度。",
+      streamTitle: "资源流",
+      streamSubtitle: "最近捕获、候选论文和正式论文的统一视图",
+      streamEmpty: "暂无资源流",
+      streamEmptyHelper: "采集 arXiv、手动捕获网页或接受候选论文后，这里会开始滚动。",
+      signalsTitle: "申请辅助信号",
+      signalsSubtitle: "只保留会影响资料优先级的 deadline 与任务风险",
+      signalsBody: "这块不再作为总览核心，只提醒哪些申请动作会改变接下来要搜集的信息优先级。",
+      signalsUrgent: "30 天任务",
+      signalsOverdue: "逾期",
+      signalsCompletion: "完成率",
+      dbLabel: "Database Inventory",
+      dbLoading: "loading",
+      dbCurrent: "current",
+      coverageUni: "官方院校入口",
+      coverageUniHint: "目标学校、官网入口、基础定位",
+      coveragePrograms: "项目与 deadline",
+      coverageProgramsHint: "SGU 项目、申请窗口、材料要求",
+      coverageProfessors: "教授 / 实验室",
+      coverageProfessorsHint: "研究对象、lab 页面、导师线索",
+      coveragePapers: "论文与研究信号",
+      coveragePapersHint: "正式论文库 + 待确认候选",
+      coverageCaptures: "浏览器捕获",
+      coverageCapturesHint: "从网页临时保存的非结构化资料",
+      coverageTasks: "辅助任务",
+      coverageTasksHint: "仅作为信息搜集优先级参考",
+      gapNoPrograms: "项目信息尚未结构化",
+      gapNoProgramsDetail: "还缺少项目名、申请窗口、材料要求和官方 URL。这个缺口会直接影响后续决策质量。",
+      gapNoProfessors: "教授 / 实验室线索不足",
+      gapNoProfessorsDetail: "信息差最容易出现在导师、lab、研究组页面和近期成果之间，需要优先补齐。",
+      gapFewUniversities: "目标院校池偏窄",
+      gapFewUniversitiesDetail: "建议至少保持 5 个目标院校入口，方便横向比较项目、导师和申请节奏。",
+      gapNoPapers: "正式论文库为空",
+      gapNoPapersDetail: "Review Queue 接受后才会成为可复用的研究证据，目前还缺沉淀层。",
+      gapCandidateBacklog: "候选资源堆积",
+      gapCandidateBacklogDetail: "待确认资源过多会降低资料可信度，建议先筛掉低相关候选再继续采集。",
+      gapNoTasks: "deadline 暂未抽取",
+      gapNoTasksDetail: "申请任务不是主轴，但 deadline 会决定信息搜集顺序，需要保留基础节点。",
+      gapNone: "暂无明显信息缺口",
+      gapNoneDetail: "当前资料库已经具备基础覆盖，可以继续扩大来源和提升资料可信度。",
+      gapNoProgramsFor: (name) => `${name} 尚无结构化项目信息`,
+      gapNoProgramsForDetail: (name) => `${name} 还缺少项目名、申请窗口和材料要求，直接影响决策质量。`,
+      gapNoProfessorsFor: (name) => `${name} 教授/实验室线索不足`,
+      gapNoProfessorsForDetail: (name) => `${name} 尚无教授或实验室数据，信息差最大。`,
+      heroStatInbox: "情报入口",
+      heroStatEntries: "资源条目",
+      heroStatSources: "覆盖源",
+    },
+    review2: {
+      title: "待确认",
+      description: "候选论文和捕获资源进入正式库前的缓冲区。",
+      accept: "接受",
+      ignore: "忽略",
+      accepting: "接受中…",
+      ignoring: "忽略中…",
+      accepted: "已接受",
+      ignored: "已忽略",
+      noResults: "Review Queue 清空",
+      noResultsHelper: "新的 arXiv 候选会在定时任务后出现。",
+    },
+    universityDetail: {
+      programsTitle: "项目",
+      professorsTitle: "教授",
+      labsTitle: "实验室",
+      statsTitle: "统计",
+      paperCount: "论文",
+      taskCount: "任务",
+      noPrograms: "暂无项目",
+      noProfessors: "暂无教授",
+      noLabs: "暂无实验室",
+      deadline: "截止日期",
+      researchKeywords: "研究方向",
     },
     entityType: { university: "院校", program: "项目", professor: "教授", lab: "实验室", paper: "论文", candidate: "候选", task: "任务" },
   },
@@ -286,9 +578,9 @@ export const LOCALES: Record<LangCode, Locale> = {
     pages: {
       dashboard: { title: "Dashboard", description: "Dashboard" },
       universities: { title: "Universities", description: "The target-university database moves to a React table view next." },
-      professors: { title: "Professors", description: "Professor and research-direction views will adopt the new component system." },
-      labs: { title: "Labs", description: "Labs, keywords, and recent papers will be rebuilt in a later pass." },
-      programs: { title: "Programs", description: "SGU programs and deadlines will share the same filtering interactions." },
+      professors: { title: "Professors", description: "Professors and advisors at target universities — research directions, contact info, and lab affiliations." },
+      labs: { title: "Labs", description: "Research groups and labs — focus areas, recent papers, and directors." },
+      programs: { title: "Programs", description: "SGU English programs — application windows, language requirements, and tuition." },
       papers: { title: "Paper radar", description: "The accepted-papers library will become a dense research table." },
       review: { title: "Review", description: "Review queue keeps accept/ignore but upgrades to a card layout." },
       timeline: { title: "Timeline", description: "Gantt view of TOEFL / JLPT / SOP / recommendation / application DDLs." },
@@ -327,6 +619,16 @@ export const LOCALES: Record<LangCode, Locale> = {
       legendHigh: "High priority",
       legendMedium: "Normal",
       legendDone: "Done",
+      newTask: "New task",
+      titleLabel: "Title",
+      deadlineLabel: "Deadline",
+      priorityLabel: "Priority",
+      taskTypeLabel: "Type",
+      notesLabel: "Notes",
+      save: "Save",
+      cancel: "Cancel",
+      delete: "Delete",
+      deleteConfirm: "Confirm delete?",
     },
     sources: {
       title: "Sources & integrations",
@@ -352,6 +654,147 @@ export const LOCALES: Record<LangCode, Locale> = {
       submit: "Save",
       success: "Saved to the review queue",
       cancel: "Cancel",
+      classificationLabel: "Detected",
+      classifiedTypes: {
+        "lab-page": "Lab page",
+        "professor-page": "Professor page",
+        "program-page": "Program page",
+        "course-page": "Course page",
+        "university-page": "University page",
+        arxiv: "arXiv paper",
+        scholar: "Google Scholar",
+        dblp: "DBLP paper",
+        "semantic-scholar": "Semantic Scholar",
+      },
+    },
+    professors: {
+      title: "Professors & Advisors",
+      description: "Professors and advisors at target universities — research directions, contact info, and lab affiliations.",
+      university: "University",
+      researchKeywords: "Research areas",
+      email: "Email",
+      website: "Website",
+      noResults: "No professors yet",
+      noResultsHelper: "Add professors via data sources or manual entry to see them listed here.",
+    },
+    labs: {
+      title: "Labs",
+      description: "Research groups and labs — focus areas, recent papers, and directors.",
+      university: "University",
+      director: "Director",
+      researchKeywords: "Research areas",
+      recentPapers: "Recent papers",
+      website: "Website",
+      noResults: "No labs yet",
+      noResultsHelper: "Add labs to see research groups listed here.",
+    },
+    programs: {
+      title: "Programs",
+      description: "SGU English programs — application windows, language requirements, and tuition.",
+      university: "University",
+      degree: "Degree",
+      language: "Language",
+      deadline: "Deadline",
+      requirements: "Requirements",
+      scholarship: "Scholarship",
+      tuition: "Tuition",
+      website: "Program website",
+      noResults: "No programs yet",
+      noResultsHelper: "Add SGU programs to see deadlines and requirements here.",
+    },
+    dashboard2: {
+      heroLabel: "Intelligence Library",
+      heroTitle: "Breaking the information gap",
+      heroBody: "The dashboard now prioritizes: which resources were just captured, which sources lack coverage, which keywords are emerging, and which materials belong in the main library. Application timeline and decision signals are kept as a supporting layer.",
+      inboxLabel: "Intelligence Inbox",
+      inboxLoading: "Organizing resource entries",
+      inboxCountFmt: (n) => `${n} new resources awaiting review`,
+      inboxBody: "This is the main entry point: arXiv candidates, browser captures, manually saved links, and recent papers first enter a buffer layer, then settle into the main library after human judgment.",
+      inboxPending: "Pending",
+      inboxManualCaptures: "Manual captures",
+      inboxSourceTypes: "Source types",
+      inboxLoadingSource: "Counting sources…",
+      inboxEmptySource: "No source data yet. Run ingestion or use the browser capture to save resources.",
+      gapsTitle: "Information gaps",
+      gapsSubtitle: "Discover which areas lack enough evidence for decisions",
+      gapsLoading: "Scanning for gaps…",
+      coverageTitle: "Source coverage",
+      coverageSubtitle: "Turn the library from an application checklist into a verifiable information network",
+      radarTitle: "Keyword radar",
+      radarSubtitle: "Extract trending research directions from candidates and papers",
+      radarEmpty: "No keyword hits yet",
+      radarEmptyHelper: "When candidates or papers enter the library, research direction trends will appear here.",
+      streamTitle: "Resource stream",
+      streamSubtitle: "Unified view of recent captures, candidates, and papers",
+      streamEmpty: "No resources yet",
+      streamEmptyHelper: "Ingest arXiv, capture web pages, or accept candidates to start the stream.",
+      signalsTitle: "Application signals",
+      signalsSubtitle: "Only deadlines and task risks that affect information-gathering priority",
+      signalsBody: "This section is no longer the dashboard core — it only reminds you which application actions change the next information-gathering priority.",
+      signalsUrgent: "30-day tasks",
+      signalsOverdue: "Overdue",
+      signalsCompletion: "Completion",
+      dbLabel: "Database Inventory",
+      dbLoading: "loading",
+      dbCurrent: "current",
+      coverageUni: "University entries",
+      coverageUniHint: "Target schools, official sites, baseline positioning",
+      coveragePrograms: "Programs & deadlines",
+      coverageProgramsHint: "SGU programs, application windows, material requirements",
+      coverageProfessors: "Professors / Labs",
+      coverageProfessorsHint: "Research targets, lab pages, advisor leads",
+      coveragePapers: "Papers & research signals",
+      coveragePapersHint: "Main paper library + pending candidates",
+      coverageCaptures: "Browser captures",
+      coverageCapturesHint: "Unstructured material saved from web pages",
+      coverageTasks: "Supporting tasks",
+      coverageTasksHint: "For information-gathering priority only",
+      gapNoPrograms: "Programs not yet structured",
+      gapNoProgramsDetail: "Missing program names, application windows, material requirements, and official URLs. This gap directly affects decision quality.",
+      gapNoProfessors: "Professor / lab leads insufficient",
+      gapNoProfessorsDetail: "Information gaps are most common between advisors, lab pages, research groups, and recent outputs — prioritize filling these.",
+      gapFewUniversities: "Target university pool too narrow",
+      gapFewUniversitiesDetail: "Maintain at least 5 target university entries for cross-comparing programs, advisors, and application rhythm.",
+      gapNoPapers: "Main paper library empty",
+      gapNoPapersDetail: "Only accepted Review Queue items become reusable research evidence — the sediment layer is missing.",
+      gapCandidateBacklog: "Candidate backlog",
+      gapCandidateBacklogDetail: "Too many unreviewed resources reduce data credibility. Filter low-relevance candidates before continuing ingestion.",
+      gapNoTasks: "Deadlines not yet extracted",
+      gapNoTasksDetail: "Application tasks aren't the main axis, but deadlines determine information-gathering order — keep basic nodes.",
+      gapNone: "No obvious information gaps",
+      gapNoneDetail: "The current library has baseline coverage. Continue expanding sources and improving data credibility.",
+      gapNoProgramsFor: (name) => `${name} has no structured programs`,
+      gapNoProgramsForDetail: (name) => `Missing program names, application windows, and material requirements for ${name}.`,
+      gapNoProfessorsFor: (name) => `${name} lacks professor / lab leads`,
+      gapNoProfessorsForDetail: (name) => `No professor or lab data for ${name} — this is where information gaps are largest.`,
+      heroStatInbox: "Inbox",
+      heroStatEntries: "Entries",
+      heroStatSources: "Sources",
+    },
+    review2: {
+      title: "Review",
+      description: "Buffer before candidates land in the main library.",
+      accept: "Accept",
+      ignore: "Ignore",
+      accepting: "Accepting…",
+      ignoring: "Ignoring…",
+      accepted: "Accepted",
+      ignored: "Ignored",
+      noResults: "Review queue clear",
+      noResultsHelper: "New arXiv candidates appear after each scheduled run.",
+    },
+    universityDetail: {
+      programsTitle: "Programs",
+      professorsTitle: "Professors",
+      labsTitle: "Labs",
+      statsTitle: "Stats",
+      paperCount: "Papers",
+      taskCount: "Tasks",
+      noPrograms: "No programs",
+      noProfessors: "No professors",
+      noLabs: "No labs",
+      deadline: "Deadline",
+      researchKeywords: "Research areas",
     },
     entityType: { university: "University", program: "Program", professor: "Professor", lab: "Lab", paper: "Paper", candidate: "Candidate", task: "Task" },
   },
@@ -403,9 +846,9 @@ export const LOCALES: Record<LangCode, Locale> = {
     pages: {
       dashboard: { title: "ダッシュボード", description: "Dashboard" },
       universities: { title: "大学", description: "志望校データベースは次回 React テーブルに移行します。" },
-      professors: { title: "教授", description: "教授・研究方向ビューは新しいコンポーネント体系を採用します。" },
-      labs: { title: "研究室", description: "研究室・キーワード・最近の論文は後続パスで再構築します。" },
-      programs: { title: "プログラム", description: "SGU プログラムと締切は同じフィルタ UI を共有します。" },
+      professors: { title: "教授", description: "志望校の教授・指導教員情報 — 研究方向・連絡先・研究室所属。" },
+      labs: { title: "研究室", description: "研究グループ・研究室 — 重点領域・最近の論文・責任者。" },
+      programs: { title: "プログラム", description: "SGU 英語プログラム — 出願窓口・言語要件・学費情報。" },
       papers: { title: "論文レーダー", description: "登録済み論文ライブラリは高密度の研究テーブルになります。" },
       review: { title: "レビュー", description: "レビュー待ちは accept/ignore のままカード形式に進化します。" },
       timeline: { title: "タイムライン", description: "TOEFL / JLPT / SOP / 推薦状 / 出願締切のガントビュー。" },
@@ -444,6 +887,16 @@ export const LOCALES: Record<LangCode, Locale> = {
       legendHigh: "高優先",
       legendMedium: "通常",
       legendDone: "完了",
+      newTask: "新規タスク",
+      titleLabel: "タイトル",
+      deadlineLabel: "締切",
+      priorityLabel: "優先度",
+      taskTypeLabel: "タイプ",
+      notesLabel: "メモ",
+      save: "保存",
+      cancel: "キャンセル",
+      delete: "削除",
+      deleteConfirm: "削除しますか？",
     },
     sources: {
       title: "ソース・連携",
@@ -469,6 +922,147 @@ export const LOCALES: Record<LangCode, Locale> = {
       submit: "保存",
       success: "レビューキューに保存しました",
       cancel: "キャンセル",
+      classificationLabel: "検出",
+      classifiedTypes: {
+        "lab-page": "研究室ページ",
+        "professor-page": "教授ページ",
+        "program-page": "プログラムページ",
+        "course-page": "コースページ",
+        "university-page": "大学ページ",
+        arxiv: "arXiv 論文",
+        scholar: "Google Scholar",
+        dblp: "DBLP 論文",
+        "semantic-scholar": "Semantic Scholar",
+      },
+    },
+    professors: {
+      title: "教授・指導教員",
+      description: "志望校の教授・指導教員情報 — 研究方向・連絡先・研究室所属。",
+      university: "所属大学",
+      researchKeywords: "研究分野",
+      email: "メール",
+      website: "ウェブサイト",
+      noResults: "教授情報なし",
+      noResultsHelper: "データソースまたは手動で教授を追加すると、ここに一覧が表示されます。",
+    },
+    labs: {
+      title: "研究室",
+      description: "研究グループ・研究室 — 重点領域・最近の論文・責任者。",
+      university: "所属大学",
+      director: "責任者",
+      researchKeywords: "研究分野",
+      recentPapers: "最近の論文",
+      website: "ウェブサイト",
+      noResults: "研究室情報なし",
+      noResultsHelper: "研究室を追加すると、研究グループ一覧が表示されます。",
+    },
+    programs: {
+      title: "プログラム",
+      description: "SGU 英語プログラム — 出願窓口・言語要件・学費情報。",
+      university: "所属大学",
+      degree: "学位",
+      language: "授業言語",
+      deadline: "出願締切",
+      requirements: "出願要件",
+      scholarship: "奨学金",
+      tuition: "学費",
+      website: "プログラムサイト",
+      noResults: "プログラム情報なし",
+      noResultsHelper: "SGU プログラムを追加すると、締切と要件がここに表示されます。",
+    },
+    dashboard2: {
+      heroLabel: "Intelligence Library",
+      heroTitle: "情報格差を打破する研究リソースライブラリ",
+      heroBody: "ダッシュボードは今、何がキャプチャされたか、どのソースのカバレッジが不足しているか、どのキーワードが台頭しているか、どの資料がメインライブラリに値するかを優先的に回答します。出願タイムラインと意思決定シグナルは補助層として維持されます。",
+      inboxLabel: "Intelligence Inbox",
+      inboxLoading: "リソースエントリを整理中",
+      inboxCountFmt: (n) => `${n} 件の新規リソースが審査待ち`,
+      inboxBody: "ここがシステムのメインエントリです：arXiv 候補、ブラウザキャプチャ、手動保存リンク、最近の論文がまずバッファ層に入り、人間の判断を経て正式ライブラリに沈殿します。",
+      inboxPending: "未確認",
+      inboxManualCaptures: "手動キャプチャ",
+      inboxSourceTypes: "ソース種別",
+      inboxLoadingSource: "ソースを集計中…",
+      inboxEmptySource: "ソースデータなし。取り込みを実行するか、ブラウザキャプチャでリソースを保存してください。",
+      gapsTitle: "情報ギャップ",
+      gapsSubtitle: "どの領域の証拠が不足しているかを発見",
+      gapsLoading: "ギャップをスキャン中…",
+      coverageTitle: "ソースカバレッジ",
+      coverageSubtitle: "ライブラリを出願チェックリストから検証可能な情報ネットワークへ",
+      radarTitle: "キーワードレーダー",
+      radarSubtitle: "候補論文と正式論文から注目研究方向を抽出",
+      radarEmpty: "キーワード命中なし",
+      radarEmptyHelper: "候補論文や正式論文がライブラリに入ると、研究方向トレンドが表示されます。",
+      streamTitle: "リソースストリーム",
+      streamSubtitle: "最近のキャプチャ・候補論文・正式論文の統合ビュー",
+      streamEmpty: "リソースなし",
+      streamEmptyHelper: "arXiv を取り込み、ウェブページをキャプチャ、または候補を受け入れるとストリームが開始されます。",
+      signalsTitle: "出願補助シグナル",
+      signalsSubtitle: "情報収集優先度に影響する締切とタスクリスクのみ",
+      signalsBody: "このセクションはダッシュボードのコアではありません — 次の情報収集優先度を変更する出願アクションのみをリマインドします。",
+      signalsUrgent: "30 日以内タスク",
+      signalsOverdue: "期限超過",
+      signalsCompletion: "完了率",
+      dbLabel: "Database Inventory",
+      dbLoading: "loading",
+      dbCurrent: "current",
+      coverageUni: "大学エントリ",
+      coverageUniHint: "志望校・公式サイト・基本ポジショニング",
+      coveragePrograms: "プログラム・締切",
+      coverageProgramsHint: "SGU プログラム・出願窓口・書類要件",
+      coverageProfessors: "教授 / 研究室",
+      coverageProfessorsHint: "研究対象・ラボページ・指導教員の手がかり",
+      coveragePapers: "論文・研究シグナル",
+      coveragePapersHint: "正式論文ライブラリ + 未確認候補",
+      coverageCaptures: "ブラウザキャプチャ",
+      coverageCapturesHint: "ウェブページから一時保存した非構造化資料",
+      coverageTasks: "補助タスク",
+      coverageTasksHint: "情報収集優先度の参考のみ",
+      gapNoPrograms: "プログラム情報が未構造化",
+      gapNoProgramsDetail: "プログラム名・出願窓口・書類要件・公式 URL が不足。このギャップは意思決定品質に直接影響します。",
+      gapNoProfessors: "教授 / 研究室の手がかり不足",
+      gapNoProfessorsDetail: "情報ギャップは指導教員・ラボ・研究グループページと最近の成果の間に最も生じやすい — これらを優先的に埋めてください。",
+      gapFewUniversities: "志望校プールが狭い",
+      gapFewUniversitiesDetail: "少なくとも 5 つの志望校エントリを維持し、プログラム・指導教員・出願リズムを横断比較できるようにしてください。",
+      gapNoPapers: "正式論文ライブラリが空",
+      gapNoPapersDetail: "レビューキューで承認されたものだけが再利用可能な研究証拠になります — 沈殿層が欠けています。",
+      gapCandidateBacklog: "候補バックログ",
+      gapCandidateBacklogDetail: "未確認リソースが多すぎるとデータの信頼性が低下します。低関連候補を除外してから取り込みを続けてください。",
+      gapNoTasks: "締切が未抽出",
+      gapNoTasksDetail: "出願タスクは主軸ではありませんが、締切が情報収集順序を決定します — 基本ノードを維持してください。",
+      gapNone: "明らかな情報ギャップなし",
+      gapNoneDetail: "現在のライブラリは基本カバレッジを備えています。ソースの拡大とデータ信頼性の向上を続けてください。",
+      gapNoProgramsFor: (name) => `${name} に構造化されたプログラム情報なし`,
+      gapNoProgramsForDetail: (name) => `${name} のプログラム名・出願窓口・書類要件が不足。意思決定品質に直接影響します。`,
+      gapNoProfessorsFor: (name) => `${name} に教授/研究室の手がかり不足`,
+      gapNoProfessorsForDetail: (name) => `${name} の教授・研究室データなし — 情報ギャップが最大の領域です。`,
+      heroStatInbox: "受信箱",
+      heroStatEntries: "エントリ",
+      heroStatSources: "ソース",
+    },
+    review2: {
+      title: "レビュー",
+      description: "候補が正式ライブラリに入る前のバッファ。",
+      accept: "承認",
+      ignore: "無視",
+      accepting: "承認中…",
+      ignoring: "無視中…",
+      accepted: "承認済み",
+      ignored: "無視済み",
+      noResults: "レビューキューは空です",
+      noResultsHelper: "新しい候補は次回のスケジュール後に表示されます。",
+    },
+    universityDetail: {
+      programsTitle: "プログラム",
+      professorsTitle: "教授",
+      labsTitle: "研究室",
+      statsTitle: "統計",
+      paperCount: "論文",
+      taskCount: "タスク",
+      noPrograms: "プログラムなし",
+      noProfessors: "教授なし",
+      noLabs: "研究室なし",
+      deadline: "締切",
+      researchKeywords: "研究分野",
     },
     entityType: { university: "大学", program: "プログラム", professor: "教授", lab: "研究室", paper: "論文", candidate: "候補", task: "タスク" },
   },

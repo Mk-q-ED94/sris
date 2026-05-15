@@ -3,8 +3,8 @@ import type { Env } from "./env";
 import { HttpError, JSON_HEADERS, json } from "./http";
 import { requireApiToken, requireApiTokenOrQuery, requireCron } from "./auth";
 import { initializeDatabase } from "./db/schema";
-import { listRows } from "./db/queries";
-import { normalizeCandidate } from "./db/normalize";
+import { listRows, countRows } from "./db/queries";
+import { normalizeCandidate, normalizeRow } from "./db/normalize";
 import { dashboard } from "./routes/dashboard";
 import { acceptCandidate, ignoreCandidate } from "./routes/review";
 import { handleCrud } from "./routes/crud";
@@ -84,6 +84,19 @@ export default {
       const ignoreMatch = url.pathname.match(/^\/api\/review\/papers\/([^/]+)\/ignore$/);
       if (ignoreMatch && request.method === "POST") {
         return json(await ignoreCandidate(env.DB, ignoreMatch[1]!));
+      }
+
+      const uniDetailMatch = url.pathname.match(/^\/api\/universities\/([^/]+)$/);
+      if (uniDetailMatch && request.method === "GET") {
+        const uniId = uniDetailMatch[1]!;
+        const university = await env.DB.prepare("select * from universities where id = ?").bind(uniId).first<Record<string, unknown>>();
+        if (!university) return json({ error: "University not found" }, 404);
+        const programs = (await listRows(env.DB, "programs", "university_id = ?", [uniId], "deadline asc, program_name asc")).map((r) => normalizeRow(r, []));
+        const professors = (await listRows(env.DB, "professors", "university_id = ?", [uniId], "name asc")).map((r) => normalizeRow(r, ["research_keywords"]));
+        const labs = (await listRows(env.DB, "labs", "university_id = ?", [uniId], "lab_name asc")).map((r) => normalizeRow(r, ["research_keywords", "recent_papers"]));
+        const paperCount = await countRows(env.DB, "papers");
+        const taskCount = await countRows(env.DB, "timeline_tasks", "related_university_id = ?", [uniId]);
+        return json({ university: normalizeRow(university, []), programs, professors, labs, paper_count: paperCount, task_count: taskCount });
       }
 
       const crudResponse = await handleCrud(env.DB, request, url.pathname);

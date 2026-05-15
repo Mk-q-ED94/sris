@@ -41,12 +41,28 @@ export type TimelineTask = {
   updated_at?: string | null;
 };
 
+export type CoverageItem = {
+  label_key: string;
+  value: number;
+  target: number;
+  tone: "strong" | "medium" | "weak";
+};
+
+export type GapItem = {
+  label_key: string;
+  priority: "high" | "medium" | "low";
+  university_id?: string;
+  university_name?: string;
+};
+
 export type DashboardSummary = {
   counts: Counts;
   recent_papers: Paper[];
   pending_candidates: PaperCandidate[];
   upcoming_tasks: TimelineTask[];
   recent_updates: Array<{ label: string; value: string }>;
+  coverage: CoverageItem[];
+  gaps: GapItem[];
 };
 
 export type SearchHit = {
@@ -60,6 +76,59 @@ export type SearchHit = {
 export type SearchResponse = {
   query: string;
   hits: SearchHit[];
+};
+
+export type University = {
+  id: string;
+  name: string;
+  location?: string | null;
+  website?: string | null;
+  tuition?: number | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type Professor = {
+  id: string;
+  university_id: string;
+  name: string;
+  title?: string | null;
+  email?: string | null;
+  website?: string | null;
+  research_keywords: string[];
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type Lab = {
+  id: string;
+  university_id: string;
+  professor_id?: string | null;
+  lab_name: string;
+  research_keywords: string[];
+  website?: string | null;
+  recent_papers: string[];
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type Program = {
+  id: string;
+  university_id: string;
+  program_name: string;
+  degree?: string | null;
+  language?: string | null;
+  deadline?: string | null;
+  requirements?: string | null;
+  scholarship?: string | null;
+  tuition?: number | null;
+  website?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type QuickCaptureResponse = { id: string; status: string };
