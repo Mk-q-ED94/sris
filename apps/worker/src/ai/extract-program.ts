@@ -1,11 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { extractText, getDocumentProxy } from "unpdf";
 
 /**
- * What we ask Claude to return for each admission-notice PDF.
+ * Structured facts we ask the LLM to return per admission-notice PDF.
  *
- * Optional fields are nullable so the model has a way to say "the PDF doesn't
- * answer this" without hallucinating a value. `cycles` is an array because
- * many programs run spring + fall in one PDF.
+ * Nullable fields are how the model says "the PDF doesn't answer this"
+ * without hallucinating. `cycles` is an array because many programs run
+ * spring + fall in one PDF.
  */
 export interface ExtractedProgramFields {
   program_name: string;
@@ -45,9 +45,11 @@ export interface ExtractedProgramFields {
   unresolved_questions: string[];
 }
 
-// JSON Schema for structured-outputs. Anthropic strict-mode requires every
-// property to be listed in `required` and `additionalProperties: false` on
-// every object. We use null instead of optional for "unknown" values.
+// OpenAI structured-outputs strict-mode JSON Schema:
+//   - additionalProperties: false on every object
+//   - every property in `required`
+//   - nullability via type array: ["string", "null"]
+//   - allowed types: string / number / boolean / integer / object / array / null
 const EXTRACTION_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -137,9 +139,7 @@ const EXTRACTION_SCHEMA = {
   ],
 } as const;
 
-// Frozen system prompt — this is the cached prefix. Keep deterministic;
-// never interpolate timestamps / per-request ids here or caching breaks.
-const SYSTEM_PROMPT = `You are an admissions analyst extracting structured facts from Japanese university SGU master's program admission notices. The input is a PDF in English, Japanese, or both.
+const SYSTEM_PROMPT = `You are an admissions analyst extracting structured facts from Japanese university SGU master's program admission notices. The input is plain text extracted from a PDF — text in English, Japanese, or both.
 
 Extraction rules:
 1. Return ALL dates in ISO 8601 (YYYY-MM-DD). When a window is given (e.g. "Oct 20-24, 2025"), put the range in cycle_name or exam_period; put the close date in application_close.
@@ -151,30 +151,44 @@ Extraction rules:
 7. mext_eligible is true if the PDF explicitly mentions MEXT scholarship eligibility, university recommendation to MEXT, or "Japanese Government Scholarship".
 8. supervisor_consent_required is true if the PDF says applicants must contact / obtain consent from a prospective supervisor before applying.
 9. documents_required lists short labels: ["SOP", "Transcripts", "Recommendation letters x2", "Research plan", "Degree certificate", "English score", "CV"]. Do NOT include things that are merely the application form itself.
-10. extraction_confidence is your honest 0.0-1.0 estimate of how completely the PDF answered the schema. If the PDF is mostly application forms with little prose, return 0.3-0.5 and put the gaps in unresolved_questions.
-11. unresolved_questions: bullet what a applicant would still need to look up (e.g. "specific GPA minimum", "exact exam fee", "thesis page limit"). Keep each item under 12 words.
+10. extraction_confidence is your honest 0.0-1.0 estimate of how completely the PDF answered the schema. If the PDF text seems truncated or is mostly form fields with little prose, return 0.3-0.5 and put the gaps in unresolved_questions.
+11. unresolved_questions: bullet what an applicant would still need to look up (e.g. "specific GPA minimum", "exact exam fee", "thesis page limit"). Keep each item under 12 words.
 12. NEVER hallucinate. If the PDF doesn't answer a field, return null / empty array / "" — do not infer from common knowledge about Japanese university admissions.
 
 Return the JSON object directly. No prose before or after.`;
-
-const MODEL_ID = "claude-haiku-4-5" as const;
 
 export interface ExtractionResult {
   facts: ExtractedProgramFields;
   usage: {
     input_tokens: number;
     output_tokens: number;
-    cache_creation_input_tokens: number;
     cache_read_input_tokens: number;
+    cache_creation_input_tokens: number;
   };
   model: string;
 }
 
+export interface LlmConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+}
+
 /**
- * Download a PDF and return its bytes as a base64 string for Anthropic.
- * Workers can't use Buffer; we walk the Uint8Array manually.
+ * Fetch a PDF and extract its plain text.
+ *
+ * unpdf is a serverless-optimized wrapper around pdf.js. It does the text
+ * extraction synchronously in the Worker isolate without needing a separate
+ * worker thread or canvas. Image-only PDFs come back empty; if you see
+ * empty text from an admission PDF that's clearly text-bearing, the
+ * upstream site is probably serving a scan.
+ *
+ * `MAX_CHARS` caps the prompt size at ~60k tokens for safety on
+ * 128k-context models. Each admission PDF is typically 30k-80k chars.
  */
-async function fetchPdfBase64(url: string): Promise<string> {
+const MAX_CHARS = 250_000;
+
+async function fetchPdfText(url: string): Promise<{ text: string; totalPages: number }> {
   const response = await fetch(url, {
     headers: {
       "user-agent":
@@ -189,90 +203,97 @@ async function fetchPdfBase64(url: string): Promise<string> {
   if (!contentType.includes("pdf") && !url.toLowerCase().endsWith(".pdf")) {
     throw new Error(`Not a PDF (content-type: ${contentType}): ${url}`);
   }
-  const buffer = await response.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  // 32k chunk size keeps the call stack within limits on the V8 isolate.
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode.apply(
-      null,
-      Array.from(bytes.subarray(i, i + CHUNK)),
-    );
+  const buffer = new Uint8Array(await response.arrayBuffer());
+  const pdf = await getDocumentProxy(buffer);
+  const result = await extractText(pdf, { mergePages: true });
+  const text = Array.isArray(result.text) ? result.text.join("\n") : result.text;
+  if (text.length === 0) {
+    throw new Error(`PDF parsed but contained no text (probably an image scan): ${url}`);
   }
-  return btoa(binary);
+  const trimmed =
+    text.length > MAX_CHARS
+      ? text.slice(0, MAX_CHARS) + "\n\n[... PDF truncated to fit context window ...]"
+      : text;
+  return { text: trimmed, totalPages: result.totalPages };
+}
+
+interface OpenAIResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    prompt_tokens_details?: { cached_tokens?: number };
+  };
+  model?: string;
+  error?: { message?: string };
 }
 
 /**
- * Run Claude Haiku 4.5 over a single PDF URL and return the parsed fields.
+ * Extract structured program fields from a single admission-notice PDF.
  *
- * The system prompt + JSON schema instructions are sent with
- * `cache_control: ephemeral` so subsequent calls in the same batch hit the
- * cache at ~10% of input price. Per-PDF cost on Haiku 4.5 with a 30-page
- * input ≈ $0.05; a batch of 15 ≈ $0.75 (the user's $0.50 target is met if
- * cache hits land and PDFs are smaller than 25 pages).
+ * Provider-agnostic — works with any OpenAI-compatible /v1/chat/completions
+ * endpoint that supports `response_format: json_schema` with strict mode.
+ * Tested targets: OpenAI (gpt-4o-mini, gpt-4.1-mini), DeepSeek (deepseek-chat),
+ * OpenRouter (any model with structured-outputs support), self-hosted
+ * LiteLLM proxies.
+ *
+ * Cost depends entirely on the chosen provider/model. The `usage` returned
+ * lets the caller convert to dollars at whatever rate they're paying.
  */
 export async function extractProgramFields(
-  apiKey: string,
+  config: LlmConfig,
   pdfUrl: string,
 ): Promise<ExtractionResult> {
-  const client = new Anthropic({ apiKey });
-  const base64Pdf = await fetchPdfBase64(pdfUrl);
+  const { text, totalPages } = await fetchPdfText(pdfUrl);
 
-  const response = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 4096,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    output_config: {
-      format: {
-        type: "json_schema",
-        // The Anthropic TS SDK types are looser than the runtime schema;
-        // casting through unknown keeps the call site honest while still
-        // accepting the structured-outputs schema we hand-rolled above.
-        schema: EXTRACTION_SCHEMA as unknown as Record<string, unknown>,
-      },
+  const response = await fetch(`${config.baseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${config.apiKey}`,
     },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: base64Pdf,
-            },
-          },
-          {
-            type: "text",
-            text: `Source URL: ${pdfUrl}\n\nExtract every field defined in the JSON schema from this admission-guideline PDF. Return only the JSON object.`,
-          },
-        ],
+    body: JSON.stringify({
+      model: config.model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: `Source URL: ${pdfUrl}\nExtracted PDF text (${totalPages} pages):\n\n---BEGIN PDF TEXT---\n${text}\n---END PDF TEXT---\n\nExtract every field defined in the JSON schema. Return only the JSON object.`,
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "program_extraction",
+          strict: true,
+          schema: EXTRACTION_SCHEMA,
+        },
       },
-    ],
+      max_tokens: 4096,
+      temperature: 0,
+    }),
   });
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Anthropic response contained no text block");
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`LLM API ${response.status}: ${body.slice(0, 500)}`);
   }
-  const facts = JSON.parse(textBlock.text) as ExtractedProgramFields;
+
+  const data = (await response.json()) as OpenAIResponse;
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error(`LLM returned no content: ${JSON.stringify(data).slice(0, 300)}`);
+  }
+  const facts = JSON.parse(content) as ExtractedProgramFields;
 
   return {
     facts,
     usage: {
-      input_tokens: response.usage.input_tokens,
-      output_tokens: response.usage.output_tokens,
-      cache_creation_input_tokens: response.usage.cache_creation_input_tokens ?? 0,
-      cache_read_input_tokens: response.usage.cache_read_input_tokens ?? 0,
+      input_tokens: data.usage?.prompt_tokens ?? 0,
+      output_tokens: data.usage?.completion_tokens ?? 0,
+      cache_read_input_tokens: data.usage?.prompt_tokens_details?.cached_tokens ?? 0,
+      cache_creation_input_tokens: 0,
     },
-    model: response.model,
+    model: data.model ?? config.model,
   };
 }

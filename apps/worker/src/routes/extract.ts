@@ -1,7 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import type { Env } from "../env";
 import { httpError } from "../http";
-import { extractProgramFields } from "../ai/extract-program";
+import { extractProgramFields, type LlmConfig } from "../ai/extract-program";
 
 interface ResourceRow {
   id: string;
@@ -22,6 +22,17 @@ interface Usage {
   cache_creation_input_tokens: number;
 }
 
+function llmConfigFromEnv(env: Env): LlmConfig {
+  if (!env.LLM_API_KEY) {
+    throw httpError(500, "LLM_API_KEY secret is not configured");
+  }
+  return {
+    apiKey: env.LLM_API_KEY,
+    baseUrl: env.LLM_BASE_URL || "https://api.openai.com/v1",
+    model: env.LLM_MODEL || "gpt-4o-mini",
+  };
+}
+
 async function loadResource(db: D1Database, id: string): Promise<ResourceRow> {
   const row = await db
     .prepare(
@@ -36,16 +47,15 @@ async function loadResource(db: D1Database, id: string): Promise<ResourceRow> {
 async function runExtraction(
   env: Env,
   resource: ResourceRow,
-): Promise<{ ok: true; usage: Usage }> {
-  if (!env.ANTHROPIC_API_KEY) {
-    throw httpError(500, "ANTHROPIC_API_KEY secret is not configured");
-  }
+): Promise<{ ok: true; usage: Usage; model: string }> {
   if (resource.resource_type !== "admission_notice") {
     throw httpError(
       400,
       `Resource ${resource.id} has type '${resource.resource_type}'; only 'admission_notice' is supported`,
     );
   }
+
+  const config = llmConfigFromEnv(env);
 
   await env.DB.prepare(
     "UPDATE intelligence_resources SET extraction_status = 'running', extraction_error = NULL, updated_at = ? WHERE id = ?",
@@ -54,7 +64,7 @@ async function runExtraction(
     .run();
 
   try {
-    const result = await extractProgramFields(env.ANTHROPIC_API_KEY, resource.url);
+    const result = await extractProgramFields(config, resource.url);
     const now = new Date().toISOString();
     await env.DB.prepare(
       `UPDATE intelligence_resources
@@ -80,7 +90,7 @@ async function runExtraction(
         resource.id,
       )
       .run();
-    return { ok: true, usage: result.usage };
+    return { ok: true, usage: result.usage, model: result.model };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await env.DB.prepare(
@@ -105,8 +115,8 @@ export async function extractOneResource(
       reason: "already extracted (pass ?force=1 to re-run)",
     };
   }
-  const { usage } = await runExtraction(env, resource);
-  return { id: resource.id, status: "succeeded", usage };
+  const { usage, model } = await runExtraction(env, resource);
+  return { id: resource.id, status: "succeeded", model, usage };
 }
 
 export async function extractAllResources(
@@ -123,14 +133,14 @@ export async function extractAllResources(
       ).all<ResourceRow>()
     ).results || [];
 
-  const results: Array<{ id: string; status: string; error?: string; usage?: Usage }> = [];
+  const results: Array<{ id: string; status: string; error?: string; usage?: Usage; model?: string }> = [];
   let totalIn = 0;
   let totalOut = 0;
   let totalCached = 0;
   for (const row of rows) {
     try {
-      const { usage } = await runExtraction(env, row);
-      results.push({ id: row.id, status: "succeeded", usage });
+      const { usage, model } = await runExtraction(env, row);
+      results.push({ id: row.id, status: "succeeded", usage, model });
       totalIn += usage.input_tokens;
       totalOut += usage.output_tokens;
       totalCached += usage.cache_read_input_tokens;
@@ -140,12 +150,6 @@ export async function extractAllResources(
     }
   }
 
-  // Haiku 4.5 pricing: $1/M input (non-cached), $0.10/M cached, $5/M output
-  const estimatedCostUsd =
-    ((totalIn - totalCached) / 1_000_000) * 1.0 +
-    (totalCached / 1_000_000) * 0.1 +
-    (totalOut / 1_000_000) * 5.0;
-
   return {
     processed: results.length,
     succeeded: results.filter((r) => r.status === "succeeded").length,
@@ -154,7 +158,6 @@ export async function extractAllResources(
       input_tokens: totalIn,
       output_tokens: totalOut,
       cache_read_input_tokens: totalCached,
-      estimated_cost_usd: Number(estimatedCostUsd.toFixed(4)),
     },
     results,
   };
