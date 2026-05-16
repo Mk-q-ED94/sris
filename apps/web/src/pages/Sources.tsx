@@ -1,8 +1,8 @@
-import { Bookmark, CalendarRange, Check, Copy, Plus, Radar, AlertTriangle, Pencil, Trash2, Globe2 } from "lucide-react";
+import { Bookmark, CalendarRange, Check, Copy, Plus, Radar, AlertTriangle, Pencil, Trash2, Globe2, RefreshCw, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { buildIcalUrl, fetchRadarSources, createRadarSource, updateRadarSource, deleteRadarSource, fetchUniversities, type RadarSource } from "../lib/api";
+import { buildIcalUrl, fetchRadarSources, createRadarSource, updateRadarSource, deleteRadarSource, fetchUniversities, patrolSource, runPatrol, type RadarSource } from "../lib/api";
 import { formatDate } from "../lib/format";
 import type { University } from "../types/sris";
 
@@ -36,6 +36,8 @@ export function Sources() {
   const [formFrequency, setFormFrequency] = useState("daily");
   const [formEnabled, setFormEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [patrollingId, setPatrollingId] = useState<string | null>(null);
+  const [batchPatrolling, setBatchPatrolling] = useState(false);
 
   async function copy(value: string, setter: (b: boolean) => void) {
     try {
@@ -114,6 +116,29 @@ export function Sources() {
     return diff > 7 * 24 * 60 * 60 * 1000;
   }
 
+  async function handlePatrolSource(id: string) {
+    setPatrollingId(id);
+    try { await patrolSource(token, id); } catch { /* */ }
+    setPatrollingId(null);
+    loadSources();
+  }
+
+  async function handleRunPatrol() {
+    setBatchPatrolling(true);
+    try { await runPatrol(token); } catch { /* */ }
+    setBatchPatrolling(false);
+    loadSources();
+  }
+
+  function patrolBadge(status?: string | null) {
+    if (!status || status === "never_checked") return { label: t.sources.patrolNeverChecked, cls: "bg-[var(--color-hairline)] text-[var(--color-muted)]" };
+    if (status === "ok") return { label: t.sources.patrolOk, cls: "bg-green-100 text-green-700" };
+    if (status === "changed") return { label: t.sources.patrolChanged, cls: "bg-amber-100 text-amber-700" };
+    if (status === "failed") return { label: t.sources.patrolFailed, cls: "bg-red-100 text-red-700" };
+    if (status === "stale") return { label: t.sources.patrolStale, cls: "bg-amber-100 text-amber-700" };
+    return { label: status, cls: "bg-[var(--color-hairline)] text-[var(--color-muted)]" };
+  }
+
   return (
     <div className="space-y-10">
       <div>
@@ -144,6 +169,15 @@ export function Sources() {
             <Plus className="h-3.5 w-3.5" />
             {t.sources.newSource}
           </button>
+          <button
+            type="button"
+            onClick={handleRunPatrol}
+            disabled={batchPatrolling}
+            className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-4 text-[12px] font-medium text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)] disabled:opacity-40"
+          >
+            {batchPatrolling ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+            {batchPatrolling ? t.sources.patrolling : t.sources.runPatrol}
+          </button>
         </div>
 
         {loading ? (
@@ -162,12 +196,18 @@ export function Sources() {
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.universityLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.confidenceLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.lastRunLabel}</th>
+                  <th className="px-4 py-3 font-medium text-[var(--color-muted)]">Patrol</th>
+                  <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.lastChecked}</th>
+                  <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.conflicts.reliabilityScore}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.enabledLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-hairline)]">
-                {sources.map((src) => (
+                {sources.map((src) => {
+                  const badge = patrolBadge(src.patrol_status);
+                  const isNonArxiv = src.source_type !== "arxiv" && !!src.url;
+                  return (
                   <tr key={src.id} className={isStale(src) ? "bg-[var(--color-todai-soft)]/30" : ""}>
                     <td className="px-4 py-3 font-medium text-[var(--color-ink)]">
                       <div className="flex items-center gap-2">
@@ -196,6 +236,36 @@ export function Sources() {
                       )}
                     </td>
                     <td className="px-4 py-3">
+                      {isNonArxiv ? (
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${badge.cls}`}>
+                            {badge.label}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handlePatrolSource(src.id)}
+                            disabled={patrollingId === src.id}
+                            className="text-[var(--color-subtle)] transition-colors hover:text-[var(--color-todai)] disabled:opacity-40"
+                            title={t.sources.checkNow}
+                          >
+                            {patrollingId === src.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-[var(--color-subtle)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--color-muted)] text-[11px]">
+                      {src.last_checked_at ? formatDate(src.last_checked_at, t.dateLocale, "—") : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-[11px]">
+                      {src.reliability_score != null ? (
+                        <span className={`mono ${(src.reliability_score ?? 0) >= 0.7 ? "text-emerald-600" : (src.reliability_score ?? 0) >= 0.4 ? "text-amber-600" : "text-red-600"}`}>
+                          {(src.reliability_score * 100).toFixed(0)}%
+                        </span>
+                      ) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
                       <span className={`inline-block h-2 w-2 rounded-full ${src.enabled ? "bg-green-500" : "bg-[var(--color-hairline-strong)]"}`} />
                     </td>
                     <td className="px-4 py-3">
@@ -209,7 +279,8 @@ export function Sources() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

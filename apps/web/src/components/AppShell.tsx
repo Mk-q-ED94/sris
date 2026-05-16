@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   BookOpen,
   CalendarDays,
   FlaskConical,
@@ -24,7 +25,8 @@ export type PageKey =
   | "papers"
   | "review"
   | "timeline"
-  | "sources";
+  | "sources"
+  | "conflicts";
 
 const navIcons: Record<PageKey, React.ComponentType<{ className?: string }>> = {
   dashboard: LayoutDashboard,
@@ -36,6 +38,7 @@ const navIcons: Record<PageKey, React.ComponentType<{ className?: string }>> = {
   review: Inbox,
   timeline: CalendarDays,
   sources: Radar,
+  conflicts: AlertTriangle,
 };
 
 const NAV_ORDER: PageKey[] = [
@@ -48,6 +51,7 @@ const NAV_ORDER: PageKey[] = [
   "review",
   "timeline",
   "sources",
+  "conflicts",
 ];
 
 export function AppShell({

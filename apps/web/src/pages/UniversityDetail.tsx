@@ -1,18 +1,20 @@
-import { ArrowLeft, ArrowUpRight, BookOpen, CalendarClock, FlaskConical, Globe2, MapPin, UsersRound, AlertTriangle, FileSearch, Lightbulb } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowUpRight, BookOpen, CalendarClock, FlaskConical, Globe2, MapPin, UsersRound, AlertTriangle, FileSearch, Lightbulb, CheckCircle2, EyeOff, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { featuredUniversities, findFeaturedUniversity } from "../data/universities";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { fetchUniversityDetail } from "../lib/api";
+import { createGapAction, fetchUniversityDetail, updateGapAction } from "../lib/api";
 import { formatDate } from "../lib/format";
-import type { Program, Professor, Lab, IntelligenceResource, UniversityGap } from "../types/sris";
+import type { Program, Professor, Lab, IntelligenceResource, UniversityGap, ResourceType } from "../types/sris";
 
 export function UniversityDetail({
   universityId,
   onBack,
+  onOpenResource,
 }: {
   universityId: string | null;
   onBack: () => void;
+  onOpenResource?: (id: string) => void;
 }) {
   const { token } = useAuth();
   const { t } = useI18n();
@@ -32,28 +34,52 @@ export function UniversityDetail({
   const displayLocation = featured?.location ?? "";
   const displayFocus = featured?.focus ?? "";
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     if (!universityId) return;
-    let cancelled = false;
     setLoading(true);
     fetchUniversityDetail(token, universityId)
       .then((data) => {
-        if (!cancelled) {
-          setPrograms(data.programs);
-          setProfessors(data.professors);
-          setLabs(data.labs);
-          setResources(data.resources);
-          setGaps(data.gaps);
-          setPaperCount(data.paper_count);
-          setTaskCount(data.task_count);
-        }
+        setPrograms(data.programs);
+        setProfessors(data.professors);
+        setLabs(data.labs);
+        setResources(data.resources);
+        setGaps(data.gaps);
+        setPaperCount(data.paper_count);
+        setTaskCount(data.task_count);
       })
       .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
+      .finally(() => setLoading(false));
   }, [token, universityId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  async function handleGapAction(gap: UniversityGap, newStatus: string) {
+    if (!universityId) return;
+    try {
+      if (gap.action_id) {
+        await updateGapAction(token, gap.action_id, { status: newStatus });
+      } else {
+        await createGapAction(token, { gap_key: gap.label_key, university_id: universityId, status: newStatus });
+      }
+      loadData();
+    } catch {
+      // Silent
+    }
+  }
+
+  function gapCaptureUrl(gap: UniversityGap): string {
+    const typeMap: Record<string, ResourceType> = {
+      no_programs_for: "program_page",
+      no_professors_for: "professor_page",
+      few_resources_for: "other",
+      no_admission_for: "admission_notice",
+      no_experience_for: "experience_post",
+    };
+    const resourceType = typeMap[gap.label_key] ?? "other";
+    return `/#capture?&resource_type=${resourceType}&university_id=${universityId ?? ""}`;
+  }
 
   const uniName = useMemo(() => {
     if (featured) return featured.name;
@@ -150,23 +176,60 @@ export function UniversityDetail({
           </div>
           <p className="mb-4 text-[13px] leading-6 text-[var(--color-muted)]">{t.universityDetail.gapsSubtitle}</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {gaps.map((gap) => (
-              <div key={gap.label_key} className="border border-[var(--color-hairline)] bg-[var(--color-surface)] p-4">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className={`h-3.5 w-3.5 ${gap.priority === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-subtle)]"}`} />
-                  <span className={`text-[13px] font-medium ${gap.priority === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
-                    {gapLabel(gap, t)}
-                  </span>
+            {gaps.map((gap) => {
+              const isResolved = gap.action_status === "resolved";
+              const isIgnored = gap.action_status === "ignored";
+              const isInactive = isResolved || isIgnored;
+              return (
+                <div key={gap.label_key} className={`border border-[var(--color-hairline)] bg-[var(--color-surface)] p-4 ${isInactive ? "opacity-50" : ""}`}>
+                  <div className="flex items-center gap-2">
+                    {isResolved ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : isIgnored ? (
+                      <EyeOff className="h-3.5 w-3.5 text-[var(--color-subtle)]" />
+                    ) : (
+                      <AlertTriangle className={`h-3.5 w-3.5 ${gap.priority === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-subtle)]"}`} />
+                    )}
+                    <span className={`text-[13px] font-medium ${isResolved ? "text-emerald-600 line-through" : isIgnored ? "text-[var(--color-subtle)]" : gap.priority === "high" ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
+                      {gapLabel(gap, t)}
+                    </span>
+                    {isResolved && (
+                      <span className="mono inline-flex h-4 items-center bg-emerald-50 px-1 text-[8px] uppercase tracking-[0.1em] text-emerald-600">{t.universityDetail.gapResolved}</span>
+                    )}
+                    {isIgnored && (
+                      <span className="mono inline-flex h-4 items-center bg-gray-50 px-1 text-[8px] uppercase tracking-[0.1em] text-gray-500">{t.universityDetail.gapIgnored}</span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">{gap.priority}</span>
+                    <div className="flex items-center gap-2">
+                      {!isInactive && (
+                        <>
+                          <a href={gapCaptureUrl(gap)} className="inline-flex items-center gap-1 text-[11px] text-[var(--color-todai)] transition-colors hover:underline">
+                            <Lightbulb className="h-3 w-3" />
+                            {t.universityDetail.captureHint}
+                          </a>
+                          <button type="button" onClick={() => handleGapAction(gap, "resolved")} className="inline-flex items-center gap-1 text-[11px] text-emerald-600 transition-colors hover:underline">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {t.universityDetail.gapResolve}
+                          </button>
+                          <button type="button" onClick={() => handleGapAction(gap, "ignored")} className="inline-flex items-center gap-1 text-[11px] text-[var(--color-subtle)] transition-colors hover:underline">
+                            <EyeOff className="h-3 w-3" />
+                            {t.universityDetail.gapIgnore}
+                          </button>
+                        </>
+                      )}
+                      {isInactive && (
+                        <button type="button" onClick={() => handleGapAction(gap, "open")} className="inline-flex items-center gap-1 text-[11px] text-[var(--color-todai)] transition-colors hover:underline">
+                          <RotateCcw className="h-3 w-3" />
+                          {t.universityDetail.gapReopen}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">{gap.priority}</span>
-                  <a href={`/#capture`} className="inline-flex items-center gap-1 text-[11px] text-[var(--color-todai)] transition-colors hover:underline">
-                    <Lightbulb className="h-3 w-3" />
-                    {t.universityDetail.captureHint}
-                  </a>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
@@ -345,12 +408,26 @@ export function UniversityDetail({
                           {res.confidence}
                         </span>
                       )}
+                      <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${res.content_text ? "bg-emerald-50 text-emerald-600" : res.excerpt ? "bg-sky-50 text-sky-600" : "bg-gray-50 text-gray-500"}`}>
+                        {res.content_text ? t.universityDetail.hasSnapshot : res.excerpt ? t.universityDetail.excerptOnly : t.universityDetail.urlOnly}
+                      </span>
                     </div>
                     <h3 className="mt-1.5 text-[14px] font-medium text-[var(--color-ink)]">
-                      <a href={res.url} target="_blank" rel="noreferrer" className="transition-colors hover:text-[var(--color-todai)]">
+                      <a
+                        href={res.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="transition-colors hover:text-[var(--color-todai)]"
+                        onClick={(e) => {
+                          if (onOpenResource) { e.preventDefault(); onOpenResource(res.id); }
+                        }}
+                      >
                         {res.title}
                       </a>
                     </h3>
+                    {res.excerpt && (
+                      <p className="mt-1 line-clamp-2 border-l-2 border-[var(--color-todai)] pl-3 text-[12px] leading-5 text-[var(--color-muted)] italic">{res.excerpt}</p>
+                    )}
                     {res.relevance_note && (
                       <p className="mt-1 text-[12px] leading-5 text-[var(--color-muted)]">{res.relevance_note}</p>
                     )}

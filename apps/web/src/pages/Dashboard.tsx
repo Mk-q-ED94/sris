@@ -66,7 +66,7 @@ type IntelligenceInsights = {
   application: ApplicationSignals;
 };
 
-export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string) => void }) {
+export function Dashboard({ onOpenUniversity, onOpenResource }: { onOpenUniversity: (id: string) => void; onOpenResource?: (id: string) => void }) {
   const { token, clearToken } = useAuth();
   const { t } = useI18n();
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -159,6 +159,29 @@ export function Dashboard({ onOpenUniversity }: { onOpenUniversity: (id: string)
         <SourceCoverage insights={insights} loading={loading} t={t} />
         <KeywordRadar insights={insights} loading={loading} t={t} />
       </section>
+
+      {data?.conflict_counts && data.conflict_counts.open > 0 && (
+        <section className="border border-amber-200 bg-amber-50/30 p-6">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="section-index text-amber-700">{t.conflicts.title}</span>
+          </div>
+          <div className="mt-3 flex gap-6 text-[13px]">
+            <span className="text-amber-700">{t.conflicts.filterOpen}: <strong>{data.conflict_counts.open}</strong></span>
+            <span className="text-[var(--color-muted)]">{t.conflicts.typeStaleUnverified}: {data.conflict_counts.stale_unverified}</span>
+          </div>
+          {data.recent_conflicts && data.recent_conflicts.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {data.recent_conflicts.slice(0, 3).map((c: Record<string, unknown>) => (
+                <div key={String(c.id)} className="text-[12px] text-[var(--color-muted)]">
+                  <span className="mono text-[10px] uppercase text-amber-600">{String(c.conflict_type ?? "").replace(/_/g, " ")}</span>
+                  {" — "}{String(c.description ?? "").slice(0, 100)}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="grid gap-8 xl:grid-cols-[1.35fr_0.85fr]">
         <ResourceStream insights={insights} loading={loading} t={t} />
@@ -356,6 +379,7 @@ function BriefStat({ label, value }: { label: string; value: number | string }) 
 }
 
 function InformationGaps({ insights, loading, t, onOpenUniversity }: { insights: IntelligenceInsights; loading: boolean; t: Locale; onOpenUniversity?: (id: string) => void }) {
+  const activeGaps = insights.gaps.filter((g) => g.action_status !== "resolved" && g.action_status !== "ignored");
   return (
     <Panel index="04" title={t.dashboard2.gapsTitle} subtitle={t.dashboard2.gapsSubtitle}>
       <div className="mb-5 flex items-center gap-2">
@@ -363,7 +387,7 @@ function InformationGaps({ insights, loading, t, onOpenUniversity }: { insights:
         <span className="mono text-[10.5px] uppercase tracking-[0.2em] text-[var(--color-subtle)]">Gap Scan</span>
       </div>
       <ul className="divide-y divide-[var(--color-hairline)]">
-        {(loading ? [] : insights.gaps).map((gap) => {
+        {(loading ? [] : activeGaps).map((gap) => {
           const { title, detail } = gapLabel(gap, t.dashboard2);
           return (
             <li key={`${gap.label_key}-${gap.university_id ?? ""}`} className="py-4 first:pt-0 last:pb-0">
@@ -385,6 +409,9 @@ function InformationGaps({ insights, loading, t, onOpenUniversity }: { insights:
             </li>
           );
         })}
+        {!loading && activeGaps.length === 0 ? (
+          <li className="py-4 text-[13px] text-[var(--color-subtle)]">{t.dashboard2.gapNone}</li>
+        ) : null}
         {loading ? <li className="py-4 text-[13px] text-[var(--color-muted)]">{t.dashboard2.gapsLoading}</li> : null}
       </ul>
     </Panel>

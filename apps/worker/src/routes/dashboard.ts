@@ -14,6 +14,9 @@ interface GapItem {
   priority: "high" | "medium" | "low";
   university_id?: string;
   university_name?: string;
+  action_id?: string | null;
+  action_status?: string | null;
+  resolved_by?: string | null;
 }
 
 export interface DashboardResult {
@@ -38,6 +41,8 @@ export interface DashboardResult {
     gap_count: number;
     latest_update: string | null;
   }>;
+  conflict_counts: { open: number; resolved: number; stale_unverified: number };
+  recent_conflicts: Record<string, unknown>[];
 }
 
 export async function dashboard(db: D1Database): Promise<DashboardResult> {
@@ -76,7 +81,7 @@ export async function dashboard(db: D1Database): Promise<DashboardResult> {
   const coverage = buildCoverage(counts, manualCaptures);
   const gaps = await buildGaps(db, counts);
   const staleSourcesRows = await db
-    .prepare("select id, name, source_type, university_id, last_run_at from radar_sources where enabled = 1 and (last_run_at is null or last_run_at < datetime('now', '-7 day')) order by last_run_at asc limit 5")
+    .prepare("select id, name, source_type, university_id, last_run_at, patrol_status, last_checked_at from radar_sources where enabled = 1 and ((last_run_at is null or last_run_at < datetime('now', '-7 day')) or patrol_status in ('failed', 'stale') or (patrol_status = 'ok' and last_checked_at < datetime('now', '-7 day'))) order by last_run_at asc limit 5")
     .all<Record<string, unknown>>();
   const stale_sources = (staleSourcesRows.results || []).map((r) => normalizeRow(r, []));
 
@@ -109,6 +114,14 @@ export async function dashboard(db: D1Database): Promise<DashboardResult> {
     });
   }
 
+  // Conflict data
+  const openConflicts = await countRows(db, "conflicts", "status = ?", ["open"]);
+  const resolvedConflicts = await countRows(db, "conflicts", "status = ?", ["resolved"]);
+  const staleConflicts = await countRows(db, "conflicts", "conflict_type = ? AND status = ?", ["stale_unverified", "open"]);
+  const recentConflictsRows = await db
+    .prepare("SELECT * FROM conflicts WHERE status = 'open' ORDER BY detected_at DESC LIMIT 3")
+    .all<Record<string, unknown>>();
+
   return {
     counts,
     recent_papers: recentPapers,
@@ -130,6 +143,8 @@ export async function dashboard(db: D1Database): Promise<DashboardResult> {
       pending_review: counts.pending_candidates ?? 0,
     },
     university_stats: universityStats,
+    conflict_counts: { open: openConflicts, resolved: resolvedConflicts, stale_unverified: staleConflicts },
+    recent_conflicts: (recentConflictsRows.results || []).map((r) => normalizeRow(r, ["sources_involved"])),
   };
 }
 
@@ -198,6 +213,18 @@ async function buildGaps(db: D1Database, counts: Record<string, number>, singleU
   }
   if (!gaps.length) {
     gaps.push({ label_key: "none", priority: "low" });
+  }
+
+  // Attach gap_actions status for per-university gaps
+  const allActions = await listRows(db, "gap_actions", null, [], "created_at desc");
+  for (const gap of gaps) {
+    if (!gap.university_id) continue;
+    const action = allActions.find((a) => String(a.gap_key) === gap.label_key && String(a.university_id) === gap.university_id);
+    if (action) {
+      gap.action_id = String(action.id);
+      gap.action_status = String(action.status);
+      gap.resolved_by = action.resolved_by ? String(action.resolved_by) : null;
+    }
   }
 
   return gaps.slice(0, 8);

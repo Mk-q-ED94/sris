@@ -24,7 +24,7 @@ const HIT_PAGE: Record<SearchHit["type"], PageKey> = {
   resource: "universities",
 };
 
-export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & { onNavigate?: (page: PageKey, id?: string) => void }) {
+export function GlobalSearch({ open, onClose, onNavigate, onOpenResource }: GlobalSearchProps & { onNavigate?: (page: PageKey, id?: string) => void; onOpenResource?: (id: string) => void }) {
   const { token } = useAuth();
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -144,12 +144,16 @@ export function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps & 
                   key={`${hit.type}-${hit.id}`}
                   className="cursor-pointer px-5 py-3 hover:bg-[var(--color-paper)]"
                   onClick={() => {
-                    const page = HIT_PAGE[hit.type];
-                    if (page && onNavigate) {
-                      if (hit.type === "university" || hit.type === "resource") {
-                        onNavigate("universities", hit.id);
-                      } else {
-                        onNavigate(page);
+                    if (hit.type === "resource" && onOpenResource) {
+                      onOpenResource(hit.id);
+                    } else {
+                      const page = HIT_PAGE[hit.type];
+                      if (page && onNavigate) {
+                        if (hit.type === "university") {
+                          onNavigate("universities", hit.id);
+                        } else {
+                          onNavigate(page);
+                        }
                       }
                     }
                     onClose();

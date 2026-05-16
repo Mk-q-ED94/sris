@@ -11,10 +11,34 @@ import { handleCrud } from "./routes/crud";
 import { buildTimelineIcs } from "./routes/ical";
 import { globalSearch } from "./routes/search";
 import { quickCapture, type QuickCapturePayload } from "./routes/quickcapture";
+import { fetchUrlContent } from "./routes/fetch";
+import { patrolSource, runPatrol } from "./routes/patrol";
+import { runConflictDetection, resolveConflict, verifyResource } from "./routes/conflict";
+import { runConfidenceUpdate, computeResourceConfidence } from "./routes/confidence";
 import { runIngest } from "./ingest";
 
+async function fetchAndSaveCandidate(db: D1Database, id: string, url: string): Promise<void> {
+  const result = await fetchUrlContent(url);
+  if (!result) return;
+  const now = new Date().toISOString();
+  await db
+    .prepare("update paper_candidates set content_text = ?, raw_snapshot = ?, snapshot_at = ?, updated_at = ? where id = ?")
+    .bind(result.content_text, result.raw_snapshot, now, now, id)
+    .run();
+}
+
+async function fetchAndSaveResource(db: D1Database, id: string, url: string): Promise<void> {
+  const result = await fetchUrlContent(url);
+  if (!result) return;
+  const now = new Date().toISOString();
+  await db
+    .prepare("update intelligence_resources set content_text = ?, raw_snapshot = ?, snapshot_at = ?, updated_at = ? where id = ?")
+    .bind(result.content_text, result.raw_snapshot, now, now, id)
+    .run();
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: JSON_HEADERS });
     }
@@ -70,7 +94,54 @@ export default {
 
       if (url.pathname === "/api/quick-capture" && request.method === "POST") {
         const payload = (await request.json()) as QuickCapturePayload;
-        return json(await quickCapture(env.DB, payload), 201);
+        const result = await quickCapture(env.DB, payload);
+        if (payload.url) {
+          ctx.waitUntil(fetchAndSaveCandidate(env.DB, result.id, payload.url));
+        }
+        return json(result, 201);
+      }
+
+      if (url.pathname === "/api/patrol/run" && request.method === "POST") {
+        return json(await runPatrol(env.DB));
+      }
+
+      const sourcePatrolMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/patrol$/);
+      if (sourcePatrolMatch && request.method === "POST") {
+        return json(await patrolSource(env.DB, sourcePatrolMatch[1]!));
+      }
+
+      // Conflict & confidence routes
+      if (url.pathname === "/api/conflicts/detect" && request.method === "POST") {
+        return json(await runConflictDetection(env.DB));
+      }
+
+      const conflictResolveMatch = url.pathname.match(/^\/api\/conflicts\/([^/]+)\/resolve$/);
+      if (conflictResolveMatch && request.method === "PATCH") {
+        const body = (await request.json()) as { status: string; resolved_value?: string; resolution_notes?: string };
+        return json(await resolveConflict(env.DB, conflictResolveMatch[1]!, body));
+      }
+
+      const conflictVerifyMatch = url.pathname.match(/^\/api\/conflicts\/([^/]+)\/verify$/);
+      if (conflictVerifyMatch && request.method === "POST") {
+        const conflict = await env.DB.prepare("SELECT entity_id, entity_type FROM conflicts WHERE id = ?").bind(conflictVerifyMatch[1]!).first<{ entity_id: string; entity_type: string }>();
+        if (!conflict) return json({ error: "Conflict not found" }, 404);
+        if (conflict.entity_type === "resource" && conflict.entity_id) {
+          return json(await verifyResource(env.DB, conflict.entity_id));
+        }
+        return json({ ok: true });
+      }
+
+      if (url.pathname === "/api/confidence/refresh" && request.method === "POST") {
+        return json(await runConfidenceUpdate(env.DB));
+      }
+
+      if (url.pathname === "/api/confidence/summary" && request.method === "GET") {
+        const openConflicts = await countRows(env.DB, "conflicts", "status = ?", ["open"]);
+        const resolvedConflicts = await countRows(env.DB, "conflicts", "status = ?", ["resolved"]);
+        const staleConflicts = await countRows(env.DB, "conflicts", "conflict_type = ? AND status = ?", ["stale_unverified", "open"]);
+        const avgScore = await env.DB.prepare("SELECT AVG(confidence_score) as avg FROM intelligence_resources WHERE confidence_score IS NOT NULL").first<{ avg: number | null }>();
+        const lowScoreCount = await env.DB.prepare("SELECT COUNT(*) as cnt FROM intelligence_resources WHERE confidence_score < 0.5").first<{ cnt: number }>();
+        return json({ open_conflicts: openConflicts, resolved_conflicts: resolvedConflicts, stale_unverified: staleConflicts, avg_confidence: avgScore?.avg ?? null, low_confidence_count: lowScoreCount?.cnt ?? 0 });
       }
 
       if ((url.pathname === "/api/review/papers" || url.pathname === "/api/review/candidates") && request.method === "GET") {
@@ -110,6 +181,55 @@ export default {
         return json(await linkCandidate(env.DB, linkMatch[1]!, links));
       }
 
+      const candidateRefreshMatch = url.pathname.match(/^\/api\/candidates\/([^/]+)\/refresh$/);
+      if (candidateRefreshMatch && request.method === "POST") {
+        const id = candidateRefreshMatch[1]!;
+        const row = await env.DB.prepare("select url from paper_candidates where id = ?").bind(id).first<{ url: string }>();
+        if (!row?.url) return json({ error: "Candidate not found or no URL" }, 404);
+        await fetchAndSaveCandidate(env.DB, id, row.url);
+        const updated = await env.DB.prepare("select * from paper_candidates where id = ?").bind(id).first<Record<string, unknown>>();
+        return json(normalizeIntelligenceCandidate(updated!));
+      }
+
+      const resourceRefreshMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/refresh$/);
+      if (resourceRefreshMatch && request.method === "POST") {
+        const id = resourceRefreshMatch[1]!;
+        const row = await env.DB.prepare("select url from intelligence_resources where id = ?").bind(id).first<{ url: string }>();
+        if (!row?.url) return json({ error: "Resource not found or no URL" }, 404);
+        await fetchAndSaveResource(env.DB, id, row.url);
+        const updated = await env.DB.prepare("select * from intelligence_resources where id = ?").bind(id).first<Record<string, unknown>>();
+        return json(normalizeRow(updated!, []));
+      }
+
+      const resDetailMatch = url.pathname.match(/^\/api\/resources\/([^/]+)$/);
+      if (resDetailMatch && request.method === "GET") {
+        const id = resDetailMatch[1]!;
+        const resource = await env.DB.prepare("select * from intelligence_resources where id = ?").bind(id).first<Record<string, unknown>>();
+        if (!resource) return json({ error: "Resource not found" }, 404);
+        const res = normalizeRow(resource, []);
+        let linkedUniversity = null;
+        let linkedProfessor = null;
+        let linkedProgram = null;
+        let linkedLab = null;
+        if (res.university_id) {
+          const u = await env.DB.prepare("select id, name from universities where id = ?").bind(res.university_id as string).first<{ id: string; name: string }>();
+          if (u) linkedUniversity = u;
+        }
+        if (res.professor_id) {
+          const p = await env.DB.prepare("select id, name from professors where id = ?").bind(res.professor_id as string).first<{ id: string; name: string }>();
+          if (p) linkedProfessor = p;
+        }
+        if (res.program_id) {
+          const p = await env.DB.prepare("select id, program_name from programs where id = ?").bind(res.program_id as string).first<{ id: string; program_name: string }>();
+          if (p) linkedProgram = p;
+        }
+        if (res.lab_id) {
+          const l = await env.DB.prepare("select id, lab_name from labs where id = ?").bind(res.lab_id as string).first<{ id: string; lab_name: string }>();
+          if (l) linkedLab = l;
+        }
+        return json({ resource: res, linked_university: linkedUniversity, linked_professor: linkedProfessor, linked_program: linkedProgram, linked_lab: linkedLab });
+      }
+
       const uniDetailMatch = url.pathname.match(/^\/api\/universities\/([^/]+)$/);
       if (uniDetailMatch && request.method === "GET") {
         const uniId = uniDetailMatch[1]!;
@@ -129,7 +249,7 @@ export default {
         const admissionCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "admission_notice"]);
         const experienceCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "experience_post"]);
 
-        interface GapItem { label_key: string; priority: "high" | "medium" | "low"; }
+        interface GapItem { label_key: string; priority: "high" | "medium" | "low"; action_id?: string | null; action_status?: string | null; resolved_by?: string | null; }
         const gaps: GapItem[] = [];
         if (progCount === 0) gaps.push({ label_key: "no_programs_for", priority: "high" });
         if (profCount === 0 && labCount === 0) gaps.push({ label_key: "no_professors_for", priority: "high" });
@@ -137,6 +257,19 @@ export default {
         if (admissionCount === 0) gaps.push({ label_key: "no_admission_for", priority: "medium" });
         if (experienceCount === 0) gaps.push({ label_key: "no_experience_for", priority: "low" });
         if (!gaps.length) gaps.push({ label_key: "none", priority: "low" });
+
+        // Attach gap_actions status
+        if (uniId) {
+          const actionRows = await listRows(env.DB, "gap_actions", "university_id = ?", [uniId], "created_at desc");
+          for (const gap of gaps) {
+            const action = actionRows.find((a) => String(a.gap_key) === gap.label_key);
+            if (action) {
+              gap.action_id = String(action.id);
+              gap.action_status = String(action.status);
+              gap.resolved_by = action.resolved_by ? String(action.resolved_by) : null;
+            }
+          }
+        }
 
         return json({ university: normalizeRow(university, []), programs, professors, labs, resources, gaps, paper_count: paperCount, task_count: taskCount });
       }
@@ -162,5 +295,8 @@ export default {
 
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runIngest(env.DB));
+    ctx.waitUntil(runPatrol(env.DB));
+    ctx.waitUntil(runConflictDetection(env.DB));
+    ctx.waitUntil(runConfidenceUpdate(env.DB));
   },
 };

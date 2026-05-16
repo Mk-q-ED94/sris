@@ -5,6 +5,7 @@ export interface QuickCapturePayload {
   title?: string;
   selection?: string;
   notes?: string;
+  excerpt?: string;
   resource_type?: string;
   university_id?: string;
   program_id?: string;
@@ -63,6 +64,7 @@ export async function quickCapture(db: D1Database, payload: QuickCapturePayload)
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const title = (payload.title || payload.url || "Captured link").slice(0, 280);
+  const excerpt = (payload.excerpt || payload.selection || "").trim().slice(0, 2000) || null;
   const abstract = [payload.selection, payload.notes].filter(Boolean).join("\n\n").trim() || null;
 
   const classification = classifyUrl(url);
@@ -73,7 +75,7 @@ export async function quickCapture(db: D1Database, payload: QuickCapturePayload)
 
   await db
     .prepare(
-      "insert or replace into paper_candidates (id,source_id,source,title,authors,abstract,url,published_at,matched_keywords,raw_payload,status,resource_type,university_id,program_id,professor_id,relevance_note,confidence,domain_source,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "insert or replace into paper_candidates (id,source_id,source,title,authors,abstract,url,published_at,matched_keywords,raw_payload,status,resource_type,university_id,program_id,professor_id,relevance_note,confidence,domain_source,excerpt,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     )
     .bind(
       id,
@@ -94,6 +96,7 @@ export async function quickCapture(db: D1Database, payload: QuickCapturePayload)
       payload.relevance_note || null,
       payload.confidence || null,
       domainSource,
+      excerpt,
       now,
       now,
     )

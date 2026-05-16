@@ -48,6 +48,10 @@ export type IntelligenceCandidate = {
   evidence_type?: string | null;
   domain_source?: string | null;
   ignore_reason?: string | null;
+  content_text?: string | null;
+  excerpt?: string | null;
+  raw_snapshot?: string | null;
+  snapshot_at?: string | null;
 };
 
 export type PaperCandidate = IntelligenceCandidate;
@@ -76,6 +80,9 @@ export type GapItem = {
   priority: "high" | "medium" | "low";
   university_id?: string;
   university_name?: string;
+  action_id?: string | null;
+  action_status?: "open" | "in_progress" | "resolved" | "ignored" | null;
+  resolved_by?: string | null;
 };
 
 export type TodayBriefing = {
@@ -101,9 +108,11 @@ export type DashboardSummary = {
   coverage: CoverageItem[];
   gaps: GapItem[];
   resource_type_counts: Record<string, number>;
-  stale_sources: Array<{ id: string; name: string; source_type: string; university_id?: string | null; last_run_at?: string | null }>;
+  stale_sources: Array<{ id: string; name: string; source_type: string; university_id?: string | null; last_run_at?: string | null; patrol_status?: string | null; last_checked_at?: string | null }>;
   today_briefing: TodayBriefing;
   university_stats: UniversityStat[];
+  conflict_counts: { open: number; resolved: number; stale_unverified: number };
+  recent_conflicts: Conflict[];
 };
 
 export type SearchHit = {
@@ -187,12 +196,77 @@ export type IntelligenceResource = {
   decision_impact?: string | null;
   relevance_note?: string | null;
   domain_source?: string | null;
+  content_text?: string | null;
+  excerpt?: string | null;
+  raw_snapshot?: string | null;
+  snapshot_at?: string | null;
+  confidence_score?: number | null;
+  confidence_last_verified?: string | null;
   created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type UniversityGap = {
   label_key: string;
   priority: "high" | "medium" | "low";
+  action_id?: string | null;
+  action_status?: "open" | "in_progress" | "resolved" | "ignored" | null;
+  resolved_by?: string | null;
 };
 
 export type QuickCaptureResponse = { id: string; status: string };
+
+export type ResourceDetailResult = {
+  resource: IntelligenceResource;
+  linked_university: { id: string; name: string } | null;
+  linked_professor: { id: string; name: string } | null;
+  linked_program: { id: string; program_name: string } | null;
+  linked_lab: { id: string; lab_name: string } | null;
+};
+
+export type GapAction = {
+  id: string;
+  gap_key: string;
+  university_id?: string | null;
+  status: "open" | "in_progress" | "resolved" | "ignored";
+  resolved_by?: string | null;
+  resolved_at?: string | null;
+  notes?: string | null;
+};
+
+export type Conflict = {
+  id: string;
+  conflict_type: string;
+  status: string;
+  entity_type: string;
+  entity_id?: string | null;
+  field_name?: string | null;
+  description?: string | null;
+  sources_involved: Array<{ table: string; id: string; value?: string }>;
+  resolved_value?: string | null;
+  resolution_notes?: string | null;
+  auto_detected?: boolean;
+  detected_at?: string | null;
+  resolved_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type SourceReliability = {
+  id: string;
+  source_id: string;
+  total_checks: number;
+  successful_checks: number;
+  failed_checks: number;
+  changed_checks: number;
+  reliability_score?: number | null;
+  last_computed_at?: string | null;
+};
+
+export type ConfidenceSummary = {
+  open_conflicts: number;
+  resolved_conflicts: number;
+  stale_unverified: number;
+  avg_confidence: number | null;
+  low_confidence_count: number;
+};

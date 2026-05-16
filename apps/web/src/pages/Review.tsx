@@ -227,6 +227,9 @@ export function Review() {
                     <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${TYPE_COLORS[candidate.resource_type] ?? TYPE_COLORS.other!}`}>
                       {t.capture.classifiedTypes[candidate.resource_type] ?? candidate.resource_type}
                     </span>
+                    <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${candidate.content_text ? "bg-emerald-50 text-emerald-600" : candidate.excerpt ? "bg-sky-50 text-sky-600" : "bg-gray-50 text-gray-500"}`}>
+                      {candidate.content_text ? t.review2.hasContent : candidate.excerpt ? t.review2.hasExcerpt : t.review2.urlOnly}
+                    </span>
                     <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
                     <span>{candidate.source ?? "candidate"}</span>
                     <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
@@ -254,6 +257,11 @@ export function Review() {
                   {(candidate.abstract || candidate.relevance_note) && (
                     <p className="mt-3 line-clamp-3 text-[13.5px] leading-[1.7] text-[var(--color-muted)]">
                       {candidate.relevance_note || candidate.abstract}
+                    </p>
+                  )}
+                  {candidate.excerpt && (
+                    <p className="mt-2 line-clamp-2 border-l-2 border-[var(--color-todai)] pl-3 text-[12.5px] leading-[1.6] text-[var(--color-muted)] italic">
+                      {candidate.excerpt}
                     </p>
                   )}
                   {candidate.confidence && (

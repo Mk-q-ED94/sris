@@ -1,4 +1,4 @@
-import type { DashboardSummary, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceType, SearchResponse, TimelineTask, University, UniversityGap } from "../types/sris";
+import type { Conflict, ConfidenceSummary, DashboardSummary, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -68,7 +68,7 @@ export function searchGlobal(token: string, query: string, filter?: { type?: str
   });
 }
 
-export function quickCapture(token: string, payload: { url: string; title?: string; selection?: string; notes?: string; resource_type?: string; university_id?: string; program_id?: string; professor_id?: string; relevance_note?: string; confidence?: string }): Promise<QuickCaptureResponse> {
+export function quickCapture(token: string, payload: { url: string; title?: string; selection?: string; notes?: string; excerpt?: string; resource_type?: string; university_id?: string; program_id?: string; professor_id?: string; relevance_note?: string; confidence?: string }): Promise<QuickCaptureResponse> {
   return request<QuickCaptureResponse>("/api/quick-capture", token, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -133,6 +133,13 @@ export type RadarSource = {
   university_id?: string | null;
   confidence?: string | null;
   check_frequency?: string | null;
+  patrol_status?: string | null;
+  last_http_status?: number | null;
+  last_title?: string | null;
+  content_hash?: string | null;
+  last_checked_at?: string | null;
+  last_changed_at?: string | null;
+  reliability_score?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -160,6 +167,45 @@ export function updateRadarSource(token: string, id: string, payload: Record<str
 
 export function deleteRadarSource(token: string, id: string): Promise<void> {
   return request(`/api/radar-sources/${id}`, token, { method: "DELETE" }).then(() => {});
+}
+
+export function patrolSource(token: string, id: string): Promise<{ status: string; changed: boolean }> {
+  return request(`/api/sources/${id}/patrol`, token, { method: "POST" });
+}
+
+export function runPatrol(token: string): Promise<{ checked: number; changed: number; failed: number }> {
+  return request("/api/patrol/run", token, { method: "POST" });
+}
+
+export function fetchConflicts(token: string, filter?: { status?: string; conflict_type?: string }): Promise<Conflict[]> {
+  const params = new URLSearchParams();
+  if (filter?.status) params.set("status", filter.status);
+  if (filter?.conflict_type) params.set("conflict_type", filter.conflict_type);
+  const qs = params.toString();
+  return request<Conflict[]>(`/api/conflicts${qs ? `?${qs}` : ""}`, token);
+}
+
+export function detectConflicts(token: string): Promise<{ detected: number }> {
+  return request("/api/conflicts/detect", token, { method: "POST" });
+}
+
+export function resolveConflict(token: string, id: string, payload: { status: string; resolved_value?: string; resolution_notes?: string }): Promise<{ ok: boolean }> {
+  return request(`/api/conflicts/${id}/resolve`, token, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function verifyConflict(token: string, id: string): Promise<{ ok: boolean }> {
+  return request(`/api/conflicts/${id}/verify`, token, { method: "POST" });
+}
+
+export function fetchConfidenceSummary(token: string): Promise<ConfidenceSummary> {
+  return request<ConfidenceSummary>("/api/confidence/summary", token);
+}
+
+export function refreshConfidence(token: string): Promise<{ updated: number }> {
+  return request("/api/confidence/refresh", token, { method: "POST" });
 }
 
 export interface ReviewFilter {
@@ -213,6 +259,55 @@ export function linkCandidate(token: string, id: string, links: { university_id?
     method: "PATCH",
     body: JSON.stringify(links),
   }).then(() => {});
+}
+
+export function refreshCandidate(token: string, id: string): Promise<IntelligenceCandidate> {
+  return request(`/api/candidates/${id}/refresh`, token, { method: "POST" });
+}
+
+export function refreshResource(token: string, id: string): Promise<IntelligenceResource> {
+  return request(`/api/resources/${id}/refresh`, token, { method: "POST" });
+}
+
+export function fetchResourceDetail(token: string, id: string): Promise<ResourceDetailResult> {
+  return request<ResourceDetailResult>(`/api/resources/${id}`, token).catch((error: unknown) => {
+    if (import.meta.env.DEV) {
+      const res = mockResources.find((r) => r.id === id) ?? mockResources[0]!;
+      return {
+        resource: res,
+        linked_university: res.university_id ? { id: res.university_id, name: "University" } : null,
+        linked_professor: null,
+        linked_program: null,
+        linked_lab: null,
+      };
+    }
+    throw error;
+  });
+}
+
+export function updateResource(token: string, id: string, payload: Record<string, unknown>): Promise<IntelligenceResource> {
+  return request<IntelligenceResource>(`/api/resources/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function fetchGapActions(token: string): Promise<GapAction[]> {
+  return request<GapAction[]>("/api/gap-actions", token);
+}
+
+export function createGapAction(token: string, payload: { gap_key: string; university_id?: string; status?: string; resolved_by?: string; notes?: string }): Promise<GapAction> {
+  return request<GapAction>("/api/gap-actions", token, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateGapAction(token: string, id: string, payload: Record<string, unknown>): Promise<GapAction> {
+  return request<GapAction>(`/api/gap-actions/${id}`, token, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function createTask(token: string, payload: Record<string, unknown>): Promise<TimelineTask> {
@@ -354,6 +449,8 @@ const mockDashboard: DashboardSummary = {
     { id: "tohoku", resource_count: 0, gap_count: 1, latest_update: null },
     { id: "tsukuba", resource_count: 0, gap_count: 1, latest_update: null },
   ],
+  conflict_counts: { open: 0, resolved: 0, stale_unverified: 0 },
+  recent_conflicts: [],
 };
 
 const today = new Date();
@@ -448,5 +545,5 @@ const mockRadarSources: RadarSource[] = [
   { id: "source-ai-systems", name: "arXiv AI Systems", source_type: "arxiv", query: "machine learning systems", keywords: ["systems", "inference", "training", "distributed", "GPU"], enabled: true, last_run_at: "2026-05-14T23:15:00Z", confidence: "high", check_frequency: "daily" },
   { id: "source-llm-inference", name: "arXiv LLM Inference", source_type: "arxiv", query: "large language model inference", keywords: ["inference", "serving", "latency", "throughput", "LLM"], enabled: true, last_run_at: "2026-05-14T23:15:00Z", confidence: "high", check_frequency: "daily" },
   { id: "source-ai-agents", name: "arXiv AI Agents", source_type: "arxiv", query: "AI agents planning tool use", keywords: ["agent", "planning", "tool use", "reasoning"], enabled: true, last_run_at: "2026-05-01T12:00:00Z", confidence: "medium", check_frequency: "weekly" },
-  { id: "source-utokyo-official", name: "UTokyo Official", source_type: "official", url: "https://www.u-tokyo.ac.jp/en/", keywords: [], enabled: true, university_id: "utokyo", confidence: "high", check_frequency: "weekly", last_run_at: null },
+  { id: "source-utokyo-official", name: "UTokyo Official", source_type: "official", url: "https://www.u-tokyo.ac.jp/en/", keywords: [], enabled: true, university_id: "utokyo", confidence: "high", check_frequency: "weekly", last_run_at: null, patrol_status: "never_checked" },
 ];

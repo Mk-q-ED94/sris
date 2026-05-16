@@ -95,6 +95,21 @@ export interface Locale {
     delete: string;
     deleteConfirm: string;
   };
+  resourceDetail: {
+    back: string;
+    urlOnly: string;
+    reFetch: string;
+    fetching: string;
+    snapshotAt: string;
+    edit: string;
+    save: string;
+    cancel: string;
+    linkedEntities: string;
+    contentSection: string;
+    excerptSection: string;
+    metadataSection: string;
+    noExcerpt: string;
+  };
   sources: {
     title: string;
     description: string;
@@ -125,6 +140,16 @@ export interface Locale {
     neverRun: string;
     staleSourcesTitle: string;
     staleSourcesBody: string;
+    patrolNeverChecked: string;
+    patrolOk: string;
+    patrolChanged: string;
+    patrolFailed: string;
+    patrolStale: string;
+    checkNow: string;
+    runPatrol: string;
+    patrolling: string;
+    lastChecked: string;
+    lastChanged: string;
   };
   capture: {
     title: string;
@@ -143,6 +168,8 @@ export interface Locale {
     confidenceLabel: string;
     relevanceNoteLabel: string;
     domainLabel: string;
+    excerptLabel: string;
+    excerptPlaceholder: string;
   };
   professors: {
     title: string;
@@ -292,6 +319,10 @@ export interface Locale {
     confidenceHigh: string;
     confidenceMedium: string;
     confidenceLow: string;
+    hasContent: string;
+    hasExcerpt: string;
+    urlOnly: string;
+    refreshSnapshot: string;
   };
   universityDetail: {
     programsTitle: string;
@@ -310,8 +341,48 @@ export interface Locale {
     resourcesTitle: string;
     noResources: string;
     captureHint: string;
+    hasSnapshot: string;
+    excerptOnly: string;
+    urlOnly: string;
+    gapResolved: string;
+    gapIgnored: string;
+    gapInProgress: string;
+    gapResolve: string;
+    gapIgnore: string;
+    gapReopen: string;
+    gapAddSource: string;
   };
   entityType: Record<"university" | "program" | "professor" | "lab" | "paper" | "candidate" | "task" | "resource", string>;
+  conflicts: {
+    title: string;
+    description: string;
+    filterOpen: string;
+    filterResolved: string;
+    filterIgnored: string;
+    allTypes: string;
+    typeUrlDuplicate: string;
+    typeTitleDuplicate: string;
+    typeValueMismatch: string;
+    typeStaleUnverified: string;
+    resolve: string;
+    ignore: string;
+    verify: string;
+    keepValue: string;
+    resolutionNotes: string;
+    resolutionNotesPlaceholder: string;
+    detectedAt: string;
+    resolvedAt: string;
+    sourcesInvolved: string;
+    noConflicts: string;
+    noConflictsHelper: string;
+    detectNow: string;
+    detecting: string;
+    autoDetected: string;
+    staleWarning: string;
+    confidenceDecayed: string;
+    reliabilityScore: string;
+    runRefresh: string;
+  };
 }
 
 export type MetricKey =
@@ -382,7 +453,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "高", medium: "中", low: "低" },
     taskStatuses: { todo: "待办", doing: "进行中", done: "已完成" },
     status: { db: "D1 数据库", arxiv: "arXiv Radar", ai: "AI 摘要", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", papers: "论文雷达", review: "待确认", timeline: "时间线", sources: "数据源" },
+    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", papers: "论文雷达", review: "待确认", timeline: "时间线", sources: "数据源", conflicts: "冲突" },
     pages: {
       dashboard: { title: "总览", description: "Dashboard" },
       universities: { title: "院校", description: "目标院校数据库会在下一轮迁移到 React 表格视图。" },
@@ -393,6 +464,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       review: { title: "待确认", description: "Review Queue 会保留接受/忽略流程,并升级成卡片队列。" },
       timeline: { title: "时间线", description: "TOEFL / JLPT / SOP / 推荐信 / 申请 DDL 的 Gantt 视图。" },
       sources: { title: "数据源", description: "arXiv RSS、iCal 订阅、浏览器抽取刷。" },
+      conflicts: { title: "冲突管理", description: "检测并解决信息冲突，追踪来源可信度与信息过期。" },
     },
     placeholderNote: "当前大改先完成总览页,后续页面会逐个迁移。",
     university: {
@@ -414,6 +486,21 @@ export const LOCALES: Record<LangCode, Locale> = {
       fieldLabel: "API_TOKEN",
       placeholder: "Paste your private token",
       submit: "Enter dashboard",
+    },
+    resourceDetail: {
+      back: "返回",
+      urlOnly: "仅保存了 URL，未抓取正文",
+      reFetch: "重新抓取",
+      fetching: "抓取中…",
+      snapshotAt: "快照时间",
+      edit: "编辑",
+      save: "保存",
+      cancel: "取消",
+      linkedEntities: "关联实体",
+      contentSection: "正文快照",
+      excerptSection: "证据摘录",
+      metadataSection: "元数据",
+      noExcerpt: "无摘录",
     },
     timeline: {
       title: "申请时间线",
@@ -468,6 +555,16 @@ export const LOCALES: Record<LangCode, Locale> = {
       neverRun: "从未运行",
       staleSourcesTitle: "数据源停滞",
       staleSourcesBody: "以下数据源超过 7 天未运行,可能错过新信息。",
+      patrolNeverChecked: "从未检查",
+      patrolOk: "正常",
+      patrolChanged: "有变化",
+      patrolFailed: "检查失败",
+      patrolStale: "过期",
+      checkNow: "检查一次",
+      runPatrol: "批量巡检",
+      patrolling: "巡检中…",
+      lastChecked: "最近检查",
+      lastChanged: "最近变化",
     },
     capture: {
       title: "保存到 SRIS",
@@ -501,6 +598,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceLabel: "可信度",
       relevanceNoteLabel: "相关性备注",
       domainLabel: "来源域名",
+      excerptLabel: "证据摘录",
+      excerptPlaceholder: "保存网页中的关键段落",
     },
     professors: {
       title: "教授与导师",
@@ -650,6 +749,10 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceHigh: "高",
       confidenceMedium: "中",
       confidenceLow: "低",
+      hasContent: "有正文",
+      hasExcerpt: "有摘录",
+      urlOnly: "仅链接",
+      refreshSnapshot: "重新抓取",
     },
     universityDetail: {
       programsTitle: "项目",
@@ -668,8 +771,48 @@ export const LOCALES: Record<LangCode, Locale> = {
       resourcesTitle: "情报资源",
       noResources: "暂无情报资源",
       captureHint: "捕获此信息",
+      hasSnapshot: "有快照",
+      excerptOnly: "仅摘录",
+      urlOnly: "仅链接",
+      gapResolved: "已解决",
+      gapIgnored: "已忽略",
+      gapInProgress: "处理中",
+      gapResolve: "标记解决",
+      gapIgnore: "忽略",
+      gapReopen: "重新打开",
+      gapAddSource: "添加来源",
     },
     entityType: { university: "院校", program: "项目", professor: "教授", lab: "实验室", paper: "论文", candidate: "候选", task: "任务", resource: "资源" },
+    conflicts: {
+      title: "冲突管理",
+      description: "检测并解决信息冲突，追踪来源可信度与信息过期。",
+      filterOpen: "待处理",
+      filterResolved: "已解决",
+      filterIgnored: "已忽略",
+      allTypes: "全部类型",
+      typeUrlDuplicate: "URL重复",
+      typeTitleDuplicate: "标题重复",
+      typeValueMismatch: "值冲突",
+      typeStaleUnverified: "过期未验证",
+      resolve: "解决",
+      ignore: "忽略",
+      verify: "验证",
+      keepValue: "保留此值",
+      resolutionNotes: "处理备注",
+      resolutionNotesPlaceholder: "说明处理原因…",
+      detectedAt: "检测时间",
+      resolvedAt: "解决时间",
+      sourcesInvolved: "涉及来源",
+      noConflicts: "暂无冲突",
+      noConflictsHelper: "点击「立即检测」扫描信息冲突和过期资源。",
+      detectNow: "立即检测",
+      detecting: "检测中…",
+      autoDetected: "自动检测",
+      staleWarning: "信息可能已过期",
+      confidenceDecayed: "可信度已衰减",
+      reliabilityScore: "来源可靠性",
+      runRefresh: "刷新可信度",
+    },
   },
   en: {
     htmlLang: "en",
@@ -723,7 +866,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "High", medium: "Medium", low: "Low" },
     taskStatuses: { todo: "Todo", doing: "Doing", done: "Done" },
     status: { db: "D1 database", arxiv: "arXiv radar", ai: "AI summary", cron: "Cloudflare cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", papers: "Paper radar", review: "Review", timeline: "Timeline", sources: "Sources" },
+    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", papers: "Paper radar", review: "Review", timeline: "Timeline", sources: "Sources", conflicts: "Conflicts" },
     pages: {
       dashboard: { title: "Dashboard", description: "Dashboard" },
       universities: { title: "Universities", description: "The target-university database moves to a React table view next." },
@@ -734,6 +877,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       review: { title: "Review", description: "Review queue keeps accept/ignore but upgrades to a card layout." },
       timeline: { title: "Timeline", description: "Gantt view of TOEFL / JLPT / SOP / recommendation / application DDLs." },
       sources: { title: "Sources", description: "arXiv RSS, iCal subscription, browser quick-capture." },
+      conflicts: { title: "Conflicts", description: "Detect and resolve information conflicts, track source reliability." },
     },
     placeholderNote: "The redesign starts from the dashboard; other pages are migrated in subsequent passes.",
     university: {
@@ -755,6 +899,21 @@ export const LOCALES: Record<LangCode, Locale> = {
       fieldLabel: "API_TOKEN",
       placeholder: "Paste your private token",
       submit: "Enter dashboard",
+    },
+    resourceDetail: {
+      back: "Back",
+      urlOnly: "URL only, no content captured",
+      reFetch: "Re-fetch content",
+      fetching: "Fetching…",
+      snapshotAt: "Snapshot at",
+      edit: "Edit",
+      save: "Save",
+      cancel: "Cancel",
+      linkedEntities: "Linked entities",
+      contentSection: "Content snapshot",
+      excerptSection: "Evidence excerpt",
+      metadataSection: "Metadata",
+      noExcerpt: "No excerpt",
     },
     timeline: {
       title: "Application timeline",
@@ -809,6 +968,16 @@ export const LOCALES: Record<LangCode, Locale> = {
       neverRun: "Never run",
       staleSourcesTitle: "Stale sources",
       staleSourcesBody: "These sources haven't run in over 7 days and may be missing new information.",
+      patrolNeverChecked: "Never checked",
+      patrolOk: "OK",
+      patrolChanged: "Changed",
+      patrolFailed: "Check failed",
+      patrolStale: "Stale",
+      checkNow: "Check now",
+      runPatrol: "Run patrol",
+      patrolling: "Patrolling…",
+      lastChecked: "Last checked",
+      lastChanged: "Last changed",
     },
     capture: {
       title: "Save to SRIS",
@@ -842,6 +1011,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceLabel: "Confidence",
       relevanceNoteLabel: "Relevance note",
       domainLabel: "Source domain",
+      excerptLabel: "Evidence excerpt",
+      excerptPlaceholder: "Save key paragraphs from the page",
     },
     professors: {
       title: "Professors & Advisors",
@@ -991,6 +1162,10 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceHigh: "High",
       confidenceMedium: "Medium",
       confidenceLow: "Low",
+      hasContent: "Has content",
+      hasExcerpt: "Has excerpt",
+      urlOnly: "URL only",
+      refreshSnapshot: "Re-fetch",
     },
     universityDetail: {
       programsTitle: "Programs",
@@ -1009,8 +1184,48 @@ export const LOCALES: Record<LangCode, Locale> = {
       resourcesTitle: "Intelligence resources",
       noResources: "No intelligence resources",
       captureHint: "Capture this information",
+      hasSnapshot: "Snapshotted",
+      excerptOnly: "Excerpt only",
+      urlOnly: "URL only",
+      gapResolved: "Resolved",
+      gapIgnored: "Ignored",
+      gapInProgress: "In progress",
+      gapResolve: "Mark resolved",
+      gapIgnore: "Ignore",
+      gapReopen: "Reopen",
+      gapAddSource: "Add source",
     },
     entityType: { university: "University", program: "Program", professor: "Professor", lab: "Lab", paper: "Paper", candidate: "Candidate", task: "Task", resource: "Resource" },
+    conflicts: {
+      title: "Conflict Management",
+      description: "Detect and resolve information conflicts, track source reliability and stale data.",
+      filterOpen: "Open",
+      filterResolved: "Resolved",
+      filterIgnored: "Ignored",
+      allTypes: "All types",
+      typeUrlDuplicate: "URL duplicate",
+      typeTitleDuplicate: "Title duplicate",
+      typeValueMismatch: "Value mismatch",
+      typeStaleUnverified: "Stale/unverified",
+      resolve: "Resolve",
+      ignore: "Ignore",
+      verify: "Verify",
+      keepValue: "Keep this value",
+      resolutionNotes: "Resolution notes",
+      resolutionNotesPlaceholder: "Explain your decision…",
+      detectedAt: "Detected at",
+      resolvedAt: "Resolved at",
+      sourcesInvolved: "Sources involved",
+      noConflicts: "No conflicts",
+      noConflictsHelper: "Click \"Detect now\" to scan for information conflicts and stale resources.",
+      detectNow: "Detect now",
+      detecting: "Detecting…",
+      autoDetected: "Auto-detected",
+      staleWarning: "Information may be stale",
+      confidenceDecayed: "Confidence has decayed",
+      reliabilityScore: "Source reliability",
+      runRefresh: "Refresh confidence",
+    },
   },
   ja: {
     htmlLang: "ja",
@@ -1064,7 +1279,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "高", medium: "中", low: "低" },
     taskStatuses: { todo: "未着手", doing: "進行中", done: "完了" },
     status: { db: "D1 データベース", arxiv: "arXiv レーダー", ai: "AI サマリ", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "毎日 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", papers: "論文レーダー", review: "レビュー", timeline: "タイムライン", sources: "ソース" },
+    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", papers: "論文レーダー", review: "レビュー", timeline: "タイムライン", sources: "ソース", conflicts: "競合" },
     pages: {
       dashboard: { title: "ダッシュボード", description: "Dashboard" },
       universities: { title: "大学", description: "志望校データベースは次回 React テーブルに移行します。" },
@@ -1075,6 +1290,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       review: { title: "レビュー", description: "レビュー待ちは accept/ignore のままカード形式に進化します。" },
       timeline: { title: "タイムライン", description: "TOEFL / JLPT / SOP / 推薦状 / 出願締切のガントビュー。" },
       sources: { title: "ソース", description: "arXiv RSS、iCal 購読、ブラウザクイックキャプチャ。" },
+      conflicts: { title: "競合管理", description: "情報の競合を検出・解決し、ソースの信頼性を追跡。" },
     },
     placeholderNote: "総覧から大改修を始め、他ページは順次移行します。",
     university: {
@@ -1096,6 +1312,21 @@ export const LOCALES: Record<LangCode, Locale> = {
       fieldLabel: "API_TOKEN",
       placeholder: "プライベートトークンを貼り付け",
       submit: "ダッシュボードへ",
+    },
+    resourceDetail: {
+      back: "戻る",
+      urlOnly: "URL のみ、コンテンツ未取得",
+      reFetch: "再取得",
+      fetching: "取得中…",
+      snapshotAt: "スナップショット日時",
+      edit: "編集",
+      save: "保存",
+      cancel: "キャンセル",
+      linkedEntities: "関連エンティティ",
+      contentSection: "コンテンツスナップショット",
+      excerptSection: "証拠抜粋",
+      metadataSection: "メタデータ",
+      noExcerpt: "抜粋なし",
     },
     timeline: {
       title: "出願タイムライン",
@@ -1150,6 +1381,16 @@ export const LOCALES: Record<LangCode, Locale> = {
       neverRun: "未実行",
       staleSourcesTitle: "ソース停滞",
       staleSourcesBody: "これらのソースは 7 日以上実行されておらず、新しい情報を見落としている可能性があります。",
+      patrolNeverChecked: "未チェック",
+      patrolOk: "正常",
+      patrolChanged: "変更あり",
+      patrolFailed: "チェック失敗",
+      patrolStale: "期限切れ",
+      checkNow: "今すぐチェック",
+      runPatrol: "一括巡回",
+      patrolling: "巡回中…",
+      lastChecked: "最終チェック",
+      lastChanged: "最終変更",
     },
     capture: {
       title: "SRIS に保存",
@@ -1183,6 +1424,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceLabel: "信頼度",
       relevanceNoteLabel: "関連性メモ",
       domainLabel: "ソースドメイン",
+      excerptLabel: "証拠抜粋",
+      excerptPlaceholder: "ページの重要な段落を保存",
     },
     professors: {
       title: "教授・指導教員",
@@ -1332,6 +1575,10 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceHigh: "高",
       confidenceMedium: "中",
       confidenceLow: "低",
+      hasContent: "本文あり",
+      hasExcerpt: "抜粋あり",
+      urlOnly: "URLのみ",
+      refreshSnapshot: "再取得",
     },
     universityDetail: {
       programsTitle: "プログラム",
@@ -1350,7 +1597,47 @@ export const LOCALES: Record<LangCode, Locale> = {
       resourcesTitle: "インテリジェンスリソース",
       noResources: "インテリジェンスリソースなし",
       captureHint: "この情報をキャプチャ",
+      hasSnapshot: "スナップショットあり",
+      excerptOnly: "抜粋のみ",
+      urlOnly: "URLのみ",
+      gapResolved: "解決済み",
+      gapIgnored: "無視",
+      gapInProgress: "対応中",
+      gapResolve: "解決済みにする",
+      gapIgnore: "無視",
+      gapReopen: "再オープン",
+      gapAddSource: "ソース追加",
     },
     entityType: { university: "大学", program: "プログラム", professor: "教授", lab: "研究室", paper: "論文", candidate: "候補", task: "タスク", resource: "リソース" },
+    conflicts: {
+      title: "競合管理",
+      description: "情報の競合を検出・解決し、ソースの信頼性と古いデータを追跡。",
+      filterOpen: "未解決",
+      filterResolved: "解決済み",
+      filterIgnored: "無視",
+      allTypes: "全タイプ",
+      typeUrlDuplicate: "URL重複",
+      typeTitleDuplicate: "タイトル重複",
+      typeValueMismatch: "値の不一致",
+      typeStaleUnverified: "期限切れ未検証",
+      resolve: "解決",
+      ignore: "無視",
+      verify: "検証",
+      keepValue: "この値を保持",
+      resolutionNotes: "解決メモ",
+      resolutionNotesPlaceholder: "判断理由を入力…",
+      detectedAt: "検出日時",
+      resolvedAt: "解決日時",
+      sourcesInvolved: "関連ソース",
+      noConflicts: "競合なし",
+      noConflictsHelper: "「今すぐ検出」をクリックして情報の競合と古いリソースをスキャン。",
+      detectNow: "今すぐ検出",
+      detecting: "検出中…",
+      autoDetected: "自動検出",
+      staleWarning: "情報が古い可能性",
+      confidenceDecayed: "信頼度が低下",
+      reliabilityScore: "ソース信頼性",
+      runRefresh: "信頼度を更新",
+    },
   },
 };

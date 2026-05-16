@@ -90,6 +90,91 @@ SRIS 的核心定位：不是普通申请管理工具，而是一个用来打破
 - 接受后的经验帖、官网页、教授主页都能在对应实体详情页看到。
 - 资源库能作为后续 SOP、套磁、项目筛选的证据来源。
 
+## P1 — 资源正文抓取 / 内容保存
+
+目标：避免 SRIS 变成只保存 URL 的收藏夹。关键网页、公告、经验帖和教授主页必须能保存正文快照和证据摘录，防止来源失效或网页改版后证据丢失。
+
+- [ ] 为候选资源和正式资源增加正文/摘录字段：`content_text`、`excerpt`、`raw_snapshot`、`snapshot_at`。
+- [ ] Quick Capture 支持保存用户选中文本作为 `excerpt`。
+- [ ] 后端支持对 URL 做轻量抓取：标题、meta description、纯文本正文、HTTP 状态、最终跳转 URL。
+- [ ] 保存原始来源信息：domain、canonical URL、content hash、抓取时间。
+- [ ] Resource Detail 中展示正文摘录、保存时间、原始 URL 和快照状态。
+- [ ] 对抓取失败的资源保留手动摘录入口。
+
+验收标准：
+
+- 保存一个项目页面后，即使原网页失效，SRIS 中仍能看到关键申请要求摘录。
+- 保存一个教授主页后，能看到研究方向相关正文片段。
+- 每条资源能区分“仅 URL”“有摘录”“有完整正文快照”。
+
+## P1 — Resource Detail / 资源详情页
+
+目标：每条资源都成为独立证据对象，而不是列表中的一行。
+
+- [ ] 新增资源详情路由：`#/resources/:id`。
+- [ ] 详情页展示：标题、URL、资源类型、来源、可信度、关联院校/项目/教授/实验室、decision impact、relevance note、正文摘录、处理历史。
+- [ ] 详情页支持编辑资源元数据：类型、confidence、关联对象、relevance note、decision impact。
+- [ ] 支持从详情页跳回关联实体：University Detail、Program、Professor、Lab。
+- [ ] 支持把资源标记为：待验证、已验证、过期、冲突、核心证据。
+- [ ] 资源详情页保留“重新抓取 / 更新快照”入口。
+
+验收标准：
+
+- 从 Dashboard 资源流、Review Queue、University Detail 都能打开同一个资源详情页。
+- 一条资源能清楚说明它为什么重要，以及它支撑哪个申请判断。
+- 修改资源详情后，关联实体页和搜索结果同步更新。
+
+## P1 — 信息缺口行动闭环
+
+目标：Gap 不只是提醒，而是能直接引导下一步补资料。
+
+- [ ] 每个 gap 提供明确 action：添加 source、打开 capture、生成搜索关键词、关联已有资源、标记已解决。
+- [ ] Gap 支持状态：open、in_progress、resolved、ignored。
+- [ ] Gap 支持关联到具体 university/program/professor/lab。
+- [ ] Gap 支持记录解决证据：用哪条 resource 关闭了这个 gap。
+- [ ] Dashboard 只突出 open/high priority gaps。
+- [ ] University Detail 中展示 gap 的解决进度。
+
+验收标准：
+
+- 点击“教授主页缺失”可以直接进入 Capture 或 Source Hub 添加来源。
+- 当关联了一条教授主页 resource 后，对应 gap 可以被标记解决。
+- Dashboard 不再反复提示已解决的缺口。
+
+## P1 — 来源巡检机制
+
+目标：让 Source Hub 不只是静态链接表，而是能提醒哪些来源需要重新检查、哪些来源可能有更新。
+
+- [ ] 为 source 增加巡检状态：never_checked、ok、changed、failed、stale。
+- [ ] 记录最近检查结果：HTTP 状态、标题、content hash、last_checked_at、last_changed_at。
+- [ ] Source Hub 支持手动“检查一次”。
+- [ ] Cron 每日/每周检查启用 source，并把变化写入 Intelligence Queue。
+- [ ] Dashboard 显示长期未检查 source 和失败 source。
+- [ ] 对招生公告、项目页、教授主页等高价值 source 设置更短检查频率。
+
+验收标准：
+
+- 某个项目页内容发生变化时，系统能生成待确认候选。
+- Source Hub 能看到哪些来源失败、哪些长期没检查。
+- 用户能从 stale source 直接进入 review/capture 流程。
+
+## P1 — 可信度与冲突管理
+
+目标：让系统能处理“不同来源说法不一致”的现实问题，避免把经验帖、旧网页、官网公告混在一起。
+
+- [ ] 资源支持可信度等级：official、high、medium、low、unverified。
+- [ ] 支持 evidence type：official_requirement、deadline、professor_interest、lab_direction、experience_claim、paper_signal、contact_info。
+- [ ] 支持把两条或多条资源标记为 conflict。
+- [ ] Conflict 记录包含：冲突字段、冲突说明、优先采用哪条证据、解决状态。
+- [ ] UI 中对官方来源和未验证经验帖做明显区分。
+- [ ] 搜索和详情页优先展示官方/高可信证据。
+
+验收标准：
+
+- 当官网 deadline 和经验帖 deadline 不一致时，可以标记冲突。
+- 资源详情页能看到“这条信息是否已验证”和“是否与其他资源冲突”。
+- Dashboard 能提醒未解决的高影响冲突。
+
 ## P2 — Dashboard 继续收束到情报主线
 
 目标：总览页成为“今天该看哪些情报”的入口。
@@ -136,4 +221,8 @@ AI 应该增强信息处理效率，但不能成为核心流程的前置依赖�
 4. Dashboard 的 Intelligence Inbox 改读通用队列。
 5. Source Hub 和 Information Gap Map。
 6. 正式 Resource Library 与实体详情页联动。
-
+7. 资源正文抓取 / 内容保存。
+8. Resource Detail 资源详情页。
+9. 信息缺口行动闭环。
+10. 来源巡检机制。
+11. 可信度与冲突管理。

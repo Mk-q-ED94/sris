@@ -9,6 +9,7 @@ interface CapturePrefill {
   url: string;
   title: string;
   notes: string;
+  selection: string;
 }
 
 const RESOURCE_TYPES: ResourceType[] = [
@@ -59,6 +60,7 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
   const [url, setUrl] = useState(prefill.url);
   const [title, setTitle] = useState(prefill.title);
   const [notes, setNotes] = useState(prefill.notes);
+  const [excerpt, setExcerpt] = useState(prefill.selection || "");
   const [resourceType, setResourceType] = useState<ResourceType>("other");
   const [universityId, setUniversityId] = useState("");
   const [programId, setProgramId] = useState("");
@@ -99,7 +101,8 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
     setUrl(prefill.url);
     setTitle(prefill.title);
     setNotes(prefill.notes);
-  }, [prefill.url, prefill.title, prefill.notes]);
+    setExcerpt(prefill.selection || "");
+  }, [prefill.url, prefill.title, prefill.notes, prefill.selection]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -111,6 +114,7 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
         url: url.trim(),
         title: title.trim() || undefined,
         notes: notes.trim() || undefined,
+        excerpt: excerpt.trim() || undefined,
         resource_type: resourceType,
         university_id: universityId || undefined,
         program_id: programId || undefined,
@@ -257,6 +261,16 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
+            className="block w-full resize-y border border-[var(--color-hairline-strong)] bg-[var(--color-paper)] p-3 text-[13.5px] leading-6 outline-none transition-colors focus:border-[var(--color-todai)]"
+          />
+        </Field>
+
+        <Field label={t.capture.excerptLabel}>
+          <textarea
+            value={excerpt}
+            onChange={(e) => setExcerpt(e.target.value)}
+            rows={4}
+            placeholder={t.capture.excerptPlaceholder}
             className="block w-full resize-y border border-[var(--color-hairline-strong)] bg-[var(--color-paper)] p-3 text-[13.5px] leading-6 outline-none transition-colors focus:border-[var(--color-todai)]"
           />
         </Field>

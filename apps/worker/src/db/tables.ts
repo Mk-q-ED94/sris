@@ -109,6 +109,27 @@ export const TABLES: Record<string, TableConfig> = {
     table: "intelligence_resources",
     order: "created_at desc",
     jsonFields: [],
-    createFields: ["candidate_id", "title", "url", "resource_type", "source", "university_id", "program_id", "professor_id", "lab_id", "confidence", "decision_impact", "relevance_note", "domain_source"],
+    createFields: ["candidate_id", "title", "url", "resource_type", "source", "university_id", "program_id", "professor_id", "lab_id", "confidence", "decision_impact", "relevance_note", "domain_source", "content_text", "excerpt"],
+  },
+  gapActions: {
+    path: "/api/gap-actions",
+    table: "gap_actions",
+    order: "created_at desc",
+    jsonFields: [],
+    createFields: ["gap_key", "university_id", "status", "resolved_by", "resolved_at", "notes"],
+  },
+  conflicts: {
+    path: "/api/conflicts",
+    table: "conflicts",
+    order: "detected_at desc",
+    jsonFields: ["sources_involved"],
+    createFields: ["conflict_type", "entity_type", "entity_id", "field_name", "description", "sources_involved", "auto_detected", "status"],
+  },
+  sourceReliability: {
+    path: "/api/source-reliability",
+    table: "source_reliability",
+    order: "updated_at desc",
+    jsonFields: [],
+    createFields: ["source_id", "total_checks", "successful_checks", "failed_checks", "changed_checks", "reliability_score"],
   },
 };

@@ -1,6 +1,7 @@
 import type { D1Database } from "@cloudflare/workers-types";
 import { httpError } from "../http";
 import { normalizeIntelligenceCandidate, normalizePaper } from "../db/normalize";
+import { computeResourceConfidence } from "./confidence";
 
 interface LinkOptions {
   university_id?: string;
@@ -77,7 +78,7 @@ export async function acceptCandidate(
       .bind(now, uniId, progId, profId, now, id),
     db
       .prepare(
-        "insert into intelligence_resources (id,candidate_id,title,url,resource_type,source,university_id,program_id,professor_id,confidence,decision_impact,relevance_note,domain_source,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "insert into intelligence_resources (id,candidate_id,title,url,resource_type,source,university_id,program_id,professor_id,confidence,decision_impact,relevance_note,domain_source,content_text,excerpt,raw_snapshot,snapshot_at,confidence_last_verified,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       )
       .bind(
         resourceId,
@@ -93,6 +94,11 @@ export async function acceptCandidate(
         candidate.decision_impact ?? null,
         candidate.relevance_note ?? null,
         candidate.domain_source ?? null,
+        candidate.content_text ?? null,
+        candidate.excerpt ?? null,
+        candidate.raw_snapshot ?? null,
+        candidate.snapshot_at ?? null,
+        now, // confidence_last_verified = now (acceptance counts as verification)
         now,
         now,
       ),
@@ -103,6 +109,10 @@ export async function acceptCandidate(
     .bind(id)
     .first<Record<string, unknown>>();
   if (!updated) throw httpError(500, "Accepted candidate not found after update");
+
+  // Compute confidence score for the new resource (non-blocking)
+  try { await computeResourceConfidence(db, resourceId); } catch { /* non-critical */ }
+
   return normalizeIntelligenceCandidate(updated);
 }
 

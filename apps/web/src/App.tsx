@@ -10,16 +10,19 @@ import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { Professors } from "./pages/Professors";
 import { Programs } from "./pages/Programs";
 import { Review } from "./pages/Review";
+import { ResourceDetail } from "./pages/ResourceDetail";
 import { Sources } from "./pages/Sources";
 import { Timeline } from "./pages/Timeline";
 import { UniversityDetail } from "./pages/UniversityDetail";
+import { Conflicts } from "./pages/Conflicts";
 
-const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "papers", "review", "timeline", "sources"];
+const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "papers", "review", "timeline", "sources", "conflicts"];
 
 interface HashRoute {
   page: PageKey | "capture";
   universityId: string | null;
-  capturePrefill: { url: string; title: string; notes: string } | null;
+  resourceId: string | null;
+  capturePrefill: { url: string; title: string; notes: string; selection: string } | null;
 }
 
 function parseHashRoute(): HashRoute {
@@ -31,17 +34,29 @@ function parseHashRoute(): HashRoute {
     return {
       page: "capture",
       universityId: null,
+      resourceId: null,
       capturePrefill: {
         url: params.get("url") ?? "",
         title: params.get("title") ?? "",
         notes: params.get("text") ?? "",
+        selection: params.get("text") ?? "",
       },
     };
   }
-  const [page = "dashboard", universityId = null] = raw.split("/");
+  const [page = "dashboard", secondSegment = null] = raw.split("/");
+  // Special case: #/resources/:id → page=universities, resourceId=secondSegment
+  if (page === "resources" && secondSegment) {
+    return {
+      page: "universities" as PageKey,
+      universityId: null,
+      resourceId: secondSegment,
+      capturePrefill: null,
+    };
+  }
   return {
     page: VALID_PAGES.includes(page as PageKey) ? (page as PageKey) : "dashboard",
-    universityId,
+    universityId: secondSegment,
+    resourceId: null,
     capturePrefill: null,
   };
 }
@@ -76,13 +91,19 @@ function AppContent() {
     setRoute({
       page: nextPage,
       universityId: universityId ?? null,
+      resourceId: null,
       capturePrefill: null,
     });
     window.history.replaceState(null, "", universityId ? `#${nextPage}/${universityId}` : `#${nextPage}`);
   }, []);
 
+  const openResource = useCallback((id: string) => {
+    setRoute({ page: "universities", universityId: null, resourceId: id, capturePrefill: null });
+    window.history.replaceState(null, "", `#resources/${id}`);
+  }, []);
+
   const closeCapture = useCallback(() => {
-    setRoute({ page: "dashboard", universityId: null, capturePrefill: null });
+    setRoute({ page: "dashboard", universityId: null, resourceId: null, capturePrefill: null });
     window.history.replaceState(null, "", "#dashboard");
   }, []);
 
@@ -90,12 +111,16 @@ function AppContent() {
     if (route.page === "capture" && route.capturePrefill) {
       return <Capture prefill={route.capturePrefill} onClose={closeCapture} />;
     }
-    if (route.page === "dashboard") return <Dashboard onOpenUniversity={(id) => navigate("universities", id)} />;
+    if (route.resourceId) {
+      return <ResourceDetail resourceId={route.resourceId} onBack={() => navigate("dashboard")} onNavigate={navigate} />;
+    }
+    if (route.page === "dashboard") return <Dashboard onOpenUniversity={(id) => navigate("universities", id)} onOpenResource={openResource} />;
     if (route.page === "universities" && route.universityId) {
-      return <UniversityDetail universityId={route.universityId} onBack={() => navigate("dashboard")} />;
+      return <UniversityDetail universityId={route.universityId} onBack={() => navigate("dashboard")} onOpenResource={openResource} />;
     }
     if (route.page === "timeline") return <Timeline />;
     if (route.page === "sources") return <Sources />;
+    if (route.page === "conflicts") return <Conflicts />;
     if (route.page === "professors") return <Professors onNavigate={navigate} />;
     if (route.page === "labs") return <Labs onNavigate={navigate} />;
     if (route.page === "programs") return <Programs />;
@@ -116,7 +141,7 @@ function AppContent() {
       >
         {page}
       </AppShell>
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} onNavigate={navigate} />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} onNavigate={navigate} onOpenResource={openResource} />
     </>
   );
 }

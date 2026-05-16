@@ -11,6 +11,7 @@ const PAGE_INDEX: Record<PageKey, string> = {
   review: "07",
   timeline: "08",
   sources: "09",
+  conflicts: "10",
 };
 
 export function PlaceholderPage({ page }: { page: PageKey }) {
