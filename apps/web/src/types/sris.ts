@@ -202,8 +202,80 @@ export type IntelligenceResource = {
   snapshot_at?: string | null;
   confidence_score?: number | null;
   confidence_last_verified?: string | null;
+  // AI extraction fields (populated by /api/resources/:id/extract on admission_notice rows)
+  extracted_facts?: ExtractedProgramFields | null;
+  extraction_status?: "pending" | "running" | "succeeded" | "failed" | null;
+  extracted_at?: string | null;
+  extraction_model?: string | null;
+  extraction_error?: string | null;
+  extraction_input_tokens?: number | null;
+  extraction_output_tokens?: number | null;
+  extraction_cache_read_tokens?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
+};
+
+export type ExtractedProgramFields = {
+  program_name: string;
+  graduate_school: string | null;
+  department: string | null;
+  degree: string | null;
+  language: string | null;
+  intake_months: string[];
+  cycles: Array<{
+    cycle_name: string;
+    application_open: string | null;
+    application_close: string | null;
+    consent_letter_deadline: string | null;
+    exam_period: string | null;
+    result_announcement: string | null;
+    enrollment_date: string | null;
+  }>;
+  english_test: {
+    type: string | null;
+    minimum_score: number | null;
+    notes: string | null;
+  };
+  japanese_test: {
+    required: boolean;
+    type: string | null;
+    minimum_level: string | null;
+  };
+  documents_required: string[];
+  supervisor_consent_required: boolean;
+  exam_fee_jpy: number | null;
+  tuition_per_year_jpy: number | null;
+  quota: number | null;
+  mext_eligible: boolean;
+  scholarships: string[];
+  notes: string;
+  extraction_confidence: number;
+  unresolved_questions: string[];
+};
+
+export type ExtractionResult = {
+  id: string;
+  status: "succeeded" | "skipped" | "failed";
+  reason?: string;
+  model?: string;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens: number;
+    cache_creation_input_tokens: number;
+  };
+};
+
+export type ExtractAllResult = {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  usage_total: {
+    input_tokens: number;
+    output_tokens: number;
+    cache_read_input_tokens: number;
+  };
+  results: ExtractionResult[];
 };
 
 export type UniversityGap = {

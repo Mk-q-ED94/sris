@@ -219,7 +219,7 @@ export default {
         const id = resDetailMatch[1]!;
         const resource = await env.DB.prepare("select * from intelligence_resources where id = ?").bind(id).first<Record<string, unknown>>();
         if (!resource) return json({ error: "Resource not found" }, 404);
-        const res = normalizeRow(resource, []);
+        const res = normalizeRow(resource, ["extracted_facts"]);
         let linkedUniversity = null;
         let linkedProfessor = null;
         let linkedProgram = null;

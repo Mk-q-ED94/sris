@@ -1,4 +1,4 @@
-import type { Conflict, ConfidenceSummary, DashboardSummary, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap } from "../types/sris";
+import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -290,6 +290,16 @@ export function updateResource(token: string, id: string, payload: Record<string
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+export function extractResource(token: string, id: string, force = false): Promise<ExtractionResult> {
+  const qs = force ? "?force=1" : "";
+  return request<ExtractionResult>(`/api/resources/${id}/extract${qs}`, token, { method: "POST" });
+}
+
+export function extractAllResources(token: string, force = false): Promise<ExtractAllResult> {
+  const qs = force ? "?force=1" : "";
+  return request<ExtractAllResult>(`/api/resources/extract-all${qs}`, token, { method: "POST" });
 }
 
 export function fetchGapActions(token: string): Promise<GapAction[]> {
