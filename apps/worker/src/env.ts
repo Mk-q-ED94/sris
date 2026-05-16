@@ -7,4 +7,5 @@ export interface Env {
   APP_NAME: string;
   API_TOKEN?: string;
   CRON_SECRET?: string;
+  ANTHROPIC_API_KEY?: string;
 }

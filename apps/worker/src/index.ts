@@ -16,6 +16,7 @@ import { patrolSource, runPatrol } from "./routes/patrol";
 import { runConflictDetection, resolveConflict, verifyResource } from "./routes/conflict";
 import { runConfidenceUpdate, computeResourceConfidence } from "./routes/confidence";
 import { runIngest } from "./ingest";
+import { extractAllResources, extractOneResource } from "./routes/extract";
 
 async function fetchAndSaveCandidate(db: D1Database, id: string, url: string): Promise<void> {
   const result = await fetchUrlContent(url);
@@ -103,6 +104,18 @@ export default {
 
       if (url.pathname === "/api/patrol/run" && request.method === "POST") {
         return json(await runPatrol(env.DB));
+      }
+
+      // AI extraction over admission_notice PDFs
+      const extractOneMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/extract$/);
+      if (extractOneMatch && request.method === "POST") {
+        const force = url.searchParams.get("force") === "1";
+        return json(await extractOneResource(env, extractOneMatch[1]!, { force }));
+      }
+
+      if (url.pathname === "/api/resources/extract-all" && request.method === "POST") {
+        const force = url.searchParams.get("force") === "1";
+        return json(await extractAllResources(env, { force }));
       }
 
       const sourcePatrolMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/patrol$/);
