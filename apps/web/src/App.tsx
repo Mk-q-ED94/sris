@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Capture } from "./pages/Capture";
 import { Dashboard } from "./pages/Dashboard";
 import { Labs } from "./pages/Labs";
+import { Papers } from "./pages/Papers";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { Professors } from "./pages/Professors";
 import { Programs } from "./pages/Programs";
@@ -13,6 +14,7 @@ import { Review } from "./pages/Review";
 import { ResourceDetail } from "./pages/ResourceDetail";
 import { Sources } from "./pages/Sources";
 import { Timeline } from "./pages/Timeline";
+import { Universities } from "./pages/Universities";
 import { UniversityDetail } from "./pages/UniversityDetail";
 import { Conflicts } from "./pages/Conflicts";
 
@@ -116,8 +118,10 @@ function AppContent() {
     }
     if (route.page === "dashboard") return <Dashboard onOpenUniversity={(id) => navigate("universities", id)} onOpenResource={openResource} />;
     if (route.page === "universities" && route.universityId) {
-      return <UniversityDetail universityId={route.universityId} onBack={() => navigate("dashboard")} onOpenResource={openResource} />;
+      return <UniversityDetail universityId={route.universityId} onBack={() => navigate("universities")} onOpenResource={openResource} />;
     }
+    if (route.page === "universities") return <Universities onNavigate={navigate} />;
+    if (route.page === "papers") return <Papers onNavigate={navigate} />;
     if (route.page === "timeline") return <Timeline />;
     if (route.page === "sources") return <Sources />;
     if (route.page === "conflicts") return <Conflicts />;

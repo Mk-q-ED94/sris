@@ -394,6 +394,18 @@ export type SourceReliability = {
   last_computed_at?: string | null;
 };
 
+export type UniversitySummary = {
+  id: string;
+  name: string;
+  location: string | null;
+  website: string | null;
+  program_count: number;
+  professor_count: number;
+  lab_count: number;
+  resource_count: number;
+  latest_resource_at: string | null;
+};
+
 export type ConfidenceSummary = {
   open_conflicts: number;
   resolved_conflicts: number;

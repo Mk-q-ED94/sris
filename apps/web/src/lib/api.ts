@@ -1,4 +1,4 @@
-import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UserProfile } from "../types/sris";
+import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, Paper, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UniversitySummary, UserProfile } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -78,6 +78,20 @@ export function quickCapture(token: string, payload: { url: string; title?: stri
 export function fetchUniversities(token: string): Promise<University[]> {
   return request<University[]>("/api/universities", token).catch((error: unknown) => {
     if (import.meta.env.DEV) return mockUniversities;
+    throw error;
+  });
+}
+
+export function fetchUniversitySummary(token: string): Promise<UniversitySummary[]> {
+  return request<UniversitySummary[]>("/api/universities/summary", token).catch((error: unknown) => {
+    if (import.meta.env.DEV) return mockUniversitySummary;
+    throw error;
+  });
+}
+
+export function fetchPapers(token: string): Promise<Paper[]> {
+  return request<Paper[]>("/api/papers", token).catch((error: unknown) => {
+    if (import.meta.env.DEV) return mockPapers;
     throw error;
   });
 }
@@ -591,6 +605,20 @@ const mockResources: IntelligenceResource[] = [
   { id: "res-1", title: "UTokyo IST Admission Guide 2026", url: "https://www.i.u-tokyo.ac.jp/eng/admission/", resource_type: "admission_notice", source: "manual", university_id: "utokyo", confidence: "high", created_at: "2026-05-01T00:00:00Z" },
   { id: "res-2", title: "Science Tokyo CS-IGP Experience Post", url: "https://example.com/experience/cs-igp", resource_type: "experience_post", source: "manual", university_id: "science-tokyo", confidence: "medium", created_at: "2026-04-28T00:00:00Z" },
   { id: "res-3", title: "Osaka IST Faculty Page", url: "https://example.com/osaka-ist-faculty", resource_type: "official_page", source: "capture", university_id: "osaka", confidence: "high", created_at: "2026-04-20T00:00:00Z" },
+];
+
+const mockUniversitySummary: UniversitySummary[] = [
+  { id: "utokyo", name: "The University of Tokyo", location: "Tokyo", website: "https://www.u-tokyo.ac.jp/en/", program_count: 1, professor_count: 1, lab_count: 1, resource_count: 1, latest_resource_at: "2026-05-01T00:00:00Z" },
+  { id: "science-tokyo", name: "Science Tokyo", location: "Tokyo / Yokohama", website: "https://www.isct.ac.jp/en", program_count: 1, professor_count: 1, lab_count: 1, resource_count: 1, latest_resource_at: "2026-04-28T00:00:00Z" },
+  { id: "osaka", name: "Osaka University", location: "Osaka", website: "https://www.osaka-u.ac.jp/en", program_count: 1, professor_count: 1, lab_count: 1, resource_count: 1, latest_resource_at: "2026-04-20T00:00:00Z" },
+  { id: "tohoku", name: "Tohoku University", location: "Sendai", website: "https://www.tohoku.ac.jp/en/", program_count: 0, professor_count: 0, lab_count: 0, resource_count: 0, latest_resource_at: null },
+  { id: "tsukuba", name: "University of Tsukuba", location: "Tsukuba", website: "https://www.tsukuba.ac.jp/en/", program_count: 0, professor_count: 0, lab_count: 0, resource_count: 0, latest_resource_at: null },
+];
+
+const mockPapers: Paper[] = [
+  { id: "paper-1", title: "On the Generalization Gap in Large-Batch Training", authors: ["Sato, Y.", "Tanaka, H."], venue: "NeurIPS", year: 2025, url: "https://arxiv.org/abs/example1", source: "arXiv", published_at: "2025-11-15T00:00:00Z", keywords: ["optimization", "deep learning", "generalization"] },
+  { id: "paper-2", title: "Efficient Inference Scheduling for Foundation Models", authors: ["Tanaka, K.", "Lee, S."], venue: "MLSys", year: 2026, url: "https://arxiv.org/abs/example2", source: "arXiv", published_at: "2026-03-10T00:00:00Z", keywords: ["inference", "scheduling", "LLM"] },
+  { id: "paper-3", title: "Multi-Turn Dialogue Evaluation with LLM Judges", authors: ["Suzuki, M."], venue: "ACL", year: 2025, url: "https://arxiv.org/abs/example3", source: "arXiv", published_at: "2025-07-20T00:00:00Z", keywords: ["NLP", "dialogue", "evaluation"] },
 ];
 
 const mockRadarSources: RadarSource[] = [

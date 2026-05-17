@@ -324,6 +324,19 @@ export default {
         return json({ resource: res, linked_university: linkedUniversity, linked_professor: linkedProfessor, linked_program: linkedProgram, linked_lab: linkedLab });
       }
 
+      if (url.pathname === "/api/universities/summary" && request.method === "GET") {
+        const rows = await env.DB.prepare(`
+          SELECT u.id, u.name, u.location, u.website,
+            (SELECT COUNT(*) FROM programs WHERE university_id = u.id) as program_count,
+            (SELECT COUNT(*) FROM professors WHERE university_id = u.id) as professor_count,
+            (SELECT COUNT(*) FROM labs WHERE university_id = u.id) as lab_count,
+            (SELECT COUNT(*) FROM intelligence_resources WHERE university_id = u.id) as resource_count,
+            (SELECT MAX(created_at) FROM intelligence_resources WHERE university_id = u.id) as latest_resource_at
+          FROM universities u ORDER BY u.name ASC
+        `).all<Record<string, unknown>>();
+        return json(rows.results);
+      }
+
       const uniDetailMatch = url.pathname.match(/^\/api\/universities\/([^/]+)$/);
       if (uniDetailMatch && request.method === "GET") {
         const uniId = uniDetailMatch[1]!;
