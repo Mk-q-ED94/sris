@@ -1,10 +1,10 @@
-import { AlertTriangle, ArrowLeft, ArrowUpRight, Globe2, RefreshCw } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowUpRight, Calendar, FileText, Globe2, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { fetchResourceDetail, refreshResource, updateResource, fetchUniversities, fetchProfessors, fetchPrograms } from "../lib/api";
+import { extractResource, fetchResourceDetail, refreshResource, updateResource, fetchUniversities, fetchProfessors, fetchPrograms } from "../lib/api";
 import { formatDate } from "../lib/format";
-import type { IntelligenceResource, ResourceType, University, Professor, Program, ResourceDetailResult } from "../types/sris";
+import type { ExtractedProgramFields, IntelligenceResource, ResourceType, University, Professor, Program, ResourceDetailResult } from "../types/sris";
 import type { PageKey } from "../components/AppShell";
 
 const RESOURCE_TYPES: ResourceType[] = [
@@ -42,6 +42,8 @@ export function ResourceDetail({
   const [editing, setEditing] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   // Edit form state
   const [editType, setEditType] = useState<ResourceType>("other");
@@ -119,6 +121,25 @@ export function ResourceDetail({
       // Silent failure
     } finally {
       setFetching(false);
+    }
+  }
+
+  async function handleExtract(force = false) {
+    if (!data) return;
+    setExtracting(true);
+    setExtractError(null);
+    try {
+      const result = await extractResource(token, data.resource.id, force);
+      if (result.status === "failed") {
+        setExtractError(result.reason ?? "Extraction failed");
+      }
+      // Re-fetch the resource to pick up extracted_facts
+      const refreshed = await fetchResourceDetail(token, data.resource.id);
+      setData(refreshed);
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "Extraction failed");
+    } finally {
+      setExtracting(false);
     }
   }
 
@@ -245,6 +266,17 @@ export function ResourceDetail({
           </button>
         </div>
       </section>
+
+      {/* AI extracted facts — admission_notice only */}
+      {res.resource_type === "admission_notice" && (
+        <ExtractedFactsSection
+          resource={res}
+          extracting={extracting}
+          error={extractError}
+          onExtract={handleExtract}
+          dateLocale={t.dateLocale}
+        />
+      )}
 
       {/* Excerpt */}
       {(res.excerpt || editing) && (
@@ -439,6 +471,282 @@ function LinkedEntityCard({ label, name, onClick }: { label: string; name?: stri
       ) : (
         <span className="mt-1.5 block text-[13px] text-[var(--color-subtle)]">—</span>
       )}
+    </div>
+  );
+}
+
+// ── AI extracted facts ──────────────────────────────────────────────────
+
+function ExtractedFactsSection({
+  resource,
+  extracting,
+  error,
+  onExtract,
+  dateLocale,
+}: {
+  resource: IntelligenceResource;
+  extracting: boolean;
+  error: string | null;
+  onExtract: (force?: boolean) => void;
+  dateLocale: string;
+}) {
+  const facts = resource.extracted_facts ?? null;
+  const status = resource.extraction_status ?? "pending";
+
+  return (
+    <section>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="rule-accent" />
+          <span className="section-index">AI extraction</span>
+          {status === "succeeded" && resource.extracted_at && (
+            <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
+              · {formatDate(resource.extracted_at, dateLocale, "")}
+              {resource.extraction_model ? ` · ${resource.extraction_model}` : ""}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => onExtract(facts != null)}
+          disabled={extracting}
+          className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-4 text-[12px] font-medium text-[var(--color-muted)] transition-colors hover:border-[var(--color-todai)] hover:text-[var(--color-todai)] disabled:opacity-50"
+        >
+          <Sparkles className={`h-3.5 w-3.5 ${extracting ? "animate-pulse" : ""}`} />
+          {extracting ? "Extracting…" : facts ? "Re-extract" : "Extract fields"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-3 flex items-start gap-2 border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {!facts && status === "failed" && resource.extraction_error && (
+        <div className="border border-red-200 bg-red-50 px-4 py-3 text-[12px] text-red-700">
+          Previous extraction failed: {resource.extraction_error}
+        </div>
+      )}
+
+      {!facts && status !== "failed" && (
+        <div className="border border-dashed border-[var(--color-hairline-strong)] bg-[var(--color-paper)] px-6 py-8 text-center">
+          <Sparkles className="mx-auto h-5 w-5 text-[var(--color-subtle)]" />
+          <p className="mt-3 text-[13px] text-[var(--color-muted)]">
+            Send this PDF to an LLM to extract deadlines, English test minima, quota, MEXT eligibility, and required documents.
+          </p>
+          <p className="mt-1.5 mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
+            Cost depends on configured provider · typically ¥0.5 – ¥5 per PDF
+          </p>
+        </div>
+      )}
+
+      {facts && <ExtractedFactsView facts={facts} dateLocale={dateLocale} />}
+    </section>
+  );
+}
+
+function ExtractedFactsView({
+  facts,
+  dateLocale,
+}: {
+  facts: ExtractedProgramFields;
+  dateLocale: string;
+}) {
+  const confidenceTone =
+    facts.extraction_confidence >= 0.8
+      ? "bg-emerald-50 text-emerald-700"
+      : facts.extraction_confidence >= 0.5
+        ? "bg-amber-50 text-amber-700"
+        : "bg-red-50 text-red-700";
+
+  return (
+    <div className="space-y-6">
+      {/* Header strip — program name + confidence */}
+      <div className="border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="serif text-[22px] font-semibold tracking-[-0.01em] text-[var(--color-ink)]">
+              {facts.program_name}
+            </div>
+            {(facts.graduate_school || facts.department) && (
+              <div className="mt-1 text-[12.5px] text-[var(--color-muted)]">
+                {[facts.graduate_school, facts.department].filter(Boolean).join(" · ")}
+              </div>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {facts.degree && <Pill>{facts.degree}</Pill>}
+              {facts.language && <Pill>{facts.language}</Pill>}
+              {facts.intake_months.length > 0 && (
+                <Pill>{facts.intake_months.join(" / ")}</Pill>
+              )}
+              {facts.mext_eligible && <Pill tone="todai">MEXT</Pill>}
+              {facts.supervisor_consent_required && <Pill tone="warn">需联系导师</Pill>}
+            </div>
+          </div>
+          <span className={`mono inline-flex h-6 items-center px-2 text-[10px] uppercase tracking-[0.16em] ${confidenceTone}`}>
+            extraction · {(facts.extraction_confidence * 100).toFixed(0)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Cycles — application windows */}
+      {facts.cycles.length > 0 && (
+        <FactBlock icon={Calendar} title="Application cycles">
+          <ul className="divide-y divide-[var(--color-hairline)]">
+            {facts.cycles.map((cycle, i) => (
+              <li key={i} className="py-3 first:pt-0 last:pb-0">
+                <div className="text-[14px] font-medium text-[var(--color-ink)]">{cycle.cycle_name}</div>
+                <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-[12.5px] sm:grid-cols-3">
+                  <DateRow label="Application opens" iso={cycle.application_open} locale={dateLocale} />
+                  <DateRow label="Application closes" iso={cycle.application_close} locale={dateLocale} highlight />
+                  <DateRow label="Consent letter due" iso={cycle.consent_letter_deadline} locale={dateLocale} />
+                  <DateRow label="Exam period" iso={cycle.exam_period} locale={dateLocale} />
+                  <DateRow label="Result announcement" iso={cycle.result_announcement} locale={dateLocale} />
+                  <DateRow label="Enrollment" iso={cycle.enrollment_date} locale={dateLocale} />
+                </dl>
+              </li>
+            ))}
+          </ul>
+        </FactBlock>
+      )}
+
+      {/* Requirements */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <FactBlock title="Language requirements">
+          <dl className="space-y-2 text-[13px]">
+            <FactRow label="English test" value={facts.english_test.type} />
+            <FactRow label="Min score" value={facts.english_test.minimum_score?.toString()} />
+            <FactRow label="Japanese required" value={facts.japanese_test.required ? "Yes" : "No"} />
+            {facts.japanese_test.type && <FactRow label="JA test" value={`${facts.japanese_test.type}${facts.japanese_test.minimum_level ? ` · ${facts.japanese_test.minimum_level}` : ""}`} />}
+            {facts.english_test.notes && (
+              <li className="mt-2 text-[12px] leading-5 text-[var(--color-subtle)]">{facts.english_test.notes}</li>
+            )}
+          </dl>
+        </FactBlock>
+
+        <FactBlock title="Cost & quota">
+          <dl className="space-y-2 text-[13px]">
+            <FactRow label="Annual tuition" value={facts.tuition_per_year_jpy ? `¥${facts.tuition_per_year_jpy.toLocaleString()}` : null} />
+            <FactRow label="Exam fee" value={facts.exam_fee_jpy ? `¥${facts.exam_fee_jpy.toLocaleString()}` : null} />
+            <FactRow label="Quota" value={facts.quota?.toString()} />
+            {facts.scholarships.length > 0 && (
+              <li className="mt-2">
+                <div className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)] mb-1">Scholarships</div>
+                <div className="flex flex-wrap gap-1">
+                  {facts.scholarships.map((s) => <Pill key={s}>{s}</Pill>)}
+                </div>
+              </li>
+            )}
+          </dl>
+        </FactBlock>
+      </div>
+
+      {/* Required documents */}
+      {facts.documents_required.length > 0 && (
+        <FactBlock icon={FileText} title="Documents required">
+          <ul className="flex flex-wrap gap-2">
+            {facts.documents_required.map((d) => (
+              <li key={d} className="inline-flex h-7 items-center border border-[var(--color-hairline)] bg-[var(--color-paper)] px-2.5 text-[12px] text-[var(--color-ink)]">
+                {d}
+              </li>
+            ))}
+          </ul>
+        </FactBlock>
+      )}
+
+      {/* Free-form notes */}
+      {facts.notes && (
+        <FactBlock title="Notes">
+          <p className="whitespace-pre-wrap text-[13px] leading-[1.65] text-[var(--color-muted)]">{facts.notes}</p>
+        </FactBlock>
+      )}
+
+      {/* Things the PDF didn't answer */}
+      {facts.unresolved_questions.length > 0 && (
+        <div className="border-l-2 border-amber-300 bg-amber-50/40 px-5 py-4">
+          <div className="mono text-[10px] uppercase tracking-[0.18em] text-amber-700">
+            Unresolved · still need to look up
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-[12.5px] text-amber-900">
+            {facts.unresolved_questions.map((q, i) => <li key={i}>{q}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FactBlock({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5">
+      <div className="mb-3 flex items-center gap-2">
+        {Icon && <Icon className="h-3.5 w-3.5 text-[var(--color-subtle)]" />}
+        <h3 className="mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-muted)]">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "todai" | "warn" }) {
+  const toneClass = {
+    neutral: "border-[var(--color-hairline)] bg-[var(--color-paper)] text-[var(--color-muted)]",
+    todai: "border-[var(--color-todai)]/30 bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
+    warn: "border-amber-200 bg-amber-50 text-amber-700",
+  }[tone];
+  return (
+    <span className={`inline-flex h-6 items-center border px-2 text-[11px] font-medium ${toneClass}`}>
+      {children}
+    </span>
+  );
+}
+
+function FactRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <li className="flex items-baseline justify-between gap-3">
+      <span className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">{label}</span>
+      <span className="text-[13px] text-[var(--color-ink)] tabular">{value ?? "—"}</span>
+    </li>
+  );
+}
+
+function DateRow({
+  label,
+  iso,
+  locale,
+  highlight,
+}: {
+  label: string;
+  iso: string | null;
+  locale: string;
+  highlight?: boolean;
+}) {
+  const formatted = iso ? formatDate(iso, locale, iso) : "—";
+  const isUnset = !iso;
+  return (
+    <div className="flex flex-col">
+      <dt className="mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-subtle)]">{label}</dt>
+      <dd
+        className={`text-[13px] tabular ${
+          isUnset
+            ? "text-[var(--color-subtle)]"
+            : highlight
+              ? "font-semibold text-[var(--color-todai)]"
+              : "text-[var(--color-ink)]"
+        }`}
+      >
+        {formatted}
+      </dd>
     </div>
   );
 }
