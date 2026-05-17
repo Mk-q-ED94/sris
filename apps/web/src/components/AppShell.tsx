@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   BookOpen,
   CalendarDays,
+  ClipboardList,
   FlaskConical,
   GraduationCap,
   Inbox,
@@ -22,6 +23,7 @@ export type PageKey =
   | "professors"
   | "labs"
   | "programs"
+  | "requirements"
   | "papers"
   | "review"
   | "timeline"
@@ -34,6 +36,7 @@ const navIcons: Record<PageKey, React.ComponentType<{ className?: string }>> = {
   professors: UsersRound,
   labs: FlaskConical,
   programs: GraduationCap,
+  requirements: ClipboardList,
   papers: BookOpen,
   review: Inbox,
   timeline: CalendarDays,
@@ -47,6 +50,7 @@ const NAV_ORDER: PageKey[] = [
   "professors",
   "labs",
   "programs",
+  "requirements",
   "papers",
   "review",
   "timeline",

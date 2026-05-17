@@ -10,6 +10,7 @@ import { Papers } from "./pages/Papers";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { Professors } from "./pages/Professors";
 import { Programs } from "./pages/Programs";
+import { Requirements } from "./pages/Requirements";
 import { Review } from "./pages/Review";
 import { ResourceDetail } from "./pages/ResourceDetail";
 import { Sources } from "./pages/Sources";
@@ -18,7 +19,7 @@ import { Universities } from "./pages/Universities";
 import { UniversityDetail } from "./pages/UniversityDetail";
 import { Conflicts } from "./pages/Conflicts";
 
-const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "papers", "review", "timeline", "sources", "conflicts"];
+const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "requirements", "papers", "review", "timeline", "sources", "conflicts"];
 
 interface HashRoute {
   page: PageKey | "capture";
@@ -128,6 +129,7 @@ function AppContent() {
     if (route.page === "professors") return <Professors onNavigate={navigate} />;
     if (route.page === "labs") return <Labs onNavigate={navigate} />;
     if (route.page === "programs") return <Programs />;
+    if (route.page === "requirements") return <Requirements onNavigate={navigate} />;
     if (route.page === "review") return <Review />;
     return <PlaceholderPage page={route.page as PageKey} />;
   }, [route, navigate, closeCapture]);

@@ -1,4 +1,4 @@
-import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, Paper, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UniversitySummary, UserProfile } from "../types/sris";
+import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, Paper, PaperCandidate, Professor, Program, ProgramRequirements, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UniversitySummary, UserProfile } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -92,6 +92,13 @@ export function fetchUniversitySummary(token: string): Promise<UniversitySummary
 export function fetchPapers(token: string): Promise<Paper[]> {
   return request<Paper[]>("/api/papers", token).catch((error: unknown) => {
     if (import.meta.env.DEV) return mockPapers;
+    throw error;
+  });
+}
+
+export function fetchProgramRequirements(token: string): Promise<ProgramRequirements[]> {
+  return request<ProgramRequirements[]>("/api/program-requirements", token).catch((error: unknown) => {
+    if (import.meta.env.DEV) return mockProgramRequirements;
     throw error;
   });
 }
@@ -613,6 +620,37 @@ const mockUniversitySummary: UniversitySummary[] = [
   { id: "osaka", name: "Osaka University", location: "Osaka", website: "https://www.osaka-u.ac.jp/en", program_count: 1, professor_count: 1, lab_count: 1, resource_count: 1, latest_resource_at: "2026-04-20T00:00:00Z" },
   { id: "tohoku", name: "Tohoku University", location: "Sendai", website: "https://www.tohoku.ac.jp/en/", program_count: 0, professor_count: 0, lab_count: 0, resource_count: 0, latest_resource_at: null },
   { id: "tsukuba", name: "University of Tsukuba", location: "Tsukuba", website: "https://www.tsukuba.ac.jp/en/", program_count: 0, professor_count: 0, lab_count: 0, resource_count: 0, latest_resource_at: null },
+];
+
+const mockProgramRequirements: ProgramRequirements[] = [
+  {
+    program: { ...mockPrograms[0]!, match_reason: "Strong overlap with applicant's ML systems background — Prof. Sato's optimization research aligns with declared interests in distributed training." },
+    university: { id: "utokyo", name: "The University of Tokyo", location: "Tokyo", website: "https://www.u-tokyo.ac.jp/en/" },
+    extracted_fields: {
+      program_name: "Information Science and Technology Master's Program",
+      graduate_school: "Graduate School of Information Science and Technology",
+      department: "Computer Science",
+      degree: "Master",
+      language: "English / Japanese",
+      intake_months: ["April", "October"],
+      cycles: [
+        { cycle_name: "Spring 2026", application_open: "2025-12-01", application_close: "2026-01-15", consent_letter_deadline: "2025-11-30", exam_period: "2026-02", result_announcement: "2026-03-01", enrollment_date: "2026-04-01" },
+      ],
+      english_test: { type: "TOEFL iBT", minimum_score: 80, notes: "IELTS Academic 6.5 also accepted" },
+      japanese_test: { required: false, type: null, minimum_level: null },
+      documents_required: ["SOP", "Transcripts", "Recommendation letters x2", "Research plan", "English score", "CV"],
+      supervisor_consent_required: true,
+      exam_fee_jpy: 30000,
+      tuition_per_year_jpy: 535800,
+      quota: 20,
+      mext_eligible: true,
+      scholarships: ["MEXT", "JASSO"],
+      notes: "Strong systems track; supervisor pre-consent strongly recommended.",
+      extraction_confidence: 0.92,
+      unresolved_questions: [],
+    },
+    source_resource: { id: "res-1", title: "UTokyo IST Admission Guide 2026", url: "https://www.i.u-tokyo.ac.jp/eng/admission/", resource_type: "admission_notice", resource_status: "core_evidence", extracted_at: "2026-05-01T00:00:00Z" },
+  },
 ];
 
 const mockPapers: Paper[] = [

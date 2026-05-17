@@ -7,11 +7,12 @@ const PAGE_INDEX: Record<PageKey, string> = {
   professors: "03",
   labs: "04",
   programs: "05",
-  papers: "06",
-  review: "07",
-  timeline: "08",
-  sources: "09",
-  conflicts: "10",
+  requirements: "06",
+  papers: "07",
+  review: "08",
+  timeline: "09",
+  sources: "10",
+  conflicts: "11",
 };
 
 export function PlaceholderPage({ page }: { page: PageKey }) {

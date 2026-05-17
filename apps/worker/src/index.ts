@@ -324,6 +324,49 @@ export default {
         return json({ resource: res, linked_university: linkedUniversity, linked_professor: linkedProfessor, linked_program: linkedProgram, linked_lab: linkedLab });
       }
 
+      if (url.pathname === "/api/program-requirements" && request.method === "GET") {
+        const programsRes = await env.DB.prepare(
+          "select * from programs where match_reason is not null order by deadline asc, program_name asc"
+        ).all<Record<string, unknown>>();
+        const universitiesRes = await env.DB.prepare(
+          "select id, name, location, website from universities"
+        ).all<Record<string, unknown>>();
+        const uniMap = new Map<string, Record<string, unknown>>();
+        for (const u of universitiesRes.results) uniMap.set(String(u.id), u);
+
+        const results: Record<string, unknown>[] = [];
+        for (const prog of programsRes.results) {
+          const progId = String(prog.id);
+          const uniId = String(prog.university_id);
+          let resource = await env.DB.prepare(
+            "select id, title, url, resource_status, extracted_facts, extracted_at, resource_type from intelligence_resources where program_id = ? and extraction_status = 'succeeded' and extracted_facts is not null order by extracted_at desc limit 1"
+          ).bind(progId).first<Record<string, unknown>>();
+          if (!resource) {
+            resource = await env.DB.prepare(
+              "select id, title, url, resource_status, extracted_facts, extracted_at, resource_type from intelligence_resources where university_id = ? and resource_type in ('program_page', 'admission_notice') and extraction_status = 'succeeded' and extracted_facts is not null order by extracted_at desc limit 1"
+            ).bind(uniId).first<Record<string, unknown>>();
+          }
+          let extracted_fields: unknown = null;
+          if (resource && typeof resource.extracted_facts === "string") {
+            try { extracted_fields = JSON.parse(resource.extracted_facts); } catch { extracted_fields = null; }
+          }
+          results.push({
+            program: prog,
+            university: uniMap.get(uniId) ?? { id: uniId, name: uniId, location: null, website: null },
+            extracted_fields,
+            source_resource: resource ? {
+              id: resource.id,
+              title: resource.title,
+              url: resource.url,
+              resource_type: resource.resource_type,
+              resource_status: resource.resource_status ?? null,
+              extracted_at: resource.extracted_at ?? null,
+            } : null,
+          });
+        }
+        return json(results);
+      }
+
       if (url.pathname === "/api/universities/summary" && request.method === "GET") {
         const rows = await env.DB.prepare(`
           SELECT u.id, u.name, u.location, u.website,

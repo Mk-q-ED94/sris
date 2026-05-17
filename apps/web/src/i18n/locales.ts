@@ -423,6 +423,79 @@ export interface Locale {
     reliabilityScore: string;
     runRefresh: string;
   };
+  requirementsPage: {
+    title: string;
+    description: string;
+    tabCards: string;
+    tabCompare: string;
+    matchedLabel: string;
+    universitiesLabel: string;
+    avgConfidence: string;
+    filterPlaceholder: string;
+    noResults: string;
+    noResultsHelper: string;
+    noMatchedAction: string;
+    sourceLabel: string;
+    extractedAt: string;
+    noExtractedFacts: string;
+    noExtractedFactsHelper: string;
+    runExtract: string;
+    matchReasonLabel: string;
+    sectionBasics: string;
+    sectionLanguage: string;
+    sectionApplication: string;
+    sectionFees: string;
+    sectionDocuments: string;
+    sectionScholarships: string;
+    sectionCycles: string;
+    sectionNotes: string;
+    degree: string;
+    language: string;
+    intakeMonths: string;
+    graduateSchool: string;
+    department: string;
+    englishTest: string;
+    englishMinScore: string;
+    englishNotes: string;
+    japaneseRequired: string;
+    japaneseType: string;
+    japaneseLevel: string;
+    documentsRequired: string;
+    supervisorConsent: string;
+    yes: string;
+    no: string;
+    examFee: string;
+    tuitionPerYear: string;
+    quota: string;
+    mextEligible: string;
+    scholarships: string;
+    cycleApplicationOpen: string;
+    cycleApplicationClose: string;
+    cycleConsent: string;
+    cycleExam: string;
+    cycleResult: string;
+    cycleEnrollment: string;
+    applicationPeriods: string;
+    requirementsList: string;
+    contactEmail: string;
+    deadline: string;
+    confidence: string;
+    unresolvedQuestions: string;
+    notSpecified: string;
+    colProgram: string;
+    colUniversity: string;
+    colDegree: string;
+    colLanguage: string;
+    colDeadline: string;
+    colEnglish: string;
+    colJapanese: string;
+    colDocs: string;
+    colSupervisor: string;
+    colTuition: string;
+    colMext: string;
+    openProgram: string;
+    openSource: string;
+  };
   universitiesPage: {
     title: string;
     description: string;
@@ -555,13 +628,14 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "高", medium: "中", low: "低" },
     taskStatuses: { todo: "待办", doing: "进行中", done: "已完成" },
     status: { db: "D1 数据库", arxiv: "arXiv Radar", ai: "AI 摘要", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", papers: "论文雷达", review: "待确认", timeline: "时间线", sources: "数据源", conflicts: "冲突" },
+    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", requirements: "申请要求", papers: "论文雷达", review: "待确认", timeline: "时间线", sources: "数据源", conflicts: "冲突" },
     pages: {
       dashboard: { title: "总览", description: "Dashboard" },
       universities: { title: "院校", description: "目标院校数据库会在下一轮迁移到 React 表格视图。" },
       professors: { title: "教授", description: "目标院校的教授和导师信息，包括研究方向、联系方式和实验室关联。" },
       labs: { title: "实验室", description: "实验室和研究组信息，包括研究方向、近期论文和负责人。" },
       programs: { title: "项目", description: "SGU 英文项目、申请窗口、语言要求和学费信息。" },
+      requirements: { title: "申请要求", description: "已 AI 匹配的 SGU 项目的完整申请要求详情。" },
       papers: { title: "论文雷达", description: "已确认论文库会改成高密度研究表格。" },
       review: { title: "待确认", description: "Review Queue 会保留接受/忽略流程,并升级成卡片队列。" },
       timeline: { title: "时间线", description: "TOEFL / JLPT / SOP / 推荐信 / 申请 DDL 的 Gantt 视图。" },
@@ -959,6 +1033,79 @@ export const LOCALES: Record<LangCode, Locale> = {
       reliabilityScore: "来源可靠性",
       runRefresh: "刷新可信度",
     },
+    requirementsPage: {
+      title: "申请要求详情",
+      description: "已通过 AI 匹配标记为相关的 SGU 项目，把官方招生公告里的语言成绩、文档清单、申请窗口、学费等结构化字段铺开。",
+      tabCards: "详情卡片",
+      tabCompare: "对比表格",
+      matchedLabel: "已匹配项目",
+      universitiesLabel: "涉及院校",
+      avgConfidence: "平均抽取置信度",
+      filterPlaceholder: "按项目 / 院校筛选…",
+      noResults: "无匹配结果",
+      noResultsHelper: "尝试清空筛选词。",
+      noMatchedAction: "前往「项目」页对感兴趣的 SGU 项目点击「AI 匹配」按钮，匹配过的项目就会出现在这里。",
+      sourceLabel: "数据来源",
+      extractedAt: "抽取时间",
+      noExtractedFacts: "尚未结构化抽取",
+      noExtractedFactsHelper: "该项目还没有关联的 program_page 或 admission_notice 资源完成 AI 抽取。建议捕获官方招生页面并在 Resource Detail 触发抽取。",
+      runExtract: "前往捕获官方页",
+      matchReasonLabel: "AI 匹配分析",
+      sectionBasics: "基本信息",
+      sectionLanguage: "语言要求",
+      sectionApplication: "申请安排",
+      sectionFees: "费用",
+      sectionDocuments: "申请材料",
+      sectionScholarships: "奖学金",
+      sectionCycles: "申请周期",
+      sectionNotes: "备注",
+      degree: "学位",
+      language: "授课语言",
+      intakeMonths: "入学月",
+      graduateSchool: "研究科",
+      department: "专攻",
+      englishTest: "英语考试",
+      englishMinScore: "最低分",
+      englishNotes: "备注",
+      japaneseRequired: "日语要求",
+      japaneseType: "类型",
+      japaneseLevel: "等级",
+      documentsRequired: "所需文档",
+      supervisorConsent: "需要事前同意",
+      yes: "需要",
+      no: "不需要",
+      examFee: "考试费",
+      tuitionPerYear: "年学费",
+      quota: "招生人数",
+      mextEligible: "MEXT 资格",
+      scholarships: "奖学金",
+      cycleApplicationOpen: "申请开放",
+      cycleApplicationClose: "申请截止",
+      cycleConsent: "同意书截止",
+      cycleExam: "考试期",
+      cycleResult: "结果发布",
+      cycleEnrollment: "入学日",
+      applicationPeriods: "申请窗口",
+      requirementsList: "申请要求",
+      contactEmail: "联系邮箱",
+      deadline: "截止日",
+      confidence: "置信度",
+      unresolvedQuestions: "未确认问题",
+      notSpecified: "未指定",
+      colProgram: "项目",
+      colUniversity: "院校",
+      colDegree: "学位",
+      colLanguage: "语言",
+      colDeadline: "截止",
+      colEnglish: "英语",
+      colJapanese: "日语",
+      colDocs: "材料",
+      colSupervisor: "事前同意",
+      colTuition: "学费",
+      colMext: "MEXT",
+      openProgram: "打开项目",
+      openSource: "查看证据",
+    },
     universitiesPage: {
       title: "院校情报地图",
       description: "每所目标院校的情报覆盖状态：还缺什么、最近捕获了什么、下一步该查哪里。",
@@ -1074,13 +1221,14 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "High", medium: "Medium", low: "Low" },
     taskStatuses: { todo: "Todo", doing: "Doing", done: "Done" },
     status: { db: "D1 database", arxiv: "arXiv radar", ai: "AI summary", cron: "Cloudflare cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", papers: "Paper radar", review: "Review", timeline: "Timeline", sources: "Sources", conflicts: "Conflicts" },
+    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", requirements: "Requirements", papers: "Paper radar", review: "Review", timeline: "Timeline", sources: "Sources", conflicts: "Conflicts" },
     pages: {
       dashboard: { title: "Dashboard", description: "Dashboard" },
       universities: { title: "Universities", description: "The target-university database moves to a React table view next." },
       professors: { title: "Professors", description: "Professors and advisors at target universities — research directions, contact info, and lab affiliations." },
       labs: { title: "Labs", description: "Research groups and labs — focus areas, recent papers, and directors." },
       programs: { title: "Programs", description: "SGU English programs — application windows, language requirements, and tuition." },
+      requirements: { title: "Requirements", description: "Full application requirements for AI-matched SGU programs." },
       papers: { title: "Paper radar", description: "The accepted-papers library will become a dense research table." },
       review: { title: "Review", description: "Review queue keeps accept/ignore but upgrades to a card layout." },
       timeline: { title: "Timeline", description: "Gantt view of TOEFL / JLPT / SOP / recommendation / application DDLs." },
@@ -1478,6 +1626,79 @@ export const LOCALES: Record<LangCode, Locale> = {
       reliabilityScore: "Source reliability",
       runRefresh: "Refresh confidence",
     },
+    requirementsPage: {
+      title: "Program requirements",
+      description: "Structured requirements for SGU programs you've AI-matched — language scores, document checklists, application windows, fees — all laid out side by side.",
+      tabCards: "Detail cards",
+      tabCompare: "Compare table",
+      matchedLabel: "Matched programs",
+      universitiesLabel: "Universities",
+      avgConfidence: "Avg extraction confidence",
+      filterPlaceholder: "Filter by program / university…",
+      noResults: "No matching results",
+      noResultsHelper: "Try clearing the filter.",
+      noMatchedAction: "Go to the Programs page and click \"AI match\" on programs you're interested in — matched programs will appear here.",
+      sourceLabel: "Source",
+      extractedAt: "Extracted",
+      noExtractedFacts: "Not yet extracted",
+      noExtractedFactsHelper: "No linked program_page or admission_notice resource has been AI-extracted for this program. Capture the official admission page and trigger extraction from Resource Detail.",
+      runExtract: "Capture official page",
+      matchReasonLabel: "AI match analysis",
+      sectionBasics: "Basics",
+      sectionLanguage: "Language requirements",
+      sectionApplication: "Application",
+      sectionFees: "Fees",
+      sectionDocuments: "Documents required",
+      sectionScholarships: "Scholarships",
+      sectionCycles: "Application cycles",
+      sectionNotes: "Notes",
+      degree: "Degree",
+      language: "Language",
+      intakeMonths: "Intake",
+      graduateSchool: "Graduate school",
+      department: "Department",
+      englishTest: "English test",
+      englishMinScore: "Min score",
+      englishNotes: "Notes",
+      japaneseRequired: "Japanese required",
+      japaneseType: "Test type",
+      japaneseLevel: "Min level",
+      documentsRequired: "Documents",
+      supervisorConsent: "Supervisor consent required",
+      yes: "Required",
+      no: "Not required",
+      examFee: "Exam fee",
+      tuitionPerYear: "Tuition / year",
+      quota: "Quota",
+      mextEligible: "MEXT eligible",
+      scholarships: "Scholarships",
+      cycleApplicationOpen: "App. open",
+      cycleApplicationClose: "App. close",
+      cycleConsent: "Consent deadline",
+      cycleExam: "Exam period",
+      cycleResult: "Result",
+      cycleEnrollment: "Enrollment",
+      applicationPeriods: "Application periods",
+      requirementsList: "Requirements",
+      contactEmail: "Contact email",
+      deadline: "Deadline",
+      confidence: "Confidence",
+      unresolvedQuestions: "Unresolved questions",
+      notSpecified: "Not specified",
+      colProgram: "Program",
+      colUniversity: "University",
+      colDegree: "Degree",
+      colLanguage: "Lang",
+      colDeadline: "Deadline",
+      colEnglish: "English",
+      colJapanese: "JLPT",
+      colDocs: "Docs",
+      colSupervisor: "Consent",
+      colTuition: "Tuition",
+      colMext: "MEXT",
+      openProgram: "Open program",
+      openSource: "View evidence",
+    },
     universitiesPage: {
       title: "University intelligence map",
       description: "Coverage status for each target university — what's missing, what was recently captured, where to look next.",
@@ -1593,13 +1814,14 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "高", medium: "中", low: "低" },
     taskStatuses: { todo: "未着手", doing: "進行中", done: "完了" },
     status: { db: "D1 データベース", arxiv: "arXiv レーダー", ai: "AI サマリ", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "毎日 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", papers: "論文レーダー", review: "レビュー", timeline: "タイムライン", sources: "ソース", conflicts: "競合" },
+    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", requirements: "出願要件", papers: "論文レーダー", review: "レビュー", timeline: "タイムライン", sources: "ソース", conflicts: "競合" },
     pages: {
       dashboard: { title: "ダッシュボード", description: "Dashboard" },
       universities: { title: "大学", description: "志望校データベースは次回 React テーブルに移行します。" },
       professors: { title: "教授", description: "志望校の教授・指導教員情報 — 研究方向・連絡先・研究室所属。" },
       labs: { title: "研究室", description: "研究グループ・研究室 — 重点領域・最近の論文・責任者。" },
       programs: { title: "プログラム", description: "SGU 英語プログラム — 出願窓口・言語要件・学費情報。" },
+      requirements: { title: "出願要件", description: "AI マッチ済み SGU プログラムの完全な出願要件詳細。" },
       papers: { title: "論文レーダー", description: "登録済み論文ライブラリは高密度の研究テーブルになります。" },
       review: { title: "レビュー", description: "レビュー待ちは accept/ignore のままカード形式に進化します。" },
       timeline: { title: "タイムライン", description: "TOEFL / JLPT / SOP / 推薦状 / 出願締切のガントビュー。" },
@@ -1996,6 +2218,79 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceDecayed: "信頼度が低下",
       reliabilityScore: "ソース信頼性",
       runRefresh: "信頼度を更新",
+    },
+    requirementsPage: {
+      title: "出願要件詳細",
+      description: "AI マッチで関連付けた SGU プログラムの構造化された出願要件 — 語学スコア、書類リスト、出願期間、学費を一覧で。",
+      tabCards: "詳細カード",
+      tabCompare: "比較表",
+      matchedLabel: "マッチ済み",
+      universitiesLabel: "大学数",
+      avgConfidence: "平均抽出信頼度",
+      filterPlaceholder: "プログラム / 大学でフィルター…",
+      noResults: "一致する結果なし",
+      noResultsHelper: "フィルターを消去してください。",
+      noMatchedAction: "「プログラム」ページで興味のある SGU プログラムに「AI マッチ」をクリックすると、ここに表示されます。",
+      sourceLabel: "ソース",
+      extractedAt: "抽出日時",
+      noExtractedFacts: "未抽出",
+      noExtractedFactsHelper: "このプログラムに関連する program_page または admission_notice リソースが AI 抽出されていません。公式募集ページをキャプチャして Resource Detail で抽出を実行してください。",
+      runExtract: "公式ページをキャプチャ",
+      matchReasonLabel: "AI マッチ分析",
+      sectionBasics: "基本情報",
+      sectionLanguage: "語学要件",
+      sectionApplication: "出願情報",
+      sectionFees: "費用",
+      sectionDocuments: "提出書類",
+      sectionScholarships: "奨学金",
+      sectionCycles: "出願サイクル",
+      sectionNotes: "備考",
+      degree: "学位",
+      language: "授業言語",
+      intakeMonths: "入学月",
+      graduateSchool: "研究科",
+      department: "専攻",
+      englishTest: "英語試験",
+      englishMinScore: "最低点",
+      englishNotes: "備考",
+      japaneseRequired: "日本語要件",
+      japaneseType: "試験タイプ",
+      japaneseLevel: "最低レベル",
+      documentsRequired: "必要書類",
+      supervisorConsent: "事前同意必要",
+      yes: "必要",
+      no: "不要",
+      examFee: "受験料",
+      tuitionPerYear: "年間学費",
+      quota: "募集人数",
+      mextEligible: "MEXT 対象",
+      scholarships: "奨学金",
+      cycleApplicationOpen: "出願開始",
+      cycleApplicationClose: "出願締切",
+      cycleConsent: "同意書締切",
+      cycleExam: "試験期間",
+      cycleResult: "結果発表",
+      cycleEnrollment: "入学日",
+      applicationPeriods: "出願期間",
+      requirementsList: "出願要件",
+      contactEmail: "連絡先",
+      deadline: "締切",
+      confidence: "信頼度",
+      unresolvedQuestions: "未確認事項",
+      notSpecified: "未指定",
+      colProgram: "プログラム",
+      colUniversity: "大学",
+      colDegree: "学位",
+      colLanguage: "言語",
+      colDeadline: "締切",
+      colEnglish: "英語",
+      colJapanese: "日本語",
+      colDocs: "書類",
+      colSupervisor: "同意",
+      colTuition: "学費",
+      colMext: "MEXT",
+      openProgram: "プログラムを開く",
+      openSource: "証拠を見る",
     },
     universitiesPage: {
       title: "大学情報マップ",

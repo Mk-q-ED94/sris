@@ -394,6 +394,20 @@ export type SourceReliability = {
   last_computed_at?: string | null;
 };
 
+export type ProgramRequirements = {
+  program: Program;
+  university: { id: string; name: string; location: string | null; website: string | null };
+  extracted_fields: ExtractedProgramFields | ExtractedProgramPageFields | null;
+  source_resource: {
+    id: string;
+    title: string;
+    url: string;
+    resource_type: string;
+    resource_status: string | null;
+    extracted_at: string | null;
+  } | null;
+};
+
 export type UniversitySummary = {
   id: string;
   name: string;
