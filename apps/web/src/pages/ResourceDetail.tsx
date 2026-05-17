@@ -13,6 +13,22 @@ const RESOURCE_TYPES: ResourceType[] = [
   "admission_notice", "experience_post", "video", "other",
 ];
 
+const STATUS_BADGE_CLS: Record<string, string> = {
+  unverified: "border-[var(--color-hairline-strong)] text-[var(--color-subtle)] bg-[var(--color-paper)]",
+  verified: "border-emerald-300 text-emerald-700 bg-emerald-50",
+  stale: "border-amber-300 text-amber-700 bg-amber-50",
+  core_evidence: "border-[var(--color-todai)]/40 text-[var(--color-todai)] bg-[var(--color-todai-soft)]",
+};
+
+function ResourceStatusBadge({ status, rd }: { status: string; rd: { statusUnverified: string; statusVerified: string; statusStale: string; statusCoreEvidence: string } }) {
+  const label = status === "verified" ? rd.statusVerified : status === "stale" ? rd.statusStale : status === "core_evidence" ? rd.statusCoreEvidence : rd.statusUnverified;
+  return (
+    <span className={`mono inline-flex h-5 items-center border px-1.5 text-[9px] uppercase tracking-[0.12em] ${STATUS_BADGE_CLS[status] ?? STATUS_BADGE_CLS.unverified}`}>
+      {label}
+    </span>
+  );
+}
+
 const TYPE_COLORS: Record<string, string> = {
   paper: "bg-[var(--color-isct-soft)] text-[var(--color-isct)]",
   lab_page: "bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
@@ -49,6 +65,7 @@ export function ResourceDetail({
   const [suggestion, setSuggestion] = useState<MetaSuggestion | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryPreview, setSummaryPreview] = useState<SummarizeResult | null>(null);
+  const [markingStatus, setMarkingStatus] = useState(false);
 
   // Edit form state
   const [editType, setEditType] = useState<ResourceType>("other");
@@ -231,6 +248,19 @@ export function ResourceDetail({
     }
   }
 
+  async function handleSetStatus(status: "unverified" | "verified" | "stale" | "core_evidence") {
+    if (!data || markingStatus) return;
+    setMarkingStatus(true);
+    try {
+      const updated = await updateResource(token, data.resource.id, { resource_status: status });
+      setData({ ...data, resource: updated });
+    } catch {
+      // Silent failure — status badge shows current server state on next load
+    } finally {
+      setMarkingStatus(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-10">
@@ -294,6 +324,28 @@ export function ResourceDetail({
               <span className="mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-subtle)]">{res.source}</span>
             </>
           )}
+          <ResourceStatusBadge status={res.resource_status ?? "unverified"} rd={rd} />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {(["unverified", "verified", "stale", "core_evidence"] as const).map((s) => {
+            const isCurrent = (res.resource_status ?? "unverified") === s;
+            const label = s === "unverified" ? rd.statusUnverified : s === "verified" ? rd.statusVerified : s === "stale" ? rd.statusStale : rd.statusCoreEvidence;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => handleSetStatus(s)}
+                disabled={markingStatus || isCurrent}
+                className={`mono text-[9px] px-2 py-0.5 border transition-colors disabled:cursor-default ${
+                  isCurrent
+                    ? STATUS_BADGE_CLS[s]
+                    : "border-[var(--color-hairline)] text-[var(--color-subtle)] hover:border-[var(--color-hairline-strong)] hover:text-[var(--color-muted)]"
+                } disabled:opacity-${isCurrent ? "100" : "50"}`}
+              >
+                {markingStatus && isCurrent ? rd.markingStatus : label}
+              </button>
+            );
+          })}
         </div>
         <h1 className="serif mt-4 text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-[44px]">
           {res.title}

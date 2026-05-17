@@ -281,13 +281,20 @@ export default {
         const resourceCount = resources.length;
         const admissionCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "admission_notice"]);
         const experienceCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "experience_post"]);
+        // Granular gap checks
+        const programsWithDeadline = progCount > 0 ? await countRows(env.DB, "programs", "university_id = ? and deadline is not null", [uniId]) : 1;
+        const programsWithRequirements = progCount > 0 ? await countRows(env.DB, "programs", "university_id = ? and requirements is not null and requirements != ''", [uniId]) : 1;
+        const labPageCount = (profCount > 0 || labCount > 0) ? await countRows(env.DB, "intelligence_resources", "university_id = ? and resource_type in ('lab_page','professor_page')", [uniId]) : 1;
 
         interface GapItem { label_key: string; priority: "high" | "medium" | "low"; action_id?: string | null; action_status?: string | null; resolved_by?: string | null; }
         const gaps: GapItem[] = [];
         if (progCount === 0) gaps.push({ label_key: "no_programs_for", priority: "high" });
         if (profCount === 0 && labCount === 0) gaps.push({ label_key: "no_professors_for", priority: "high" });
+        if (progCount > 0 && programsWithDeadline === 0) gaps.push({ label_key: "no_deadline_for", priority: "high" });
         if (resourceCount < 3) gaps.push({ label_key: "few_resources_for", priority: "medium" });
         if (admissionCount === 0) gaps.push({ label_key: "no_admission_for", priority: "medium" });
+        if (progCount > 0 && programsWithRequirements === 0) gaps.push({ label_key: "no_materials_for", priority: "medium" });
+        if ((profCount > 0 || labCount > 0) && labPageCount === 0) gaps.push({ label_key: "no_lab_direction_for", priority: "medium" });
         if (experienceCount === 0) gaps.push({ label_key: "no_experience_for", priority: "low" });
         if (!gaps.length) gaps.push({ label_key: "none", priority: "low" });
 

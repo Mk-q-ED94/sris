@@ -109,7 +109,7 @@ export const TABLES: Record<string, TableConfig> = {
     table: "intelligence_resources",
     order: "created_at desc",
     jsonFields: [],
-    createFields: ["candidate_id", "title", "url", "resource_type", "source", "university_id", "program_id", "professor_id", "lab_id", "confidence", "decision_impact", "relevance_note", "domain_source", "content_text", "excerpt"],
+    createFields: ["candidate_id", "title", "url", "resource_type", "source", "university_id", "program_id", "professor_id", "lab_id", "confidence", "decision_impact", "relevance_note", "domain_source", "content_text", "excerpt", "resource_status"],
   },
   gapActions: {
     path: "/api/gap-actions",

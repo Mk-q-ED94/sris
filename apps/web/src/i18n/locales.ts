@@ -113,6 +113,12 @@ export interface Locale {
     summarizing: string;
     summaryPreview: string;
     applySummary: string;
+    statusLabel: string;
+    statusUnverified: string;
+    statusVerified: string;
+    statusStale: string;
+    statusCoreEvidence: string;
+    markingStatus: string;
   };
   sources: {
     title: string;
@@ -282,6 +288,12 @@ export interface Locale {
     gapNoAdmissionForDetail: (name: string) => string;
     gapNoExperienceFor: (name: string) => string;
     gapNoExperienceForDetail: (name: string) => string;
+    gapNoDeadlineFor: (name: string) => string;
+    gapNoDeadlineForDetail: (name: string) => string;
+    gapNoMaterialsFor: (name: string) => string;
+    gapNoMaterialsForDetail: (name: string) => string;
+    gapNoLabDirectionFor: (name: string) => string;
+    gapNoLabDirectionForDetail: (name: string) => string;
     staleSourcesTitle: string;
     staleSourcesBody: string;
     heroStatInbox: string;
@@ -511,6 +523,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       summarizing: "摘要中…",
       summaryPreview: "AI 摘要预览",
       applySummary: "应用为摘录",
+      statusLabel: "状态",
+      statusUnverified: "待核实",
+      statusVerified: "已验证",
+      statusStale: "已过期",
+      statusCoreEvidence: "核心证据",
+      markingStatus: "标记中…",
     },
     timeline: {
       title: "申请时间线",
@@ -722,6 +740,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       gapNoAdmissionForDetail: (name) => `${name} 尚无招生公告类资源，这是申请决策的关键信息。`,
       gapNoExperienceFor: (name) => `${name} 缺少经验帖`,
       gapNoExperienceForDetail: (name) => `${name} 尚无申请经验帖，了解前人路径有助于规划。`,
+      gapNoDeadlineFor: (name) => `${name} 项目无截止日期`,
+      gapNoDeadlineForDetail: (name) => `${name} 的项目尚未录入申请截止日期，无法规划时间线。`,
+      gapNoMaterialsFor: (name) => `${name} 项目无申请材料说明`,
+      gapNoMaterialsForDetail: (name) => `${name} 的项目缺少申请材料要求字段，无法确认准备清单。`,
+      gapNoLabDirectionFor: (name) => `${name} 实验室方向未知`,
+      gapNoLabDirectionForDetail: (name) => `${name} 有教授/实验室记录但缺少实验室页面资源，研究方向不明确。`,
       staleSourcesTitle: "数据源停滞",
       staleSourcesBody: "以下数据源超过 7 天未运行，可能错过新信息。",
       heroStatInbox: "情报入口",
@@ -934,6 +958,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       summarizing: "Summarizing…",
       summaryPreview: "AI summary preview",
       applySummary: "Apply as excerpt",
+      statusLabel: "Status",
+      statusUnverified: "Unverified",
+      statusVerified: "Verified",
+      statusStale: "Stale",
+      statusCoreEvidence: "Core evidence",
+      markingStatus: "Marking…",
     },
     timeline: {
       title: "Application timeline",
@@ -1145,6 +1175,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       gapNoAdmissionForDetail: (name) => `${name} has no admission notice resources — critical for application decisions.`,
       gapNoExperienceFor: (name) => `${name} lacks experience posts`,
       gapNoExperienceForDetail: (name) => `${name} has no application experience posts — understanding predecessors' paths helps planning.`,
+      gapNoDeadlineFor: (name) => `${name} programs have no deadlines`,
+      gapNoDeadlineForDetail: (name) => `${name}'s programs have no application deadline recorded — cannot plan a timeline.`,
+      gapNoMaterialsFor: (name) => `${name} programs lack materials list`,
+      gapNoMaterialsForDetail: (name) => `${name}'s programs have no requirements listed — cannot confirm what to prepare.`,
+      gapNoLabDirectionFor: (name) => `${name} lab direction unknown`,
+      gapNoLabDirectionForDetail: (name) => `${name} has professor/lab entries but no lab-page resource — research direction is unclear.`,
       staleSourcesTitle: "Stale sources",
       staleSourcesBody: "These sources haven't run in over 7 days and may be missing new information.",
       heroStatInbox: "Inbox",
@@ -1357,6 +1393,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       summarizing: "要約中…",
       summaryPreview: "AI 要約プレビュー",
       applySummary: "抜粋に適用",
+      statusLabel: "ステータス",
+      statusUnverified: "未確認",
+      statusVerified: "確認済み",
+      statusStale: "期限切れ",
+      statusCoreEvidence: "核心証拠",
+      markingStatus: "マーク中…",
     },
     timeline: {
       title: "出願タイムライン",
@@ -1568,6 +1610,12 @@ export const LOCALES: Record<LangCode, Locale> = {
       gapNoAdmissionForDetail: (name) => `${name} には入試公告リソースがありません — 出願決定に不可欠な情報です。`,
       gapNoExperienceFor: (name) => `${name} に体験記なし`,
       gapNoExperienceForDetail: (name) => `${name} には出願体験記がありません — 先人の道を知ることで計画に役立ちます。`,
+      gapNoDeadlineFor: (name) => `${name} のプログラムに期限なし`,
+      gapNoDeadlineForDetail: (name) => `${name} のプログラムに出願締め切りが登録されていません — タイムラインを計画できません。`,
+      gapNoMaterialsFor: (name) => `${name} のプログラムに出願材料リストなし`,
+      gapNoMaterialsForDetail: (name) => `${name} のプログラムに必要書類フィールドがありません — 準備リストを確認できません。`,
+      gapNoLabDirectionFor: (name) => `${name} の研究室方向不明`,
+      gapNoLabDirectionForDetail: (name) => `${name} には教授・研究室があるが研究室ページリソースがありません — 研究方向が不明です。`,
       staleSourcesTitle: "ソース停滞",
       staleSourcesBody: "これらのソースは 7 日以上実行されておらず、新しい情報を見落としている可能性があります。",
       heroStatInbox: "受信箱",

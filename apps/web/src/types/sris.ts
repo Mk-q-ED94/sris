@@ -200,6 +200,7 @@ export type IntelligenceResource = {
   excerpt?: string | null;
   raw_snapshot?: string | null;
   snapshot_at?: string | null;
+  resource_status?: "unverified" | "verified" | "stale" | "core_evidence" | null;
   confidence_score?: number | null;
   confidence_last_verified?: string | null;
   // AI extraction fields (populated by /api/resources/:id/extract)
