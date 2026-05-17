@@ -17,7 +17,7 @@ const RESOURCE_TYPES: ResourceType[] = [
   "admission_notice", "experience_post", "video", "other",
 ];
 
-function classifyUrl(url: string): { resource_type: ResourceType; source: string } | null {
+function classifyUrl(url: string): { resource_type: ResourceType; source: string; reason: string } | null {
   try {
     const u = new URL(url);
     const host = u.hostname;
@@ -25,24 +25,26 @@ function classifyUrl(url: string): { resource_type: ResourceType; source: string
 
     if (host.endsWith(".ac.jp")) {
       if (path.includes("/lab") || path.includes("/research") || path.includes("/kenkyu"))
-        return { resource_type: "lab_page", source: "lab-page" };
+        return { resource_type: "lab_page", source: "lab-page", reason: `path includes /lab or /research on ${host}` };
       if (path.includes("/faculty") || path.includes("/member") || path.includes("/staff") || path.includes("/professor"))
-        return { resource_type: "professor_page", source: "professor-page" };
-      if (path.includes("/program") || path.includes("/admission") || path.includes("/apply") || path.includes("/nyushi"))
-        return { resource_type: path.includes("/admission") || path.includes("/nyushi") ? "admission_notice" : "program_page", source: "program-page" };
+        return { resource_type: "professor_page", source: "professor-page", reason: `path includes /faculty or /member on ${host}` };
+      if (path.includes("/admission") || path.includes("/nyushi"))
+        return { resource_type: "admission_notice", source: "admission-page", reason: `admission path on ${host}` };
+      if (path.includes("/program") || path.includes("/apply"))
+        return { resource_type: "program_page", source: "program-page", reason: `program or apply path on ${host}` };
       if (path.includes("/course") || path.includes("/curriculum"))
-        return { resource_type: "program_page", source: "course-page" };
-      return { resource_type: "official_page", source: "university-page" };
+        return { resource_type: "program_page", source: "course-page", reason: `course or curriculum path on ${host}` };
+      return { resource_type: "official_page", source: "university-page", reason: `official .ac.jp domain: ${host}` };
     }
 
-    if (host.includes("arxiv.org")) return { resource_type: "paper", source: "arxiv" };
-    if (host.includes("scholar.google")) return { resource_type: "paper", source: "scholar" };
-    if (host.includes("dblp")) return { resource_type: "paper", source: "dblp" };
-    if (host.includes("semanticscholar")) return { resource_type: "paper", source: "semantic-scholar" };
+    if (host.includes("arxiv.org")) return { resource_type: "paper", source: "arxiv", reason: "arxiv.org domain" };
+    if (host.includes("scholar.google")) return { resource_type: "paper", source: "scholar", reason: "Google Scholar domain" };
+    if (host.includes("dblp")) return { resource_type: "paper", source: "dblp", reason: "DBLP domain" };
+    if (host.includes("semanticscholar")) return { resource_type: "paper", source: "semantic-scholar", reason: "Semantic Scholar domain" };
     if (host.includes("youtube.com") || host.includes("youtu.be") || host.includes("bilibili.com"))
-      return { resource_type: "video", source: host };
+      return { resource_type: "video", source: host, reason: `video platform: ${host}` };
     if (host.includes("zhihu.com") || host.includes("reddit.com") || host.includes("medium.com"))
-      return { resource_type: "experience_post", source: host };
+      return { resource_type: "experience_post", source: host, reason: `community / blog platform: ${host}` };
 
     return null;
   } catch {
@@ -165,10 +167,13 @@ export function Capture({ prefill, onClose }: { prefill: CapturePrefill; onClose
             className="block h-11 w-full border-0 border-b border-[var(--color-hairline-strong)] bg-transparent px-0 text-[14px] outline-none transition-colors focus:border-[var(--color-todai)]"
           />
           {classification ? (
-            <div className="mt-2 flex items-center gap-1.5 text-[11.5px] text-[var(--color-todai)]">
-              <Zap className="h-3 w-3" />
-              <span className="mono uppercase tracking-[0.12em]">{t.capture.classificationLabel}</span>
-              <span className="font-medium">{t.capture.classifiedTypes[classification.resource_type] ?? classification.resource_type}</span>
+            <div className="mt-2 space-y-0.5">
+              <div className="flex items-center gap-1.5 text-[11.5px] text-[var(--color-todai)]">
+                <Zap className="h-3 w-3 shrink-0" />
+                <span className="mono uppercase tracking-[0.12em]">{t.capture.classificationLabel}:</span>
+                <span className="font-medium">{t.capture.classifiedTypes[classification.resource_type] ?? classification.resource_type}</span>
+              </div>
+              <div className="pl-5 text-[10.5px] text-[var(--color-subtle)]">{classification.reason}</div>
             </div>
           ) : null}
           {domain && (

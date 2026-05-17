@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
@@ -12,6 +12,9 @@ interface GlobalSearchProps {
 }
 
 type TypeFilter = "all" | "university" | "program" | "professor" | "lab" | "paper" | "resource" | "task";
+
+const RESOURCE_SUBTYPES = ["professor_page", "lab_page", "program_page", "official_page", "admission_notice", "experience_post", "paper", "video", "other"] as const;
+const CONFIDENCE_LEVELS = ["official", "high", "medium", "low"] as const;
 
 const HIT_PAGE: Record<SearchHit["type"], PageKey> = {
   university: "universities",
@@ -31,6 +34,8 @@ export function GlobalSearch({ open, onClose, onNavigate, onOpenResource }: Glob
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [resSubtype, setResSubtype] = useState("all");
+  const [resConfidence, setResConfidence] = useState("all");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,9 +52,18 @@ export function GlobalSearch({ open, onClose, onNavigate, onOpenResource }: Glob
       setQuery("");
       setHits([]);
       setTypeFilter("all");
+      setResSubtype("all");
+      setResConfidence("all");
       window.setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (typeFilter !== "resource") {
+      setResSubtype("all");
+      setResConfidence("all");
+    }
+  }, [typeFilter]);
 
   useEffect(() => {
     if (!open) return;
@@ -73,6 +87,19 @@ export function GlobalSearch({ open, onClose, onNavigate, onOpenResource }: Glob
     }, 220);
     return () => window.clearTimeout(handle);
   }, [query, token, open, typeFilter]);
+
+  const filteredHits = useMemo(() => {
+    if (typeFilter !== "resource" || (resSubtype === "all" && resConfidence === "all")) return hits;
+    return hits.filter((hit) => {
+      if (hit.type !== "resource") return true;
+      const parts = (hit.subtitle ?? "").split(" · ");
+      const rt = parts[0] ?? "";
+      const conf = parts[1] ?? "";
+      if (resSubtype !== "all" && rt !== resSubtype) return false;
+      if (resConfidence !== "all" && conf !== resConfidence) return false;
+      return true;
+    });
+  }, [hits, typeFilter, resSubtype, resConfidence]);
 
   if (!open) return null;
 
@@ -130,16 +157,53 @@ export function GlobalSearch({ open, onClose, onNavigate, onOpenResource }: Glob
           ))}
         </div>
 
+        {typeFilter === "resource" && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-b border-[var(--color-hairline)] px-5 py-2">
+            <div className="flex flex-wrap gap-1">
+              {(["all", ...RESOURCE_SUBTYPES] as const).map((rt) => (
+                <button
+                  key={rt}
+                  type="button"
+                  onClick={() => setResSubtype(rt)}
+                  className={`mono text-[9px] px-1.5 py-0.5 border transition-colors ${
+                    resSubtype === rt
+                      ? "border-[var(--color-todai)] text-[var(--color-todai)] bg-[var(--color-todai-soft)]"
+                      : "border-transparent text-[var(--color-subtle)] hover:border-[var(--color-hairline)]"
+                  }`}
+                >
+                  {rt === "all" ? t.searchFilterAll : (t.capture.classifiedTypes[rt] ?? rt)}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {(["all", ...CONFIDENCE_LEVELS] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setResConfidence(c)}
+                  className={`mono text-[9px] px-1.5 py-0.5 border transition-colors ${
+                    resConfidence === c
+                      ? "border-emerald-400 text-emerald-700 bg-emerald-50"
+                      : "border-transparent text-[var(--color-subtle)] hover:border-[var(--color-hairline)]"
+                  }`}
+                >
+                  {c === "all" ? "any conf." : c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="max-h-[60vh] overflow-y-auto">
-          {loading && hits.length === 0 ? (
+          {loading && filteredHits.length === 0 ? (
             <div className="px-5 py-10 text-center text-[12.5px] text-[var(--color-subtle)]">{t.loading}</div>
           ) : query.trim() === "" ? (
             <div className="px-5 py-10 text-center text-[12.5px] text-[var(--color-subtle)]">{t.searchHint}</div>
-          ) : hits.length === 0 ? (
+          ) : filteredHits.length === 0 ? (
             <div className="px-5 py-10 text-center text-[12.5px] text-[var(--color-subtle)]">{t.searchEmpty}</div>
           ) : (
             <ul className="divide-y divide-[var(--color-hairline)]">
-              {hits.map((hit) => (
+              {filteredHits.map((hit) => (
                 <li
                   key={`${hit.type}-${hit.id}`}
                   className="cursor-pointer px-5 py-3 hover:bg-[var(--color-paper)]"
