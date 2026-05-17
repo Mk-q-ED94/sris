@@ -26,9 +26,10 @@ jobs:
           CLOUDFLARE_D1_DATABASE_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID }}
           SRIS_API_TOKEN: ${{ secrets.SRIS_API_TOKEN }}
           SRIS_CRON_SECRET: ${{ secrets.SRIS_CRON_SECRET }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: |
           missing=0
-          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_D1_DATABASE_ID SRIS_API_TOKEN SRIS_CRON_SECRET; do
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_D1_DATABASE_ID SRIS_API_TOKEN SRIS_CRON_SECRET LLM_API_KEY; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing required secret: $name"
               missing=1
@@ -59,8 +60,24 @@ jobs:
         env:
           API_TOKEN: ${{ secrets.SRIS_API_TOKEN }}
           CRON_SECRET: ${{ secrets.SRIS_CRON_SECRET }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: |
-          node -e "const fs=require('fs'); fs.writeFileSync('.secrets.json', JSON.stringify({ API_TOKEN: process.env.API_TOKEN, CRON_SECRET: process.env.CRON_SECRET }));"
+          node -e "
+            const fs = require('fs');
+            const out = {
+              API_TOKEN: process.env.API_TOKEN,
+              CRON_SECRET: process.env.CRON_SECRET,
+              LLM_API_KEY: process.env.LLM_API_KEY,
+            };
+            // Optional overrides — only include if the GitHub secret is set,
+            // otherwise the Worker falls back to the defaults in
+            // routes/extract.ts (api.openai.com/v1, gpt-4o-mini).
+            if (process.env.LLM_BASE_URL) out.LLM_BASE_URL = process.env.LLM_BASE_URL;
+            if (process.env.LLM_MODEL) out.LLM_MODEL = process.env.LLM_MODEL;
+            fs.writeFileSync('.secrets.json', JSON.stringify(out));
+          "
 
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v3
