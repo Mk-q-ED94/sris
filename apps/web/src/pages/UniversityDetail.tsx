@@ -408,6 +408,11 @@ export function UniversityDetail({
                           {res.confidence}
                         </span>
                       )}
+                      {res.resource_status && res.resource_status !== "unverified" && (
+                        <span className={`mono inline-flex h-5 items-center border px-1.5 text-[9px] uppercase tracking-[0.12em] ${res.resource_status === "verified" ? "border-emerald-300 text-emerald-700 bg-emerald-50" : res.resource_status === "stale" ? "border-amber-300 text-amber-700 bg-amber-50" : "border-[var(--color-todai)]/40 text-[var(--color-todai)] bg-[var(--color-todai-soft)]"}`}>
+                          {res.resource_status === "verified" ? t.resourceDetail.statusVerified : res.resource_status === "stale" ? t.resourceDetail.statusStale : t.resourceDetail.statusCoreEvidence}
+                        </span>
+                      )}
                       <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${res.content_text ? "bg-emerald-50 text-emerald-600" : res.excerpt ? "bg-sky-50 text-sky-600" : "bg-gray-50 text-gray-500"}`}>
                         {res.content_text ? t.universityDetail.hasSnapshot : res.excerpt ? t.universityDetail.excerptOnly : t.universityDetail.urlOnly}
                       </span>
@@ -455,6 +460,9 @@ function gapLabel(gap: UniversityGap, t: Locale): string {
     case "few_resources_for": return d2.gapFewResourcesFor(t.university.featured || "");
     case "no_admission_for": return d2.gapNoAdmissionFor(t.university.featured || "");
     case "no_experience_for": return d2.gapNoExperienceFor(t.university.featured || "");
+    case "no_deadline_for": return d2.gapNoDeadlineFor(t.university.featured || "");
+    case "no_materials_for": return d2.gapNoMaterialsFor(t.university.featured || "");
+    case "no_lab_direction_for": return d2.gapNoLabDirectionFor(t.university.featured || "");
     case "none": return d2.gapNone;
     default: return gap.label_key;
   }

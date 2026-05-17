@@ -38,6 +38,8 @@ export function Sources() {
   const [saving, setSaving] = useState(false);
   const [patrollingId, setPatrollingId] = useState<string | null>(null);
   const [batchPatrolling, setBatchPatrolling] = useState(false);
+  const [filterUni, setFilterUni] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   async function copy(value: string, setter: (b: boolean) => void) {
     try {
@@ -110,6 +112,12 @@ export function Sources() {
     return m;
   }, [universities]);
 
+  const filteredSources = useMemo(() => sources.filter((s) => {
+    if (filterUni && s.university_id !== filterUni) return false;
+    if (filterType && s.source_type !== filterType) return false;
+    return true;
+  }), [sources, filterUni, filterType]);
+
   function isStale(src: RadarSource): boolean {
     if (!src.last_run_at) return src.enabled;
     const diff = Date.now() - new Date(src.last_run_at).getTime();
@@ -180,6 +188,42 @@ export function Sources() {
           </button>
         </div>
 
+        {/* Filter bar */}
+        {!loading && sources.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <select
+              value={filterUni}
+              onChange={(e) => setFilterUni(e.target.value)}
+              className="h-8 border border-[var(--color-hairline-strong)] bg-transparent px-2 text-[11px] text-[var(--color-muted)]"
+            >
+              <option value="">— {t.sources.universityLabel}</option>
+              {universities.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="h-8 border border-[var(--color-hairline-strong)] bg-transparent px-2 text-[11px] text-[var(--color-muted)]"
+            >
+              <option value="">— {t.sources.sourceTypeLabel}</option>
+              {Object.entries(t.sources.sourceTypes).map(([key, label]) => (
+                <option key={key} value={key}>{label as string}</option>
+              ))}
+            </select>
+            {(filterUni || filterType) && (
+              <button
+                type="button"
+                onClick={() => { setFilterUni(""); setFilterType(""); }}
+                className="text-[11px] text-[var(--color-todai)] hover:underline"
+              >
+                ✕ Clear
+              </button>
+            )}
+            <span className="ml-auto mono text-[10px] text-[var(--color-subtle)]">
+              {filteredSources.length} / {sources.length}
+            </span>
+          </div>
+        )}
+
         {loading ? (
           <div className="h-40 animate-pulse border border-[var(--color-hairline)] bg-[var(--color-paper)]" />
         ) : sources.length === 0 ? (
@@ -204,7 +248,7 @@ export function Sources() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-hairline)]">
-                {sources.map((src) => {
+                {filteredSources.map((src) => {
                   const badge = patrolBadge(src.patrol_status);
                   const isNonArxiv = src.source_type !== "arxiv" && !!src.url;
                   return (
@@ -285,7 +329,7 @@ export function Sources() {
             </table>
           </div>
         )}
-        {isStale(sources.find(isStale)!) && (
+        {filteredSources.some(isStale) && (
           <div className="mt-3 flex items-center gap-2 border border-[var(--color-todai)]/20 bg-[var(--color-todai-soft)]/30 px-4 py-3 text-[12px] text-[var(--color-todai)]">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             {t.sources.staleWarning}
