@@ -14,9 +14,17 @@ import { quickCapture, type QuickCapturePayload } from "./routes/quickcapture";
 import { fetchUrlContent } from "./routes/fetch";
 import { patrolSource, runPatrol } from "./routes/patrol";
 import { runConflictDetection, resolveConflict, verifyResource } from "./routes/conflict";
+import type { LlmConfig } from "./ai/extract-program";
 import { runConfidenceUpdate, computeResourceConfidence } from "./routes/confidence";
 import { runIngest } from "./ingest";
 import { extractAllResources, extractOneResource } from "./routes/extract";
+import { suggestResourceMetaRoute } from "./routes/suggest";
+import { summarizeResourceRoute } from "./routes/summarize-content";
+
+function llmConfigOrNull(env: Env): LlmConfig | null {
+  if (!env.LLM_API_KEY) return null;
+  return { apiKey: env.LLM_API_KEY, baseUrl: env.LLM_BASE_URL || "https://api.openai.com/v1", model: env.LLM_MODEL || "gpt-4o-mini" };
+}
 
 async function fetchAndSaveCandidate(db: D1Database, id: string, url: string): Promise<void> {
   const result = await fetchUrlContent(url);
@@ -118,6 +126,18 @@ export default {
         return json(await extractAllResources(env, { force }));
       }
 
+      const suggestMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/suggest-meta$/);
+      if (suggestMatch && request.method === "POST") {
+        const apply = url.searchParams.get("apply") === "1";
+        return json(await suggestResourceMetaRoute(env, suggestMatch[1]!, apply));
+      }
+
+      const summarizeMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/summarize$/);
+      if (summarizeMatch && request.method === "POST") {
+        const apply = url.searchParams.get("apply") === "1";
+        return json(await summarizeResourceRoute(env, summarizeMatch[1]!, apply));
+      }
+
       const sourcePatrolMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/patrol$/);
       if (sourcePatrolMatch && request.method === "POST") {
         return json(await patrolSource(env.DB, sourcePatrolMatch[1]!));
@@ -125,7 +145,7 @@ export default {
 
       // Conflict & confidence routes
       if (url.pathname === "/api/conflicts/detect" && request.method === "POST") {
-        return json(await runConflictDetection(env.DB));
+        return json(await runConflictDetection(env.DB, llmConfigOrNull(env)));
       }
 
       const conflictResolveMatch = url.pathname.match(/^\/api\/conflicts\/([^/]+)\/resolve$/);
@@ -309,7 +329,7 @@ export default {
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runIngest(env.DB));
     ctx.waitUntil(runPatrol(env.DB));
-    ctx.waitUntil(runConflictDetection(env.DB));
+    ctx.waitUntil(runConflictDetection(env.DB, llmConfigOrNull(env)));
     ctx.waitUntil(runConfidenceUpdate(env.DB));
   },
 };

@@ -109,6 +109,10 @@ export interface Locale {
     excerptSection: string;
     metadataSection: string;
     noExcerpt: string;
+    summarize: string;
+    summarizing: string;
+    summaryPreview: string;
+    applySummary: string;
   };
   sources: {
     title: string;
@@ -364,6 +368,8 @@ export interface Locale {
     typeTitleDuplicate: string;
     typeValueMismatch: string;
     typeStaleUnverified: string;
+    typeAiFieldConflict: string;
+    trustSource: string;
     resolve: string;
     ignore: string;
     verify: string;
@@ -501,6 +507,10 @@ export const LOCALES: Record<LangCode, Locale> = {
       excerptSection: "证据摘录",
       metadataSection: "元数据",
       noExcerpt: "无摘录",
+      summarize: "AI 摘要",
+      summarizing: "摘要中…",
+      summaryPreview: "AI 摘要预览",
+      applySummary: "应用为摘录",
     },
     timeline: {
       title: "申请时间线",
@@ -794,6 +804,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       typeTitleDuplicate: "标题重复",
       typeValueMismatch: "值冲突",
       typeStaleUnverified: "过期未验证",
+      typeAiFieldConflict: "AI字段冲突",
+      trustSource: "信任此来源",
       resolve: "解决",
       ignore: "忽略",
       verify: "验证",
@@ -914,6 +926,10 @@ export const LOCALES: Record<LangCode, Locale> = {
       excerptSection: "Evidence excerpt",
       metadataSection: "Metadata",
       noExcerpt: "No excerpt",
+      summarize: "AI summary",
+      summarizing: "Summarizing…",
+      summaryPreview: "AI summary preview",
+      applySummary: "Apply as excerpt",
     },
     timeline: {
       title: "Application timeline",
@@ -1207,6 +1223,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       typeTitleDuplicate: "Title duplicate",
       typeValueMismatch: "Value mismatch",
       typeStaleUnverified: "Stale/unverified",
+      typeAiFieldConflict: "AI field conflict",
+      trustSource: "Trust this source",
       resolve: "Resolve",
       ignore: "Ignore",
       verify: "Verify",
@@ -1327,6 +1345,10 @@ export const LOCALES: Record<LangCode, Locale> = {
       excerptSection: "証拠抜粋",
       metadataSection: "メタデータ",
       noExcerpt: "抜粋なし",
+      summarize: "AI 要約",
+      summarizing: "要約中…",
+      summaryPreview: "AI 要約プレビュー",
+      applySummary: "抜粋に適用",
     },
     timeline: {
       title: "出願タイムライン",
@@ -1620,6 +1642,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       typeTitleDuplicate: "タイトル重複",
       typeValueMismatch: "値の不一致",
       typeStaleUnverified: "期限切れ未検証",
+      typeAiFieldConflict: "AIフィールド矛盾",
+      trustSource: "このソースを信頼",
       resolve: "解決",
       ignore: "無視",
       verify: "検証",

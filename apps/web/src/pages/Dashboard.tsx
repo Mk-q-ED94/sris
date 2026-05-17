@@ -124,79 +124,96 @@ export function Dashboard({ onOpenUniversity, onOpenResource }: { onOpenUniversi
   }
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-12">
+
+      {/* 01 — Today's briefing: action stats first, no hero prose */}
       <section>
-        <div className="flex items-center gap-3">
-          <span className="rule-accent" />
-          <span className="section-index">01 — {t.dashboard2.heroLabel}</span>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="rule-accent" />
+            <span className="section-index">01 — {t.dashboard2.heroLabel}</span>
+          </div>
+          <button
+            onClick={load}
+            className="mono inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)] transition-colors hover:text-[var(--color-todai)]"
+          >
+            <RefreshCw className="h-3 w-3" />
+            {t.refresh}
+          </button>
         </div>
-        <div className="mt-6 grid gap-10 xl:grid-cols-[1.4fr_1fr] xl:items-end">
-          <div>
-            <h1 className="serif text-[44px] font-semibold leading-[1.08] tracking-[-0.02em] text-[var(--color-ink)] sm:text-[64px]">
-              {t.dashboard2.heroTitle}
-            </h1>
-            <p className="mt-5 max-w-2xl text-[15px] leading-[1.85] text-[var(--color-muted)] sm:text-[16px]">
-              {t.dashboard2.heroBody}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-0 border-y border-[var(--color-hairline-strong)]">
-            <HeroStat label={t.dashboard2.briefingNewCaptures} value={data?.today_briefing?.new_captures ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.new_captures ?? 0) > 0} />
-            <HeroStat label={t.dashboard2.briefingHighGaps} value={data?.today_briefing?.high_priority_gaps ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.high_priority_gaps ?? 0) > 0} />
-            <HeroStat label={t.dashboard2.briefingStaleSources} value={data?.today_briefing?.stale_sources ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.stale_sources ?? 0) > 0} />
-            <HeroStat label={t.dashboard2.briefingPendingReview} value={data?.today_briefing?.pending_review ?? 0} helper={t.dashboard2.briefingLabel} accent={false} />
-          </div>
+        <div className="mt-5 grid grid-cols-2 border border-[var(--color-hairline-strong)] sm:grid-cols-4">
+          <HeroStat label={t.dashboard2.briefingNewCaptures} value={data?.today_briefing?.new_captures ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.new_captures ?? 0) > 0} loading={loading} />
+          <HeroStat label={t.dashboard2.briefingPendingReview} value={data?.today_briefing?.pending_review ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.pending_review ?? 0) > 0} loading={loading} />
+          <HeroStat label={t.dashboard2.briefingHighGaps} value={data?.today_briefing?.high_priority_gaps ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.high_priority_gaps ?? 0) > 0} loading={loading} />
+          <HeroStat label={t.dashboard2.briefingStaleSources} value={data?.today_briefing?.stale_sources ?? 0} helper={t.dashboard2.briefingLabel} accent={(data?.today_briefing?.stale_sources ?? 0) > 0} loading={loading} />
         </div>
       </section>
 
+      {/* Alert strips — surface early, above the fold */}
+      {!loading && (data?.stale_sources ?? []).length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 border border-amber-200 bg-amber-50/40 px-5 py-3">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+          <span className="text-[12.5px] text-amber-800">
+            {(data?.stale_sources ?? []).length} {(data?.stale_sources ?? []).length === 1 ? "source" : "sources"} overdue for check
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {(data?.stale_sources ?? []).slice(0, 4).map((src) => (
+              <span key={src.id} className="mono inline-flex h-5 items-center border border-amber-300 bg-amber-50 px-1.5 text-[9px] uppercase tracking-[0.12em] text-amber-700">
+                {src.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && data?.conflict_counts && data.conflict_counts.open > 0 && (
+        <div className="flex flex-wrap items-center gap-4 border border-amber-200 bg-amber-50/30 px-5 py-3">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+          <span className="text-[12.5px] text-amber-800">
+            {data.conflict_counts.open} open {data.conflict_counts.open === 1 ? "conflict" : "conflicts"}
+            {data.conflict_counts.stale_unverified > 0 && ` · ${data.conflict_counts.stale_unverified} stale-unverified`}
+          </span>
+          {data.recent_conflicts && data.recent_conflicts.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {data.recent_conflicts.slice(0, 2).map((c: Record<string, unknown>) => (
+                <span key={String(c.id)} className="mono inline-flex h-5 items-center border border-amber-300 bg-amber-50 px-1.5 text-[9px] uppercase tracking-[0.1em] text-amber-700">
+                  {String(c.conflict_type ?? "").replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 02 — University rail */}
       <UniversityCarousel onSelect={onOpenUniversity} universityStats={data?.university_stats ?? []} />
 
+      {/* 03 — Inbox + Gaps side by side */}
       <section className="grid gap-8 xl:grid-cols-[1.25fr_0.95fr]">
         <IntelligenceInbox insights={insights} loading={loading} onRefresh={load} t={t} />
         <InformationGaps insights={insights} loading={loading} t={t} onOpenUniversity={onOpenUniversity} />
       </section>
 
+      {/* 04 — Resource stream: promoted full-width */}
+      <ResourceStream insights={insights} loading={loading} t={t} onOpenResource={onOpenResource} />
+
+      {/* 05 — Source coverage + keyword radar */}
       <section className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
         <SourceCoverage insights={insights} loading={loading} t={t} />
         <KeywordRadar insights={insights} loading={loading} t={t} />
       </section>
 
-      {data?.conflict_counts && data.conflict_counts.open > 0 && (
-        <section className="border border-amber-200 bg-amber-50/30 p-6">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="section-index text-amber-700">{t.conflicts.title}</span>
-          </div>
-          <div className="mt-3 flex gap-6 text-[13px]">
-            <span className="text-amber-700">{t.conflicts.filterOpen}: <strong>{data.conflict_counts.open}</strong></span>
-            <span className="text-[var(--color-muted)]">{t.conflicts.typeStaleUnverified}: {data.conflict_counts.stale_unverified}</span>
-          </div>
-          {data.recent_conflicts && data.recent_conflicts.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {data.recent_conflicts.slice(0, 3).map((c: Record<string, unknown>) => (
-                <div key={String(c.id)} className="text-[12px] text-[var(--color-muted)]">
-                  <span className="mono text-[10px] uppercase text-amber-600">{String(c.conflict_type ?? "").replace(/_/g, " ")}</span>
-                  {" — "}{String(c.description ?? "").slice(0, 100)}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+      {/* 06 — Application signals: demoted to compact strip */}
+      <UpcomingDeadlinesStrip signals={insights.application} loading={loading} t={t} />
 
-      <section className="grid gap-8 xl:grid-cols-[1.35fr_0.85fr]">
-        <ResourceStream insights={insights} loading={loading} t={t} />
-        <ApplicationSignalsPanel signals={insights.application} loading={loading} t={t} />
-      </section>
-
+      {/* 07 — DB metrics: footer, informational only */}
       <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="section-index">07 — {t.dashboard2.dbLabel}</span>
-            <span className="h-px w-12 bg-[var(--color-hairline-strong)]" />
-            <span className="mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-subtle)]">
-              {loading ? t.dashboard2.dbLoading : t.dashboard2.dbCurrent}
-            </span>
-          </div>
+        <div className="mb-4 flex items-center gap-3">
+          <span className="section-index">07 — {t.dashboard2.dbLabel}</span>
+          <span className="h-px w-12 bg-[var(--color-hairline-strong)]" />
+          <span className="mono text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-subtle)]">
+            {loading ? t.dashboard2.dbLoading : t.dashboard2.dbCurrent}
+          </span>
         </div>
         <div className="grid grid-cols-2 border border-[var(--color-hairline)] sm:grid-cols-3 lg:grid-cols-7">
           {metricConfig.map((metric, idx) => {
@@ -206,7 +223,7 @@ export function Dashboard({ onOpenUniversity, onOpenResource }: { onOpenUniversi
             return (
               <div
                 key={metric.key}
-                className={`relative border-b border-r border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-colors hover:bg-[var(--color-paper)] [&:nth-child(7n)]:border-r-0 ${
+                className={`relative border-b border-r border-[var(--color-hairline)] bg-[var(--color-surface)] p-4 transition-colors hover:bg-[var(--color-paper)] [&:nth-child(7n)]:border-r-0 ${
                   idx >= metricConfig.length - (metricConfig.length % 7 || 7) ? "lg:border-b-0" : ""
                 }`}
               >
@@ -216,10 +233,10 @@ export function Dashboard({ onOpenUniversity, onOpenResource }: { onOpenUniversi
                   </span>
                   <Icon className={`h-3.5 w-3.5 ${isAccent ? "text-[var(--color-todai)]" : "text-[var(--color-subtle)]"}`} />
                 </div>
-                <div className={`serif mt-5 text-[36px] font-semibold leading-none tabular tracking-[-0.02em] ${isAccent ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
+                <div className={`serif mt-4 text-[30px] font-semibold leading-none tabular tracking-[-0.02em] ${isAccent ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
                   {loading ? "—" : compactNumber(value)}
                 </div>
-                <div className="mt-2 text-[12.5px] text-[var(--color-muted)]">{t.metrics[metric.key]}</div>
+                <div className="mt-1.5 text-[12px] text-[var(--color-muted)]">{t.metrics[metric.key]}</div>
               </div>
             );
           })}
@@ -234,21 +251,26 @@ function HeroStat({
   value,
   helper,
   accent,
+  loading,
 }: {
   label: string;
   value: number | string;
   helper: string;
   accent?: boolean;
+  loading?: boolean;
 }) {
   return (
-    <div className="border-l border-[var(--color-hairline)] px-5 py-5 first:border-l-0">
-      <div className={`serif text-[28px] font-semibold leading-none tabular tracking-[-0.02em] ${accent ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
-        {value}
+    <div className="border-r border-[var(--color-hairline-strong)] px-6 py-6 last:border-r-0 [&:nth-child(2)]:border-r-0 sm:[&:nth-child(2)]:border-r">
+      <div className={`serif text-[36px] font-semibold leading-none tabular tracking-[-0.02em] ${loading ? "text-[var(--color-subtle)]" : accent ? "text-[var(--color-todai)]" : "text-[var(--color-ink)]"}`}>
+        {loading ? "—" : value}
       </div>
       <div className="mt-3 text-[12.5px] font-medium text-[var(--color-ink)]">{label}</div>
-      <div className="mono mt-1 text-[10.5px] uppercase tracking-[0.18em] text-[var(--color-subtle)]">
+      <div className="mono mt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--color-subtle)]">
         {helper}
       </div>
+      {accent && !loading && Number(value) > 0 && (
+        <div className="mt-2 h-0.5 w-6 bg-[var(--color-todai)]" />
+      )}
     </div>
   );
 }
@@ -420,7 +442,7 @@ function InformationGaps({ insights, loading, t, onOpenUniversity }: { insights:
 
 function SourceCoverage({ insights, loading, t }: { insights: IntelligenceInsights; loading: boolean; t: Locale }) {
   return (
-    <Panel index="05" title={t.dashboard2.coverageTitle} subtitle={t.dashboard2.coverageSubtitle}>
+    <Panel index="05a" title={t.dashboard2.coverageTitle} subtitle={t.dashboard2.coverageSubtitle}>
       <div className="grid gap-px border border-[var(--color-hairline)] bg-[var(--color-hairline)] sm:grid-cols-2">
         {insights.coverage.map((item) => {
           const pct = Math.min(100, Math.round((item.value / item.target) * 100));
@@ -452,7 +474,7 @@ function SourceCoverage({ insights, loading, t }: { insights: IntelligenceInsigh
 
 function KeywordRadar({ insights, loading, t }: { insights: IntelligenceInsights; loading: boolean; t: Locale }) {
   return (
-    <Panel index="06" title={t.dashboard2.radarTitle} subtitle={t.dashboard2.radarSubtitle}>
+    <Panel index="05b" title={t.dashboard2.radarTitle} subtitle={t.dashboard2.radarSubtitle}>
       <div className="mb-5 flex items-center gap-2">
         <Tags className="h-4 w-4 text-[var(--color-todai)]" />
         <span className="mono text-[10.5px] uppercase tracking-[0.2em] text-[var(--color-subtle)]">Research Signals</span>
@@ -482,58 +504,121 @@ function KeywordRadar({ insights, loading, t }: { insights: IntelligenceInsights
   );
 }
 
-function ResourceStream({ insights, loading, t }: { insights: IntelligenceInsights; loading: boolean; t: Locale }) {
+const TYPE_BADGE: Record<string, string> = {
+  paper: "bg-[var(--color-isct-soft)] text-[var(--color-isct)]",
+  lab_page: "bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
+  professor_page: "bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
+  program_page: "bg-emerald-50 text-emerald-700",
+  official_page: "bg-sky-50 text-sky-700",
+  admission_notice: "bg-amber-50 text-amber-700",
+  experience_post: "bg-purple-50 text-purple-700",
+  video: "bg-rose-50 text-rose-700",
+  other: "bg-gray-50 text-gray-500",
+  capture: "bg-[var(--color-todai-soft)] text-[var(--color-todai)]",
+  candidate: "bg-gray-50 text-gray-500",
+};
+
+function ResourceStream({
+  insights,
+  loading,
+  t,
+  onOpenResource,
+}: {
+  insights: IntelligenceInsights;
+  loading: boolean;
+  t: Locale;
+  onOpenResource?: (id: string) => void;
+}) {
+  const items = insights.stream.slice(0, 12);
   return (
-    <Panel index="07" title={t.dashboard2.streamTitle} subtitle={t.dashboard2.streamSubtitle}>
-      {loading ? (
-        <SkeletonRows />
-      ) : insights.stream.length ? (
-        <ul className="divide-y divide-[var(--color-hairline)]">
-          {insights.stream.slice(0, 8).map((item) => (
-            <li key={`${item.type}-${item.id}`} className="py-4 first:pt-0 last:pb-0">
-              <a href={item.url} target="_blank" rel="noreferrer" className="group block">
-                <div className="flex items-start justify-between gap-4">
+    <section className="border border-[var(--color-hairline)] bg-[var(--color-surface)]">
+      <div className="flex items-center justify-between border-b border-[var(--color-hairline)] px-6 py-5">
+        <div>
+          <div className="section-index">04 — {t.dashboard2.streamTitle}</div>
+          <p className="mt-1 text-[12.5px] text-[var(--color-muted)]">{t.dashboard2.streamSubtitle}</p>
+        </div>
+        {!loading && items.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(
+              items.reduce<Record<string, number>>((acc, item) => {
+                const key = item.resource_type ?? item.type;
+                acc[key] = (acc[key] ?? 0) + 1;
+                return acc;
+              }, {}),
+            )
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([type, count]) => (
+                <span
+                  key={type}
+                  className={`mono inline-flex h-5 items-center gap-1 px-1.5 text-[9px] uppercase tracking-[0.12em] ${TYPE_BADGE[type] ?? TYPE_BADGE.other}`}
+                >
+                  {t.capture.classifiedTypes[type] ?? type}
+                  <span className="opacity-60">{count}</span>
+                </span>
+              ))}
+          </div>
+        )}
+      </div>
+      <div className="px-6 py-5">
+        {loading ? (
+          <SkeletonRows />
+        ) : items.length ? (
+          <ul className="divide-y divide-[var(--color-hairline)] sm:columns-2 sm:gap-8 sm:[&>li]:break-inside-avoid">
+            {items.map((item) => {
+              const typeKey = item.resource_type ?? item.type;
+              const badgeClass = TYPE_BADGE[typeKey] ?? TYPE_BADGE.other;
+              const inner = (
+                <div className="flex items-start gap-3 py-4 first:pt-0">
                   <div className="min-w-0 flex-1">
-                    <div className="mono mb-2 flex flex-wrap items-center gap-2 text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
-                      {item.resource_type && item.resource_type !== "paper" ? (
-                        <span className="text-[var(--color-todai)]">{t.capture.classifiedTypes[item.resource_type] ?? item.resource_type}</span>
-                      ) : (
-                        <span className={item.type === "paper" ? "text-[var(--color-isct)]" : "text-[var(--color-todai)]"}>{streamTypeLabel(item.type)}</span>
-                      )}
-                      <span className="h-px w-4 bg-[var(--color-hairline-strong)]" />
-                      <span>{item.source}</span>
-                      <span>{formatDate(item.date, t.dateLocale, t.notSet)}</span>
+                    <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${badgeClass}`}>
+                        {t.capture.classifiedTypes[typeKey] ?? typeKey}
+                      </span>
+                      <span className="mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-subtle)]">{item.source}</span>
+                      <span className="mono text-[10px] text-[var(--color-subtle)]">·</span>
+                      <span className="mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-subtle)]">{formatDate(item.date, t.dateLocale, t.notSet)}</span>
                     </div>
-                    <h3 className="line-clamp-2 text-[14.5px] font-medium leading-[1.5] text-[var(--color-ink)] group-hover:text-[var(--color-todai)]">
+                    <h3 className="line-clamp-2 text-[13.5px] font-medium leading-[1.45] text-[var(--color-ink)] transition-colors group-hover:text-[var(--color-todai)]">
                       {item.title}
                     </h3>
-                    {item.keywords.length ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {item.keywords.slice(0, 4).map((keyword) => (
-                          <span key={keyword} className="mono inline-flex h-5 items-center bg-[var(--color-isct-soft)] px-1.5 text-[10px] uppercase tracking-[0.12em] text-[var(--color-isct)]">
-                            {keyword}
+                    {item.keywords.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {item.keywords.slice(0, 3).map((kw) => (
+                          <span key={kw} className="mono inline-flex h-4 items-center bg-[var(--color-paper)] border border-[var(--color-hairline)] px-1 text-[9px] uppercase tracking-[0.1em] text-[var(--color-subtle)]">
+                            {kw}
                           </span>
                         ))}
                       </div>
-                    ) : null}
+                    )}
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-2">
-                    <span className="mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-muted)]">{item.status}</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 text-[var(--color-subtle)] transition-colors group-hover:text-[var(--color-todai)]" />
-                  </div>
+                  <ArrowUpRight className="h-3.5 w-3.5 mt-0.5 shrink-0 text-[var(--color-subtle)] transition-colors group-hover:text-[var(--color-todai)]" />
                 </div>
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <EmptyState title={t.dashboard2.streamEmpty} helper={t.dashboard2.streamEmptyHelper} />
-      )}
-    </Panel>
+              );
+              return (
+                <li key={`${item.type}-${item.id}`} className="group">
+                  {onOpenResource && item.type !== "paper" ? (
+                    <button type="button" onClick={() => onOpenResource(item.id)} className="w-full text-left">
+                      {inner}
+                    </button>
+                  ) : (
+                    <a href={item.url} target="_blank" rel="noreferrer">
+                      {inner}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyState title={t.dashboard2.streamEmpty} helper={t.dashboard2.streamEmptyHelper} />
+        )}
+      </div>
+    </section>
   );
 }
 
-function ApplicationSignalsPanel({
+function UpcomingDeadlinesStrip({
   signals,
   loading,
   t,
@@ -543,37 +628,49 @@ function ApplicationSignalsPanel({
   t: Locale;
 }) {
   const nextDays = daysUntil(signals.nextTask?.deadline ?? null);
+  const overdue = signals.overdueTasks.length;
+  const urgent = signals.urgentTasks.length;
+
   return (
-    <Panel index="08" title={t.dashboard2.signalsTitle} subtitle={t.dashboard2.signalsSubtitle}>
-      <div className="mb-6 grid grid-cols-3 border-y border-[var(--color-hairline)]">
-        <BriefStat label={t.dashboard2.signalsUrgent} value={loading ? "—" : signals.urgentTasks.length} />
-        <BriefStat label={t.dashboard2.signalsOverdue} value={loading ? "—" : signals.overdueTasks.length} />
-        <BriefStat label={t.dashboard2.signalsCompletion} value={loading ? "—" : `${signals.completion}%`} />
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border border-[var(--color-hairline)] bg-[var(--color-surface)] px-6 py-4">
+      <div className="flex items-center gap-2">
+        <span className="section-index">06 — {t.dashboard2.signalsTitle}</span>
       </div>
       {loading ? (
-        <SkeletonRows />
-      ) : signals.nextTask ? (
-        <div>
-          <div className="mb-3 flex items-center gap-2">
-            {nextDays !== null && nextDays < 0 ? (
-              <AlertTriangle className="h-4 w-4 text-[var(--color-todai)]" />
-            ) : (
-              <Clock3 className="h-4 w-4 text-[var(--color-subtle)]" />
-            )}
-            <span className="mono text-[10.5px] uppercase tracking-[0.2em] text-[var(--color-subtle)]">Next deadline</span>
-          </div>
-          <h3 className="text-[14px] font-semibold leading-6 text-[var(--color-ink)]">{signals.nextTask.title}</h3>
-          <div className="mono mt-2 text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">
-            {formatDate(signals.nextTask.deadline, t.dateLocale, t.notSet)} · {signals.nextTask.priority}
-          </div>
-          <p className="mt-4 text-[12.5px] leading-6 text-[var(--color-muted)]">
-            {t.dashboard2.signalsBody}
-          </p>
-        </div>
+        <span className="mono text-[11px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">…</span>
       ) : (
-        <EmptyState title={t.noTasksTitle} helper={t.noTasksHelper} />
+        <>
+          {overdue > 0 && (
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-[var(--color-todai)]" />
+              <span className="text-[12.5px] text-[var(--color-todai)]">
+                {overdue} overdue {overdue === 1 ? "task" : "tasks"}
+              </span>
+            </div>
+          )}
+          {urgent > 0 && (
+            <span className="text-[12.5px] text-[var(--color-muted)]">
+              {urgent} due in ≤ 30 days
+            </span>
+          )}
+          {signals.nextTask && (
+            <div className="flex items-center gap-2">
+              <Clock3 className="h-3.5 w-3.5 text-[var(--color-subtle)]" />
+              <span className="text-[12.5px] text-[var(--color-ink)]">
+                {signals.nextTask.title}
+              </span>
+              <span className="mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-subtle)]">
+                {formatDate(signals.nextTask.deadline, t.dateLocale, t.notSet)}
+                {nextDays !== null && ` · ${nextDays >= 0 ? `in ${nextDays}d` : `${-nextDays}d ago`}`}
+              </span>
+            </div>
+          )}
+          {!signals.nextTask && !overdue && (
+            <span className="mono text-[10.5px] uppercase tracking-[0.16em] text-[var(--color-subtle)]">{t.noTasksTitle}</span>
+          )}
+        </>
       )}
-    </Panel>
+    </div>
   );
 }
 
