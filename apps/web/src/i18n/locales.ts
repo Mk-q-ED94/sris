@@ -190,6 +190,11 @@ export interface Locale {
     website: string;
     noResults: string;
     noResultsHelper: string;
+    matchReason: string;
+    matchButton: string;
+    matching: string;
+    matchAll: string;
+    matchAllDone: string;
   };
   labs: {
     title: string;
@@ -215,6 +220,23 @@ export interface Locale {
     website: string;
     noResults: string;
     noResultsHelper: string;
+    matchReason: string;
+    matchButton: string;
+    matching: string;
+    matchAll: string;
+    matchAllDone: string;
+  };
+  userProfile: {
+    panelTitle: string;
+    panelBody: string;
+    backgroundLabel: string;
+    backgroundPlaceholder: string;
+    fieldsLabel: string;
+    fieldsPlaceholder: string;
+    save: string;
+    saved: string;
+    noProfile: string;
+    noProfileHelper: string;
   };
   dashboard2: {
     heroLabel: string;
@@ -642,6 +664,11 @@ export const LOCALES: Record<LangCode, Locale> = {
       website: "主页",
       noResults: "暂无教授信息",
       noResultsHelper: "通过数据源采集或手动添加教授后，这里会展示导师列表。",
+      matchReason: "匹配分析",
+      matchButton: "AI 匹配",
+      matching: "分析中…",
+      matchAll: "批量匹配",
+      matchAllDone: "批量完成",
     },
     labs: {
       title: "实验室",
@@ -667,6 +694,23 @@ export const LOCALES: Record<LangCode, Locale> = {
       website: "项目主页",
       noResults: "暂无项目信息",
       noResultsHelper: "添加 SGU 项目后，这里会展示项目列表和截止日期。",
+      matchReason: "匹配分析",
+      matchButton: "AI 匹配",
+      matching: "分析中…",
+      matchAll: "批量匹配",
+      matchAllDone: "批量完成",
+    },
+    userProfile: {
+      panelTitle: "我的研究背景",
+      panelBody: "填写后，AI 可以分析每个教授和项目与你的研究方向匹配程度。",
+      backgroundLabel: "研究背景与经历",
+      backgroundPlaceholder: "例：本科计算机，研究过 LLM 推理效率、分布式训练调度，有 arXiv 预印本一篇。",
+      fieldsLabel: "目标研究领域",
+      fieldsPlaceholder: "例：ML systems, LLM inference, distributed training",
+      save: "保存",
+      saved: "已保存",
+      noProfile: "未设置研究背景",
+      noProfileHelper: "请先填写你的研究背景，才能生成匹配分析。",
     },
     dashboard2: {
       heroLabel: "Intelligence Library",
@@ -1077,6 +1121,11 @@ export const LOCALES: Record<LangCode, Locale> = {
       website: "Website",
       noResults: "No professors yet",
       noResultsHelper: "Add professors via data sources or manual entry to see them listed here.",
+      matchReason: "Match analysis",
+      matchButton: "AI match",
+      matching: "Analyzing…",
+      matchAll: "Match all",
+      matchAllDone: "Done",
     },
     labs: {
       title: "Labs",
@@ -1102,6 +1151,23 @@ export const LOCALES: Record<LangCode, Locale> = {
       website: "Program website",
       noResults: "No programs yet",
       noResultsHelper: "Add SGU programs to see deadlines and requirements here.",
+      matchReason: "Match analysis",
+      matchButton: "AI match",
+      matching: "Analyzing…",
+      matchAll: "Match all",
+      matchAllDone: "Done",
+    },
+    userProfile: {
+      panelTitle: "My Research Profile",
+      panelBody: "Fill this in so AI can analyze how each professor and program aligns with your research direction.",
+      backgroundLabel: "Research background",
+      backgroundPlaceholder: "e.g. CS undergrad, research on LLM inference efficiency and distributed training scheduling, one arXiv preprint.",
+      fieldsLabel: "Target research fields",
+      fieldsPlaceholder: "e.g. ML systems, LLM inference, distributed training",
+      save: "Save",
+      saved: "Saved",
+      noProfile: "No research profile set",
+      noProfileHelper: "Set your research background first to enable match analysis.",
     },
     dashboard2: {
       heroLabel: "Intelligence Library",
@@ -1512,6 +1578,11 @@ export const LOCALES: Record<LangCode, Locale> = {
       website: "ウェブサイト",
       noResults: "教授情報なし",
       noResultsHelper: "データソースまたは手動で教授を追加すると、ここに一覧が表示されます。",
+      matchReason: "マッチ分析",
+      matchButton: "AI マッチ",
+      matching: "分析中…",
+      matchAll: "一括マッチ",
+      matchAllDone: "完了",
     },
     labs: {
       title: "研究室",
@@ -1537,6 +1608,23 @@ export const LOCALES: Record<LangCode, Locale> = {
       website: "プログラムサイト",
       noResults: "プログラム情報なし",
       noResultsHelper: "SGU プログラムを追加すると、締切と要件がここに表示されます。",
+      matchReason: "マッチ分析",
+      matchButton: "AI マッチ",
+      matching: "分析中…",
+      matchAll: "一括マッチ",
+      matchAllDone: "完了",
+    },
+    userProfile: {
+      panelTitle: "研究プロフィール",
+      panelBody: "入力すると、AIが各教授・プログラムとの研究方向の適合性を分析できます。",
+      backgroundLabel: "研究背景・経験",
+      backgroundPlaceholder: "例：学部CS、LLM推論効率・分散訓練スケジューリングの研究、arXivプレプリント1本。",
+      fieldsLabel: "目標研究分野",
+      fieldsPlaceholder: "例：ML systems, LLM inference, distributed training",
+      save: "保存",
+      saved: "保存済み",
+      noProfile: "研究プロフィール未設定",
+      noProfileHelper: "まず研究背景を入力してください。マッチ分析が有効になります。",
     },
     dashboard2: {
       heroLabel: "Intelligence Library",

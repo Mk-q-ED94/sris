@@ -20,6 +20,7 @@ import { runIngest } from "./ingest";
 import { extractAllResources, extractOneResource } from "./routes/extract";
 import { suggestResourceMetaRoute } from "./routes/suggest";
 import { summarizeResourceRoute } from "./routes/summarize-content";
+import { generateMatchReason } from "./ai/match-reason";
 
 function llmConfigOrNull(env: Env): LlmConfig | null {
   if (!env.LLM_API_KEY) return null;
@@ -136,6 +137,66 @@ export default {
       if (summarizeMatch && request.method === "POST") {
         const apply = url.searchParams.get("apply") === "1";
         return json(await summarizeResourceRoute(env, summarizeMatch[1]!, apply));
+      }
+
+      // User profile (single-row, id = 'me')
+      if (url.pathname === "/api/user-profile") {
+        if (request.method === "GET") {
+          const row = await env.DB.prepare("SELECT * FROM user_profile WHERE id = 'me'").first<Record<string, unknown>>();
+          return json(row ?? { id: "me", research_background: null, target_fields: null });
+        }
+        if (request.method === "PATCH") {
+          const body = (await request.json()) as { research_background?: string; target_fields?: string };
+          await env.DB.prepare(
+            "INSERT INTO user_profile (id, research_background, target_fields, updated_at) VALUES ('me', ?, ?, ?) ON CONFLICT(id) DO UPDATE SET research_background = excluded.research_background, target_fields = excluded.target_fields, updated_at = excluded.updated_at"
+          ).bind(body.research_background ?? null, body.target_fields ?? null, new Date().toISOString()).run();
+          const updated = await env.DB.prepare("SELECT * FROM user_profile WHERE id = 'me'").first<Record<string, unknown>>();
+          return json(updated);
+        }
+      }
+
+      // AI match reason routes
+      const profMatchRouteMatch = url.pathname.match(/^\/api\/professors\/([^/]+)\/match$/);
+      if (profMatchRouteMatch && request.method === "POST") {
+        const profId = profMatchRouteMatch[1]!;
+        const llmConfig = llmConfigOrNull(env);
+        if (!llmConfig) return json({ error: "LLM not configured" }, 503);
+        const prof = await env.DB.prepare("SELECT * FROM professors WHERE id = ?").bind(profId).first<Record<string, unknown>>();
+        if (!prof) return json({ error: "Professor not found" }, 404);
+        const profile = await env.DB.prepare("SELECT * FROM user_profile WHERE id = 'me'").first<{ research_background?: string | null; target_fields?: string | null }>();
+        if (!profile?.research_background) return json({ error: "User profile not set" }, 400);
+        const kwArr = (() => { try { return JSON.parse(String(prof.research_keywords ?? "[]")) as string[]; } catch { return []; } })();
+        const details = [
+          prof.title ? `Title: ${prof.title}` : "",
+          kwArr.length ? `Research keywords: ${kwArr.join(", ")}` : "",
+          prof.notes ? `Notes: ${prof.notes}` : "",
+        ].filter(Boolean).join("\n");
+        const reason = await generateMatchReason(llmConfig, { entity_type: "professor", entity_name: String(prof.name), entity_details: details, research_background: profile.research_background, target_fields: profile.target_fields ?? "" });
+        const apply = url.searchParams.get("apply") !== "0";
+        if (apply) await env.DB.prepare("UPDATE professors SET match_reason = ?, updated_at = ? WHERE id = ?").bind(reason, new Date().toISOString(), profId).run();
+        return json({ id: profId, match_reason: reason, applied: apply });
+      }
+
+      const progMatchRouteMatch = url.pathname.match(/^\/api\/programs\/([^/]+)\/match$/);
+      if (progMatchRouteMatch && request.method === "POST") {
+        const progId = progMatchRouteMatch[1]!;
+        const llmConfig = llmConfigOrNull(env);
+        if (!llmConfig) return json({ error: "LLM not configured" }, 503);
+        const prog = await env.DB.prepare("SELECT * FROM programs WHERE id = ?").bind(progId).first<Record<string, unknown>>();
+        if (!prog) return json({ error: "Program not found" }, 404);
+        const profile = await env.DB.prepare("SELECT * FROM user_profile WHERE id = 'me'").first<{ research_background?: string | null; target_fields?: string | null }>();
+        if (!profile?.research_background) return json({ error: "User profile not set" }, 400);
+        const details = [
+          prog.degree ? `Degree: ${prog.degree}` : "",
+          prog.language ? `Language: ${prog.language}` : "",
+          prog.requirements ? `Requirements: ${prog.requirements}` : "",
+          prog.scholarship ? `Scholarship: ${prog.scholarship}` : "",
+          prog.notes ? `Notes: ${prog.notes}` : "",
+        ].filter(Boolean).join("\n");
+        const reason = await generateMatchReason(llmConfig, { entity_type: "program", entity_name: String(prog.program_name), entity_details: details, research_background: profile.research_background, target_fields: profile.target_fields ?? "" });
+        const apply = url.searchParams.get("apply") !== "0";
+        if (apply) await env.DB.prepare("UPDATE programs SET match_reason = ?, updated_at = ? WHERE id = ?").bind(reason, new Date().toISOString(), progId).run();
+        return json({ id: progId, match_reason: reason, applied: apply });
       }
 
       const sourcePatrolMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/patrol$/);

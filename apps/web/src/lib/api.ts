@@ -1,4 +1,4 @@
-import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap } from "../types/sris";
+import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, PaperCandidate, Professor, Program, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UserProfile } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -319,6 +319,24 @@ export type SummarizeResult = {
 export function summarizeResource(token: string, id: string, apply = false): Promise<SummarizeResult> {
   const qs = apply ? "?apply=1" : "";
   return request<SummarizeResult>(`/api/resources/${id}/summarize${qs}`, token, { method: "POST" });
+}
+
+export function fetchUserProfile(token: string): Promise<UserProfile> {
+  return request<UserProfile>("/api/user-profile", token).catch(() => ({ id: "me", research_background: null, target_fields: null }));
+}
+
+export function updateUserProfile(token: string, payload: { research_background?: string; target_fields?: string }): Promise<UserProfile> {
+  return request<UserProfile>("/api/user-profile", token, { method: "PATCH", body: JSON.stringify(payload) });
+}
+
+export type MatchResult = { id: string; match_reason: string; applied: boolean };
+
+export function matchProfessor(token: string, id: string): Promise<MatchResult> {
+  return request<MatchResult>(`/api/professors/${id}/match`, token, { method: "POST" });
+}
+
+export function matchProgram(token: string, id: string): Promise<MatchResult> {
+  return request<MatchResult>(`/api/programs/${id}/match`, token, { method: "POST" });
 }
 
 export function extractAllResources(token: string, force = false): Promise<ExtractAllResult> {

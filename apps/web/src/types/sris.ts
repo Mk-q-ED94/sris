@@ -148,6 +148,7 @@ export type Professor = {
   website?: string | null;
   research_keywords: string[];
   notes?: string | null;
+  match_reason?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -177,6 +178,7 @@ export type Program = {
   tuition?: number | null;
   website?: string | null;
   notes?: string | null;
+  match_reason?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -371,6 +373,13 @@ export type Conflict = {
   detected_at?: string | null;
   resolved_at?: string | null;
   created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type UserProfile = {
+  id: string;
+  research_background: string | null;
+  target_fields: string | null;
   updated_at?: string | null;
 };
 
