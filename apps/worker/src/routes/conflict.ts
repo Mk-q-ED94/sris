@@ -1,4 +1,6 @@
 import type { D1Database } from "@cloudflare/workers-types";
+import type { LlmConfig } from "../ai/extract-program";
+import { compareResourceFacts } from "../ai/detect-conflicts";
 
 interface ConflictRow {
   id: string;
@@ -293,7 +295,95 @@ export async function detectStaleUnverified(db: D1Database): Promise<number> {
   return count;
 }
 
-export async function runConflictDetection(db: D1Database): Promise<{ detected: number }> {
+interface PairRow {
+  id_a: string;
+  title_a: string;
+  type_a: string;
+  facts_a: string;
+  id_b: string;
+  title_b: string;
+  type_b: string;
+  facts_b: string;
+  entity_id: string;
+  entity_type: string;
+}
+
+export async function detectAiConflicts(db: D1Database, llmConfig: LlmConfig | null): Promise<number> {
+  if (!llmConfig) return 0;
+
+  const programPairs = await db
+    .prepare(
+      `SELECT a.id as id_a, a.title as title_a, a.resource_type as type_a, a.extracted_facts as facts_a,
+              b.id as id_b, b.title as title_b, b.resource_type as type_b, b.extracted_facts as facts_b,
+              a.program_id as entity_id, 'program' as entity_type
+       FROM intelligence_resources a
+       JOIN intelligence_resources b ON a.program_id = b.program_id AND a.id < b.id
+       WHERE a.program_id IS NOT NULL
+         AND a.extraction_status = 'succeeded' AND a.extracted_facts IS NOT NULL
+         AND b.extraction_status = 'succeeded' AND b.extracted_facts IS NOT NULL
+       LIMIT 20`,
+    )
+    .all<PairRow>();
+
+  const professorPairs = await db
+    .prepare(
+      `SELECT a.id as id_a, a.title as title_a, a.resource_type as type_a, a.extracted_facts as facts_a,
+              b.id as id_b, b.title as title_b, b.resource_type as type_b, b.extracted_facts as facts_b,
+              a.professor_id as entity_id, 'professor' as entity_type
+       FROM intelligence_resources a
+       JOIN intelligence_resources b ON a.professor_id = b.professor_id AND a.id < b.id
+       WHERE a.professor_id IS NOT NULL
+         AND a.extraction_status = 'succeeded' AND a.extracted_facts IS NOT NULL
+         AND b.extraction_status = 'succeeded' AND b.extracted_facts IS NOT NULL
+       LIMIT 20`,
+    )
+    .all<PairRow>();
+
+  const allPairs = [...(programPairs.results ?? []), ...(professorPairs.results ?? [])];
+  let count = 0;
+
+  for (const pair of allPairs) {
+    let result;
+    try {
+      result = await compareResourceFacts(llmConfig, {
+        title_a: pair.title_a,
+        type_a: pair.type_a,
+        facts_a: pair.facts_a,
+        title_b: pair.title_b,
+        type_b: pair.type_b,
+        facts_b: pair.facts_b,
+        entity_type: pair.entity_type,
+      });
+    } catch {
+      continue;
+    }
+
+    if (!result.has_conflict) continue;
+
+    for (const finding of result.findings) {
+      const sources = JSON.stringify([
+        { table: "intelligence_resources", id: pair.id_a, value: finding.value_a },
+        { table: "intelligence_resources", id: pair.id_b, value: finding.value_b },
+      ]);
+      await insertConflict(db, {
+        id: conflictId("ai_field_conflict", pair.entity_type, pair.entity_id, finding.field),
+        conflict_type: "ai_field_conflict",
+        status: "open",
+        entity_type: pair.entity_type,
+        entity_id: pair.entity_id,
+        field_name: finding.field,
+        description: finding.description,
+        sources_involved: sources,
+        auto_detected: 1,
+      });
+      count++;
+    }
+  }
+
+  return count;
+}
+
+export async function runConflictDetection(db: D1Database, llmConfig?: LlmConfig | null): Promise<{ detected: number }> {
   // Close previously open auto-detected conflicts before re-detecting
   await db
     .prepare("UPDATE conflicts SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now') WHERE status = 'open' AND auto_detected = 1")
@@ -303,8 +393,9 @@ export async function runConflictDetection(db: D1Database): Promise<{ detected: 
   const titleDups = await detectTitleDuplicates(db);
   const valueMismatches = await detectValueMismatches(db);
   const stale = await detectStaleUnverified(db);
+  const aiFields = await detectAiConflicts(db, llmConfig ?? null);
 
-  return { detected: urlDups + titleDups + valueMismatches + stale };
+  return { detected: urlDups + titleDups + valueMismatches + stale + aiFields };
 }
 
 export async function resolveConflict(

@@ -364,6 +364,8 @@ export interface Locale {
     typeTitleDuplicate: string;
     typeValueMismatch: string;
     typeStaleUnverified: string;
+    typeAiFieldConflict: string;
+    trustSource: string;
     resolve: string;
     ignore: string;
     verify: string;
@@ -794,6 +796,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       typeTitleDuplicate: "标题重复",
       typeValueMismatch: "值冲突",
       typeStaleUnverified: "过期未验证",
+      typeAiFieldConflict: "AI字段冲突",
+      trustSource: "信任此来源",
       resolve: "解决",
       ignore: "忽略",
       verify: "验证",
@@ -1207,6 +1211,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       typeTitleDuplicate: "Title duplicate",
       typeValueMismatch: "Value mismatch",
       typeStaleUnverified: "Stale/unverified",
+      typeAiFieldConflict: "AI field conflict",
+      trustSource: "Trust this source",
       resolve: "Resolve",
       ignore: "Ignore",
       verify: "Verify",
@@ -1620,6 +1626,8 @@ export const LOCALES: Record<LangCode, Locale> = {
       typeTitleDuplicate: "タイトル重複",
       typeValueMismatch: "値の不一致",
       typeStaleUnverified: "期限切れ未検証",
+      typeAiFieldConflict: "AIフィールド矛盾",
+      trustSource: "このソースを信頼",
       resolve: "解決",
       ignore: "無視",
       verify: "検証",

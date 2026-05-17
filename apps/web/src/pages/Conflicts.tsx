@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Eye, FileText, Link2, RefreshCw, Shield, Zap } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Check, Eye, FileText, Link2, RefreshCw, Shield, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
@@ -12,6 +12,7 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   title_duplicate: FileText,
   value_mismatch: AlertTriangle,
   stale_unverified: Shield,
+  ai_field_conflict: BrainCircuit,
 };
 
 export function Conflicts() {
@@ -77,6 +78,7 @@ export function Conflicts() {
       title_duplicate: t.conflicts.typeTitleDuplicate,
       value_mismatch: t.conflicts.typeValueMismatch,
       stale_unverified: t.conflicts.typeStaleUnverified,
+      ai_field_conflict: t.conflicts.typeAiFieldConflict,
     };
     return map[type] ?? type;
   }
@@ -87,6 +89,7 @@ export function Conflicts() {
       title_duplicate: "bg-purple-100 text-purple-700",
       value_mismatch: "bg-amber-100 text-amber-700",
       stale_unverified: "bg-gray-100 text-gray-600",
+      ai_field_conflict: "bg-emerald-100 text-emerald-700",
     };
     return map[type] ?? "bg-gray-100 text-gray-600";
   }
@@ -149,6 +152,7 @@ export function Conflicts() {
               <option value="title_duplicate">{t.conflicts.typeTitleDuplicate}</option>
               <option value="value_mismatch">{t.conflicts.typeValueMismatch}</option>
               <option value="stale_unverified">{t.conflicts.typeStaleUnverified}</option>
+              <option value="ai_field_conflict">{t.conflicts.typeAiFieldConflict}</option>
             </select>
             <button
               type="button"
@@ -200,15 +204,26 @@ export function Conflicts() {
                       <p className="mt-2 text-[13px] leading-[1.7] text-[var(--color-ink)]">
                         {c.description}
                       </p>
-                      {c.sources_involved && c.sources_involved.length > 0 && (
+                      {c.conflict_type === "ai_field_conflict" && c.sources_involved && c.sources_involved.length >= 2 ? (
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {(c.sources_involved as { table: string; id: string; value?: string }[]).slice(0, 2).map((s, i) => (
+                            <div key={i} className="border border-[var(--color-hairline)] bg-[var(--color-paper)] p-2">
+                              <div className="mono mb-1 text-[9px] text-[var(--color-subtle)]">
+                                {i === 0 ? "Source A" : "Source B"} · {s.id.slice(0, 10)}
+                              </div>
+                              <div className="text-[12px] font-medium text-[var(--color-ink)]">{s.value ?? "—"}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : c.sources_involved && c.sources_involved.length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {c.sources_involved.map((s: { table: string; id: string; value?: string }, i: number) => (
+                          {(c.sources_involved as { table: string; id: string; value?: string }[]).map((s, i) => (
                             <span key={i} className="mono text-[10px] text-[var(--color-muted)] border border-[var(--color-hairline)] px-1.5 py-0.5">
                               {s.table}:{s.id.slice(0, 12)}
                             </span>
                           ))}
                         </div>
-                      )}
+                      ) : null}
                       <div className="mt-2 flex gap-4 text-[11px] text-[var(--color-subtle)]">
                         <span>{t.conflicts.detectedAt}: {c.detected_at ? formatDate(c.detected_at, t.dateLocale, "—") : "—"}</span>
                         {c.resolved_at && <span>{t.conflicts.resolvedAt}: {formatDate(c.resolved_at, t.dateLocale, "—")}</span>}
@@ -229,7 +244,7 @@ export function Conflicts() {
                             {t.conflicts.verify}
                           </button>
                         )}
-                        {c.conflict_type === "value_mismatch" && c.sources_involved.length > 0 && c.sources_involved.map((s) => (
+                        {c.conflict_type === "value_mismatch" && c.sources_involved.length > 0 && (c.sources_involved as { table: string; id: string; value?: string }[]).map((s) => (
                           <button
                             key={s.id}
                             type="button"
@@ -241,7 +256,23 @@ export function Conflicts() {
                             {t.conflicts.keepValue}: {(s.value ?? "").slice(0, 30)}
                           </button>
                         ))}
-                        {c.conflict_type !== "stale_unverified" && c.conflict_type !== "value_mismatch" && (
+                        {c.conflict_type === "ai_field_conflict" && c.sources_involved && (c.sources_involved as { table: string; id: string; value?: string }[]).length >= 2 && (
+                          <>
+                            {(c.sources_involved as { table: string; id: string; value?: string }[]).slice(0, 2).map((s, i) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => handleResolve(c.id, "resolved", s.value)}
+                                disabled={isResolving}
+                                className="inline-flex h-7 items-center gap-1.5 border border-[var(--color-hairline-strong)] px-2.5 text-[11px] font-medium text-[var(--color-muted)] hover:border-[var(--color-todai)] hover:text-[var(--color-todai)] disabled:opacity-40"
+                              >
+                                <Check className="h-3 w-3" />
+                                {t.conflicts.trustSource} {i === 0 ? "A" : "B"}
+                              </button>
+                            ))}
+                          </>
+                        )}
+                        {c.conflict_type !== "stale_unverified" && c.conflict_type !== "value_mismatch" && c.conflict_type !== "ai_field_conflict" && (
                           <button
                             type="button"
                             onClick={() => handleResolve(c.id, "resolved")}
