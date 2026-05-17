@@ -2,8 +2,8 @@ import { AlertTriangle, ArrowLeft, ArrowUpRight, BookOpen, Calendar, FileText, G
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { extractResource, fetchResourceDetail, refreshResource, updateResource, fetchUniversities, fetchProfessors, fetchPrograms, suggestResourceMeta } from "../lib/api";
-import type { MetaSuggestion } from "../lib/api";
+import { extractResource, fetchResourceDetail, refreshResource, updateResource, fetchUniversities, fetchProfessors, fetchPrograms, suggestResourceMeta, summarizeResource } from "../lib/api";
+import type { MetaSuggestion, SummarizeResult } from "../lib/api";
 import { formatDate } from "../lib/format";
 import type { ExtractedProgramFields, ExtractedProfessorFields, ExtractedProgramPageFields, ExtractedLabFields, IntelligenceResource, ResourceType, University, Professor, Program, ResourceDetailResult } from "../types/sris";
 import type { PageKey } from "../components/AppShell";
@@ -47,6 +47,8 @@ export function ResourceDetail({
   const [extractError, setExtractError] = useState<string | null>(null);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<MetaSuggestion | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryPreview, setSummaryPreview] = useState<SummarizeResult | null>(null);
 
   // Edit form state
   const [editType, setEditType] = useState<ResourceType>("other");
@@ -140,18 +142,29 @@ export function ResourceDetail({
       const refreshed = await fetchResourceDetail(token, data.resource.id);
       setData(refreshed);
       // Auto-apply suggestions for null fields after a successful extraction
-      if (result.status !== "failed" && (!refreshed.resource.confidence || !refreshed.resource.decision_impact)) {
-        try {
-          const s = await suggestResourceMeta(token, data.resource.id, true);
-          setSuggestion(s);
-          // Re-fetch to pick up applied values
-          if (s.applied.confidence || s.applied.decision_impact) {
+      if (result.status !== "failed") {
+        if (!refreshed.resource.confidence || !refreshed.resource.decision_impact) {
+          try {
+            const s = await suggestResourceMeta(token, data.resource.id, true);
+            setSuggestion(s);
+            if (s.applied.confidence || s.applied.decision_impact) {
+              const again = await fetchResourceDetail(token, data.resource.id);
+              setData(again);
+              initEditForm(again.resource);
+            }
+          } catch {
+            // Non-fatal
+          }
+        }
+        // Auto-summarize if content_text present and excerpt is empty
+        if (refreshed.resource.content_text && !refreshed.resource.excerpt) {
+          try {
+            await summarizeResource(token, data.resource.id, true);
             const again = await fetchResourceDetail(token, data.resource.id);
             setData(again);
-            initEditForm(again.resource);
+          } catch {
+            // Non-fatal
           }
-        } catch {
-          // Non-fatal: suggestion failed silently
         }
       }
     } catch (err) {
@@ -181,6 +194,41 @@ export function ResourceDetail({
     setEditDecisionImpact(suggestion.suggested_decision_impact);
     setEditing(true);
     setSuggestion(null);
+  }
+
+  async function handleSummarize(apply = false) {
+    if (!data) return;
+    setSummarizing(true);
+    setSummaryPreview(null);
+    try {
+      const result = await summarizeResource(token, data.resource.id, apply);
+      if (result.skipped_reason) return;
+      if (apply && result.applied) {
+        const refreshed = await fetchResourceDetail(token, data.resource.id);
+        setData(refreshed);
+      } else {
+        setSummaryPreview(result);
+      }
+    } catch {
+      // Silent failure
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
+  async function applySummaryPreview() {
+    if (!data || !summaryPreview) return;
+    setSummarizing(true);
+    try {
+      await summarizeResource(token, data.resource.id, true);
+      const refreshed = await fetchResourceDetail(token, data.resource.id);
+      setData(refreshed);
+      setSummaryPreview(null);
+    } catch {
+      // keep preview visible on failure
+    } finally {
+      setSummarizing(false);
+    }
   }
 
   if (loading) {
@@ -322,12 +370,55 @@ export function ResourceDetail({
       )}
 
       {/* Excerpt */}
-      {(res.excerpt || editing) && (
+      {(res.excerpt || res.content_text || editing) && (
         <section>
-          <div className="mb-4 flex items-center gap-3">
-            <span className="rule-accent" />
-            <span className="section-index">{rd.excerptSection}</span>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="rule-accent" />
+              <span className="section-index">{rd.excerptSection}</span>
+            </div>
+            {res.content_text && !editing && (
+              <button
+                type="button"
+                onClick={() => handleSummarize(false)}
+                disabled={summarizing}
+                className="inline-flex items-center gap-1.5 mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-subtle)] hover:text-[var(--color-todai)] disabled:opacity-50"
+              >
+                <Sparkles className={`h-3 w-3 ${summarizing ? "animate-pulse" : ""}`} />
+                {summarizing ? rd.summarizing : rd.summarize}
+              </button>
+            )}
           </div>
+
+          {/* AI summary preview callout */}
+          {summaryPreview && !summaryPreview.skipped_reason && (
+            <div className="mb-4 border border-[var(--color-todai)]/30 bg-[var(--color-todai-soft)] p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 space-y-2">
+                  <div className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-todai)]">{rd.summaryPreview}</div>
+                  <p className="text-[13px] leading-[1.7] text-[var(--color-ink)]">{summaryPreview.summary}</p>
+                </div>
+                <div className="flex shrink-0 flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={applySummaryPreview}
+                    disabled={summarizing}
+                    className="inline-flex h-8 items-center bg-[var(--color-todai)] px-3 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  >
+                    {rd.applySummary}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSummaryPreview(null)}
+                    className="inline-flex h-8 items-center border border-[var(--color-hairline-strong)] px-3 text-[11px] text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {res.excerpt ? (
             <div className="border-l-2 border-[var(--color-todai)] bg-[var(--color-surface)] px-6 py-4 text-[13.5px] leading-[1.75] text-[var(--color-muted)] italic">
               {res.excerpt}

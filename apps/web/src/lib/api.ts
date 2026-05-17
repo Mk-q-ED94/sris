@@ -310,6 +310,17 @@ export function suggestResourceMeta(token: string, id: string, apply = false): P
   return request<MetaSuggestion>(`/api/resources/${id}/suggest-meta${qs}`, token, { method: "POST" });
 }
 
+export type SummarizeResult = {
+  summary: string;
+  applied: boolean;
+  skipped_reason?: string;
+};
+
+export function summarizeResource(token: string, id: string, apply = false): Promise<SummarizeResult> {
+  const qs = apply ? "?apply=1" : "";
+  return request<SummarizeResult>(`/api/resources/${id}/summarize${qs}`, token, { method: "POST" });
+}
+
 export function extractAllResources(token: string, force = false): Promise<ExtractAllResult> {
   const qs = force ? "?force=1" : "";
   return request<ExtractAllResult>(`/api/resources/extract-all${qs}`, token, { method: "POST" });

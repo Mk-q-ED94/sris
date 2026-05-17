@@ -19,6 +19,7 @@ import { runConfidenceUpdate, computeResourceConfidence } from "./routes/confide
 import { runIngest } from "./ingest";
 import { extractAllResources, extractOneResource } from "./routes/extract";
 import { suggestResourceMetaRoute } from "./routes/suggest";
+import { summarizeResourceRoute } from "./routes/summarize-content";
 
 function llmConfigOrNull(env: Env): LlmConfig | null {
   if (!env.LLM_API_KEY) return null;
@@ -129,6 +130,12 @@ export default {
       if (suggestMatch && request.method === "POST") {
         const apply = url.searchParams.get("apply") === "1";
         return json(await suggestResourceMetaRoute(env, suggestMatch[1]!, apply));
+      }
+
+      const summarizeMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/summarize$/);
+      if (summarizeMatch && request.method === "POST") {
+        const apply = url.searchParams.get("apply") === "1";
+        return json(await summarizeResourceRoute(env, summarizeMatch[1]!, apply));
       }
 
       const sourcePatrolMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/patrol$/);
