@@ -17,6 +17,7 @@ import { runConflictDetection, resolveConflict, verifyResource } from "./routes/
 import { runConfidenceUpdate, computeResourceConfidence } from "./routes/confidence";
 import { runIngest } from "./ingest";
 import { extractAllResources, extractOneResource } from "./routes/extract";
+import { suggestResourceMetaRoute } from "./routes/suggest";
 
 async function fetchAndSaveCandidate(db: D1Database, id: string, url: string): Promise<void> {
   const result = await fetchUrlContent(url);
@@ -116,6 +117,12 @@ export default {
       if (url.pathname === "/api/resources/extract-all" && request.method === "POST") {
         const force = url.searchParams.get("force") === "1";
         return json(await extractAllResources(env, { force }));
+      }
+
+      const suggestMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/suggest-meta$/);
+      if (suggestMatch && request.method === "POST") {
+        const apply = url.searchParams.get("apply") === "1";
+        return json(await suggestResourceMetaRoute(env, suggestMatch[1]!, apply));
       }
 
       const sourcePatrolMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/patrol$/);

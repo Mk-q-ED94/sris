@@ -2,7 +2,8 @@ import { AlertTriangle, ArrowLeft, ArrowUpRight, BookOpen, Calendar, FileText, G
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
-import { extractResource, fetchResourceDetail, refreshResource, updateResource, fetchUniversities, fetchProfessors, fetchPrograms } from "../lib/api";
+import { extractResource, fetchResourceDetail, refreshResource, updateResource, fetchUniversities, fetchProfessors, fetchPrograms, suggestResourceMeta } from "../lib/api";
+import type { MetaSuggestion } from "../lib/api";
 import { formatDate } from "../lib/format";
 import type { ExtractedProgramFields, ExtractedProfessorFields, ExtractedProgramPageFields, ExtractedLabFields, IntelligenceResource, ResourceType, University, Professor, Program, ResourceDetailResult } from "../types/sris";
 import type { PageKey } from "../components/AppShell";
@@ -44,6 +45,8 @@ export function ResourceDetail({
   const [saving, setSaving] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestion, setSuggestion] = useState<MetaSuggestion | null>(null);
 
   // Edit form state
   const [editType, setEditType] = useState<ResourceType>("other");
@@ -136,11 +139,48 @@ export function ResourceDetail({
       // Re-fetch the resource to pick up extracted_facts
       const refreshed = await fetchResourceDetail(token, data.resource.id);
       setData(refreshed);
+      // Auto-apply suggestions for null fields after a successful extraction
+      if (result.status !== "failed" && (!refreshed.resource.confidence || !refreshed.resource.decision_impact)) {
+        try {
+          const s = await suggestResourceMeta(token, data.resource.id, true);
+          setSuggestion(s);
+          // Re-fetch to pick up applied values
+          if (s.applied.confidence || s.applied.decision_impact) {
+            const again = await fetchResourceDetail(token, data.resource.id);
+            setData(again);
+            initEditForm(again.resource);
+          }
+        } catch {
+          // Non-fatal: suggestion failed silently
+        }
+      }
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : "Extraction failed");
     } finally {
       setExtracting(false);
     }
+  }
+
+  async function handleSuggest() {
+    if (!data) return;
+    setSuggesting(true);
+    setSuggestion(null);
+    try {
+      const s = await suggestResourceMeta(token, data.resource.id, false);
+      setSuggestion(s);
+    } catch {
+      // Ignore — user can retry
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  function applySuggestion() {
+    if (!suggestion) return;
+    setEditConfidence(suggestion.suggested_confidence);
+    setEditDecisionImpact(suggestion.suggested_decision_impact);
+    setEditing(true);
+    setSuggestion(null);
   }
 
   if (loading) {
@@ -306,13 +346,24 @@ export function ResourceDetail({
             <span className="section-index">{rd.metadataSection}</span>
           </div>
           {!editing ? (
-            <button
-              type="button"
-              onClick={() => { initEditForm(res); setEditing(true); }}
-              className="mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-todai)] hover:underline"
-            >
-              {rd.edit}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSuggest}
+                disabled={suggesting}
+                className="inline-flex items-center gap-1.5 mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-subtle)] hover:text-[var(--color-todai)] disabled:opacity-50"
+              >
+                <Sparkles className={`h-3 w-3 ${suggesting ? "animate-pulse" : ""}`} />
+                {suggesting ? "Thinking…" : "AI suggest"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { initEditForm(res); setEditing(true); }}
+                className="mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-todai)] hover:underline"
+              >
+                {rd.edit}
+              </button>
+            </div>
           ) : (
             <div className="flex gap-2">
               <button
@@ -333,6 +384,47 @@ export function ResourceDetail({
             </div>
           )}
         </div>
+
+        {/* AI suggestion callout */}
+        {suggestion && (
+          <div className="mb-5 border border-[var(--color-todai)]/30 bg-[var(--color-todai-soft)] p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 space-y-2">
+                <div className="mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-todai)]">
+                  AI suggestion
+                  {suggestion.impact_source === "rules_fallback" && (
+                    <span className="ml-2 text-[var(--color-subtle)]">· rules fallback</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-subtle)]">Confidence:</span>
+                  <span className="mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] bg-[var(--color-todai-soft)] text-[var(--color-todai)]">
+                    {suggestion.suggested_confidence}
+                  </span>
+                </div>
+                <p className="text-[13px] leading-[1.6] text-[var(--color-ink)]">
+                  {suggestion.suggested_decision_impact}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={applySuggestion}
+                  className="inline-flex h-8 items-center bg-[var(--color-todai)] px-3 text-[11px] font-medium text-white hover:opacity-90"
+                >
+                  Apply
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSuggestion(null)}
+                  className="inline-flex h-8 items-center border border-[var(--color-hairline-strong)] px-3 text-[11px] text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 sm:grid-cols-2">
           <MetaField label={t.capture.resourceTypeLabel}>

@@ -297,6 +297,19 @@ export function extractResource(token: string, id: string, force = false): Promi
   return request<ExtractionResult>(`/api/resources/${id}/extract${qs}`, token, { method: "POST" });
 }
 
+export type MetaSuggestion = {
+  suggested_confidence: string;
+  suggested_decision_impact: string;
+  confidence_source: "rules";
+  impact_source: "llm" | "rules_fallback";
+  applied: { confidence: boolean; decision_impact: boolean };
+};
+
+export function suggestResourceMeta(token: string, id: string, apply = false): Promise<MetaSuggestion> {
+  const qs = apply ? "?apply=1" : "";
+  return request<MetaSuggestion>(`/api/resources/${id}/suggest-meta${qs}`, token, { method: "POST" });
+}
+
 export function extractAllResources(token: string, force = false): Promise<ExtractAllResult> {
   const qs = force ? "?force=1" : "";
   return request<ExtractAllResult>(`/api/resources/extract-all${qs}`, token, { method: "POST" });
