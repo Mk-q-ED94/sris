@@ -2,6 +2,9 @@ import type { D1Database } from "@cloudflare/workers-types";
 import type { Env } from "../env";
 import { httpError } from "../http";
 import { extractProgramFields, type LlmConfig } from "../ai/extract-program";
+import { extractWebpageFields } from "../ai/extract-webpage";
+
+const WEBPAGE_TYPES = new Set(["professor_page", "program_page", "lab_page"]);
 
 interface ResourceRow {
   id: string;
@@ -48,10 +51,12 @@ async function runExtraction(
   env: Env,
   resource: ResourceRow,
 ): Promise<{ ok: true; usage: Usage; model: string }> {
-  if (resource.resource_type !== "admission_notice") {
+  const isAdmission = resource.resource_type === "admission_notice";
+  const isWebpage = WEBPAGE_TYPES.has(resource.resource_type);
+  if (!isAdmission && !isWebpage) {
     throw httpError(
       400,
-      `Resource ${resource.id} has type '${resource.resource_type}'; only 'admission_notice' is supported`,
+      `Resource ${resource.id} has type '${resource.resource_type}'; extraction supports: admission_notice, professor_page, program_page, lab_page`,
     );
   }
 
@@ -64,7 +69,13 @@ async function runExtraction(
     .run();
 
   try {
-    const result = await extractProgramFields(config, resource.url);
+    const result = isAdmission
+      ? await extractProgramFields(config, resource.url)
+      : await extractWebpageFields(
+          config,
+          resource.url,
+          resource.resource_type as "professor_page" | "program_page" | "lab_page",
+        );
     const now = new Date().toISOString();
     await env.DB.prepare(
       `UPDATE intelligence_resources
@@ -123,9 +134,10 @@ export async function extractAllResources(
   env: Env,
   options: ExtractOptions = {},
 ): Promise<unknown> {
+  const extractableTypes = "'admission_notice','professor_page','program_page','lab_page'";
   const filter = options.force
-    ? "resource_type = 'admission_notice'"
-    : "resource_type = 'admission_notice' AND (extraction_status IS NULL OR extraction_status IN ('pending', 'failed'))";
+    ? `resource_type IN (${extractableTypes})`
+    : `resource_type IN (${extractableTypes}) AND (extraction_status IS NULL OR extraction_status IN ('pending', 'failed'))`;
   const rows =
     (
       await env.DB.prepare(

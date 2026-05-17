@@ -202,8 +202,8 @@ export type IntelligenceResource = {
   snapshot_at?: string | null;
   confidence_score?: number | null;
   confidence_last_verified?: string | null;
-  // AI extraction fields (populated by /api/resources/:id/extract on admission_notice rows)
-  extracted_facts?: ExtractedProgramFields | null;
+  // AI extraction fields (populated by /api/resources/:id/extract)
+  extracted_facts?: ExtractedProgramFields | ExtractedProfessorFields | ExtractedProgramPageFields | ExtractedLabFields | null;
   extraction_status?: "pending" | "running" | "succeeded" | "failed" | null;
   extracted_at?: string | null;
   extraction_model?: string | null;
@@ -248,6 +248,55 @@ export type ExtractedProgramFields = {
   quota: number | null;
   mext_eligible: boolean;
   scholarships: string[];
+  notes: string;
+  extraction_confidence: number;
+  unresolved_questions: string[];
+};
+
+export type ExtractedProfessorFields = {
+  full_name: string;
+  title: string | null;
+  affiliation: string | null;
+  department: string | null;
+  email: string | null;
+  research_interests: string[];
+  bio_snippet: string | null;
+  recent_publications: Array<{ title: string; year: number | null; venue: string | null }>;
+  lab_name: string | null;
+  open_positions: boolean;
+  contact_notes: string | null;
+  extraction_confidence: number;
+  unresolved_questions: string[];
+};
+
+export type ExtractedProgramPageFields = {
+  program_name: string;
+  degree: string | null;
+  language: string | null;
+  application_periods: Array<{ label: string; open: string | null; close: string | null }>;
+  requirements: string[];
+  quota: number | null;
+  tuition_per_year_jpy: number | null;
+  application_fee_jpy: number | null;
+  mext_eligible: boolean;
+  scholarships: string[];
+  supervisor_consent_required: boolean;
+  contact_email: string | null;
+  notes: string;
+  extraction_confidence: number;
+  unresolved_questions: string[];
+};
+
+export type ExtractedLabFields = {
+  lab_name: string;
+  pi_name: string | null;
+  university: string | null;
+  department: string | null;
+  research_themes: string[];
+  tools_methods: string[];
+  recent_publications: Array<{ title: string; year: number | null; venue: string | null }>;
+  open_positions: boolean;
+  contact_email: string | null;
   notes: string;
   extraction_confidence: number;
   unresolved_questions: string[];
