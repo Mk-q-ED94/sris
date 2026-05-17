@@ -423,6 +423,68 @@ export interface Locale {
     reliabilityScore: string;
     runRefresh: string;
   };
+  universitiesPage: {
+    title: string;
+    description: string;
+    totalLabel: string;
+    resourcesLabel: string;
+    highGapsLabel: string;
+    programsLabel: string;
+    professorsLabel: string;
+    labsLabel: string;
+    updatedLabel: string;
+    neverUpdated: string;
+    sortLabel: string;
+    sortName: string;
+    sortUpdated: string;
+    sortResources: string;
+    sortGaps: string;
+    filterPlaceholder: string;
+    noData: string;
+    noDataHelper: string;
+    noDataAction1: string;
+    noDataAction2: string;
+    noResults: string;
+    openDetail: string;
+    addSource: string;
+    capture: string;
+    viewResources: string;
+    viewGaps: string;
+    noGaps: string;
+    gapHigh: string;
+    gapMedium: string;
+    gapLow: string;
+  };
+  papersPage: {
+    title: string;
+    description: string;
+    confirmedLabel: string;
+    pendingLabel: string;
+    thisWeekLabel: string;
+    tabAll: string;
+    tabConfirmed: string;
+    tabCandidates: string;
+    filterPlaceholder: string;
+    noResults: string;
+    noResultsHelper: string;
+    noPapers: string;
+    noPapersHelper: string;
+    noCandidates: string;
+    noCandidatesHelper: string;
+    runIngest: string;
+    addArxivSource: string;
+    capturePaper: string;
+    goToReview: string;
+    candidateBadge: string;
+    openUrl: string;
+    openReview: string;
+    linkedTo: string;
+    year: string;
+    venue: string;
+    authors: string;
+    keywords: string;
+    abstract: string;
+  };
 }
 
 export type MetricKey =
@@ -663,7 +725,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       email: "邮箱",
       website: "主页",
       noResults: "暂无教授信息",
-      noResultsHelper: "通过数据源采集或手动添加教授后，这里会展示导师列表。",
+      noResultsHelper: "建议从以下方式补充：① 添加教授主页 source → Source Hub；② 在院校官网抓取 faculty 页面 → Capture；③ 从 Google Scholar 或 arXiv 候选关联到具体教授。",
       matchReason: "匹配分析",
       matchButton: "AI 匹配",
       matching: "分析中…",
@@ -679,7 +741,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       recentPapers: "近期论文",
       website: "主页",
       noResults: "暂无实验室信息",
-      noResultsHelper: "添加实验室后，这里会展示研究组列表。",
+      noResultsHelper: "建议从以下方式补充：① 捕获实验室主页（lab_page 类型）→ 进入 Review Queue 接受；② 在 Source Hub 添加实验室页 source；③ 从已有教授关联到实验室。",
     },
     programs: {
       title: "项目",
@@ -693,7 +755,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       tuition: "学费",
       website: "项目主页",
       noResults: "暂无项目信息",
-      noResultsHelper: "添加 SGU 项目后，这里会展示项目列表和截止日期。",
+      noResultsHelper: "建议从以下方式补充：① 优先捕获官方项目页（program_page / admission_notice 类型）；② 在院校详情页用缺口快捷入口跳到 Capture；③ 添加招生公告 source。",
       matchReason: "匹配分析",
       matchButton: "AI 匹配",
       matching: "分析中…",
@@ -888,7 +950,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       resolvedAt: "解决时间",
       sourcesInvolved: "涉及来源",
       noConflicts: "暂无冲突",
-      noConflictsHelper: "点击「立即检测」扫描信息冲突和过期资源。",
+      noConflictsHelper: "当不同来源对同一字段说法不一致时，冲突会自动出现在这里。点击「立即检测」立即扫描。",
       detectNow: "立即检测",
       detecting: "检测中…",
       autoDetected: "自动检测",
@@ -896,6 +958,68 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceDecayed: "可信度已衰减",
       reliabilityScore: "来源可靠性",
       runRefresh: "刷新可信度",
+    },
+    universitiesPage: {
+      title: "院校情报地图",
+      description: "每所目标院校的情报覆盖状态：还缺什么、最近捕获了什么、下一步该查哪里。",
+      totalLabel: "目标院校",
+      resourcesLabel: "资源总数",
+      highGapsLabel: "高优先缺口",
+      programsLabel: "项目",
+      professorsLabel: "教授",
+      labsLabel: "实验室",
+      updatedLabel: "最近更新",
+      neverUpdated: "尚无资源",
+      sortLabel: "排序",
+      sortName: "名称",
+      sortUpdated: "最近更新",
+      sortResources: "资源最多",
+      sortGaps: "缺口最多",
+      filterPlaceholder: "按院校名筛选…",
+      noData: "暂无目标院校",
+      noDataHelper: "还没有添加任何目标院校。先添加一个 source 或捕获官方项目页，系统会自动创建院校入口。",
+      noDataAction1: "添加数据源",
+      noDataAction2: "捕获网页",
+      noResults: "无匹配院校",
+      openDetail: "查看详情",
+      addSource: "添加 source",
+      capture: "捕获",
+      viewResources: "查看资源",
+      viewGaps: "查看缺口",
+      noGaps: "无明显缺口",
+      gapHigh: "高",
+      gapMedium: "中",
+      gapLow: "低",
+    },
+    papersPage: {
+      title: "论文雷达",
+      description: "已确认论文库 + 待确认论文候选的统一视图。把论文和研究信号沉淀成教授匹配证据。",
+      confirmedLabel: "已确认",
+      pendingLabel: "待确认候选",
+      thisWeekLabel: "本周新增",
+      tabAll: "全部",
+      tabConfirmed: "已确认论文",
+      tabCandidates: "待确认候选",
+      filterPlaceholder: "按标题 / 作者 / 关键词筛选…",
+      noResults: "没有匹配结果",
+      noResultsHelper: "尝试调整筛选条件。",
+      noPapers: "正式论文库为空",
+      noPapersHelper: "在 Review Queue 接受论文候选后，它们会进入正式论文库作为可复用证据。",
+      noCandidates: "暂无论文候选",
+      noCandidatesHelper: "运行 arXiv ingest、添加 arXiv source，或用捕获入口保存论文链接，候选就会出现在这里。",
+      runIngest: "运行 arXiv ingest",
+      addArxivSource: "添加 arXiv source",
+      capturePaper: "捕获论文链接",
+      goToReview: "前往 Review Queue",
+      candidateBadge: "候选",
+      openUrl: "打开链接",
+      openReview: "进入 Review",
+      linkedTo: "关联",
+      year: "年份",
+      venue: "发表于",
+      authors: "作者",
+      keywords: "关键词",
+      abstract: "摘要",
     },
   },
   en: {
@@ -1120,7 +1244,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       email: "Email",
       website: "Website",
       noResults: "No professors yet",
-      noResultsHelper: "Add professors via data sources or manual entry to see them listed here.",
+      noResultsHelper: "To populate this list: ① add a professor page source in Source Hub; ② capture a faculty page (professor_page type); ③ or link paper candidates to a professor profile.",
       matchReason: "Match analysis",
       matchButton: "AI match",
       matching: "Analyzing…",
@@ -1136,7 +1260,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       recentPapers: "Recent papers",
       website: "Website",
       noResults: "No labs yet",
-      noResultsHelper: "Add labs to see research groups listed here.",
+      noResultsHelper: "To populate this list: ① capture a lab homepage (lab_page type) and accept it in Review; ② add a lab page source in Source Hub; ③ or associate a professor with a lab entry.",
     },
     programs: {
       title: "Programs",
@@ -1150,7 +1274,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       tuition: "Tuition",
       website: "Program website",
       noResults: "No programs yet",
-      noResultsHelper: "Add SGU programs to see deadlines and requirements here.",
+      noResultsHelper: "To populate this list: ① capture official program or admission pages (program_page / admission_notice types); ② use the gap shortcut in University Detail to open Capture pre-filled; ③ or add an admission notice source.",
       matchReason: "Match analysis",
       matchButton: "AI match",
       matching: "Analyzing…",
@@ -1345,7 +1469,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       resolvedAt: "Resolved at",
       sourcesInvolved: "Sources involved",
       noConflicts: "No conflicts",
-      noConflictsHelper: "Click \"Detect now\" to scan for information conflicts and stale resources.",
+      noConflictsHelper: "Conflicts appear here when different sources disagree on the same field. Click \"Detect now\" to run an immediate scan.",
       detectNow: "Detect now",
       detecting: "Detecting…",
       autoDetected: "Auto-detected",
@@ -1353,6 +1477,68 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceDecayed: "Confidence has decayed",
       reliabilityScore: "Source reliability",
       runRefresh: "Refresh confidence",
+    },
+    universitiesPage: {
+      title: "University intelligence map",
+      description: "Coverage status for each target university — what's missing, what was recently captured, where to look next.",
+      totalLabel: "Universities",
+      resourcesLabel: "Total resources",
+      highGapsLabel: "High-priority gaps",
+      programsLabel: "Programs",
+      professorsLabel: "Professors",
+      labsLabel: "Labs",
+      updatedLabel: "Last updated",
+      neverUpdated: "No resources yet",
+      sortLabel: "Sort",
+      sortName: "Name",
+      sortUpdated: "Recently updated",
+      sortResources: "Most resources",
+      sortGaps: "Most gaps",
+      filterPlaceholder: "Filter by university name…",
+      noData: "No target universities",
+      noDataHelper: "No universities added yet. Add a source or capture an official program page and a university entry will be created automatically.",
+      noDataAction1: "Add source",
+      noDataAction2: "Capture page",
+      noResults: "No matching universities",
+      openDetail: "View detail",
+      addSource: "Add source",
+      capture: "Capture",
+      viewResources: "View resources",
+      viewGaps: "View gaps",
+      noGaps: "No significant gaps",
+      gapHigh: "High",
+      gapMedium: "Med",
+      gapLow: "Low",
+    },
+    papersPage: {
+      title: "Paper radar",
+      description: "Confirmed papers + pending candidates in one view. Settle papers into reusable professor-match evidence.",
+      confirmedLabel: "Confirmed",
+      pendingLabel: "Pending candidates",
+      thisWeekLabel: "This week",
+      tabAll: "All",
+      tabConfirmed: "Confirmed papers",
+      tabCandidates: "Pending candidates",
+      filterPlaceholder: "Filter by title / author / keyword…",
+      noResults: "No matching results",
+      noResultsHelper: "Try adjusting your filters.",
+      noPapers: "No confirmed papers yet",
+      noPapersHelper: "Accept paper candidates in the Review Queue to build the confirmed paper library.",
+      noCandidates: "No paper candidates",
+      noCandidatesHelper: "Run arXiv ingest, add an arXiv source, or capture a paper URL to start seeing candidates here.",
+      runIngest: "Run arXiv ingest",
+      addArxivSource: "Add arXiv source",
+      capturePaper: "Capture paper URL",
+      goToReview: "Go to Review Queue",
+      candidateBadge: "Candidate",
+      openUrl: "Open URL",
+      openReview: "Open in Review",
+      linkedTo: "Linked to",
+      year: "Year",
+      venue: "Venue",
+      authors: "Authors",
+      keywords: "Keywords",
+      abstract: "Abstract",
     },
   },
   ja: {
@@ -1577,7 +1763,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       email: "メール",
       website: "ウェブサイト",
       noResults: "教授情報なし",
-      noResultsHelper: "データソースまたは手動で教授を追加すると、ここに一覧が表示されます。",
+      noResultsHelper: "次の方法で追加できます：① Source Hub で教授ページのソースを追加；② 教員ページをキャプチャ（professor_page タイプ）；③ 論文候補を教授プロフィールに関連付け。",
       matchReason: "マッチ分析",
       matchButton: "AI マッチ",
       matching: "分析中…",
@@ -1593,7 +1779,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       recentPapers: "最近の論文",
       website: "ウェブサイト",
       noResults: "研究室情報なし",
-      noResultsHelper: "研究室を追加すると、研究グループ一覧が表示されます。",
+      noResultsHelper: "次の方法で追加できます：① 研究室ホームページをキャプチャ（lab_page タイプ）してレビューで受け入れ；② Source Hub で研究室ページのソースを追加；③ 教授を研究室に関連付け。",
     },
     programs: {
       title: "プログラム",
@@ -1607,7 +1793,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       tuition: "学費",
       website: "プログラムサイト",
       noResults: "プログラム情報なし",
-      noResultsHelper: "SGU プログラムを追加すると、締切と要件がここに表示されます。",
+      noResultsHelper: "次の方法で追加できます：① 公式プログラム・募集要項ページをキャプチャ（program_page / admission_notice タイプ）；② 大学詳細のギャップショートカットでキャプチャを開く；③ 募集要項ソースを追加。",
       matchReason: "マッチ分析",
       matchButton: "AI マッチ",
       matching: "分析中…",
@@ -1802,7 +1988,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       resolvedAt: "解決日時",
       sourcesInvolved: "関連ソース",
       noConflicts: "競合なし",
-      noConflictsHelper: "「今すぐ検出」をクリックして情報の競合と古いリソースをスキャン。",
+      noConflictsHelper: "異なるソースが同じフィールドで矛盾する場合、ここに競合が表示されます。「今すぐ検出」をクリックしてスキャン。",
       detectNow: "今すぐ検出",
       detecting: "検出中…",
       autoDetected: "自動検出",
@@ -1810,6 +1996,68 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceDecayed: "信頼度が低下",
       reliabilityScore: "ソース信頼性",
       runRefresh: "信頼度を更新",
+    },
+    universitiesPage: {
+      title: "大学情報マップ",
+      description: "各志望校の情報カバレッジ状況 — 何が不足しているか、最近何がキャプチャされたか、次にどこを調べるべきか。",
+      totalLabel: "志望校",
+      resourcesLabel: "リソース総数",
+      highGapsLabel: "高優先ギャップ",
+      programsLabel: "プログラム",
+      professorsLabel: "教授",
+      labsLabel: "研究室",
+      updatedLabel: "最終更新",
+      neverUpdated: "リソースなし",
+      sortLabel: "並び替え",
+      sortName: "名前",
+      sortUpdated: "最近更新",
+      sortResources: "リソース多",
+      sortGaps: "ギャップ多",
+      filterPlaceholder: "大学名でフィルター…",
+      noData: "志望校なし",
+      noDataHelper: "まだ大学が追加されていません。ソースを追加するか、公式プログラムページをキャプチャすると、大学エントリが自動作成されます。",
+      noDataAction1: "ソース追加",
+      noDataAction2: "ページをキャプチャ",
+      noResults: "一致する大学なし",
+      openDetail: "詳細を見る",
+      addSource: "ソース追加",
+      capture: "キャプチャ",
+      viewResources: "リソースを見る",
+      viewGaps: "ギャップを見る",
+      noGaps: "顕著なギャップなし",
+      gapHigh: "高",
+      gapMedium: "中",
+      gapLow: "低",
+    },
+    papersPage: {
+      title: "論文レーダー",
+      description: "確認済み論文と候補論文を一元表示。論文を教授マッチの証拠として蓄積。",
+      confirmedLabel: "確認済み",
+      pendingLabel: "候補",
+      thisWeekLabel: "今週",
+      tabAll: "すべて",
+      tabConfirmed: "確認済み論文",
+      tabCandidates: "候補",
+      filterPlaceholder: "タイトル / 著者 / キーワードでフィルター…",
+      noResults: "一致する結果なし",
+      noResultsHelper: "フィルターを調整してください。",
+      noPapers: "確認済み論文なし",
+      noPapersHelper: "レビューキューで候補を受け入れると、確認済み論文ライブラリに追加されます。",
+      noCandidates: "論文候補なし",
+      noCandidatesHelper: "arXiv 取り込みを実行するか、arXiv ソースを追加するか、論文 URL をキャプチャすると候補が表示されます。",
+      runIngest: "arXiv 取り込みを実行",
+      addArxivSource: "arXiv ソースを追加",
+      capturePaper: "論文 URL をキャプチャ",
+      goToReview: "レビューキューへ",
+      candidateBadge: "候補",
+      openUrl: "URL を開く",
+      openReview: "レビューで開く",
+      linkedTo: "関連",
+      year: "年",
+      venue: "掲載先",
+      authors: "著者",
+      keywords: "キーワード",
+      abstract: "概要",
     },
   },
 };
