@@ -18,8 +18,9 @@ import { Timeline } from "./pages/Timeline";
 import { Universities } from "./pages/Universities";
 import { UniversityDetail } from "./pages/UniversityDetail";
 import { Conflicts } from "./pages/Conflicts";
+import { Automation } from "./pages/Automation";
 
-const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "requirements", "papers", "review", "timeline", "sources", "conflicts"];
+const VALID_PAGES: PageKey[] = ["dashboard", "universities", "professors", "labs", "programs", "requirements", "papers", "review", "automation", "timeline", "sources", "conflicts"];
 
 interface HashRoute {
   page: PageKey | "capture";
@@ -131,6 +132,7 @@ function AppContent() {
     if (route.page === "programs") return <Programs />;
     if (route.page === "requirements") return <Requirements onNavigate={navigate} />;
     if (route.page === "review") return <Review />;
+    if (route.page === "automation") return <Automation />;
     return <PlaceholderPage page={route.page as PageKey} />;
   }, [route, navigate, closeCapture]);
 

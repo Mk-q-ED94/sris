@@ -1,4 +1,4 @@
-import type { Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, Paper, PaperCandidate, Professor, Program, ProgramRequirements, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UniversitySummary, UserProfile } from "../types/sris";
+import type { AutomationRun, AutomationRunItem, AutomationRunScope, Conflict, ConfidenceSummary, DashboardSummary, ExtractAllResult, ExtractionResult, GapAction, IntelligenceCandidate, IntelligenceResource, Lab, Paper, PaperCandidate, Professor, Program, ProgramRequirements, QuickCaptureResponse, ResourceDetailResult, ResourceType, SearchResponse, SourceReliability, TimelineTask, University, UniversityGap, UniversitySummary, UserProfile } from "../types/sris";
 
 const TOKEN_KEY = "sris_token";
 
@@ -161,6 +161,12 @@ export type RadarSource = {
   last_checked_at?: string | null;
   last_changed_at?: string | null;
   reliability_score?: number | null;
+  last_candidate_created_at?: string | null;
+  last_error?: string | null;
+  consecutive_failures?: number;
+  last_run_id?: string | null;
+  priority?: string;
+  ai_enrichment_enabled?: boolean;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -227,6 +233,34 @@ export function fetchConfidenceSummary(token: string): Promise<ConfidenceSummary
 
 export function refreshConfidence(token: string): Promise<{ updated: number }> {
   return request("/api/confidence/refresh", token, { method: "POST" });
+}
+
+// Automation
+
+export function runAutomation(
+  token: string,
+  options: { scope?: AutomationRunScope; force?: boolean; dryRun?: boolean },
+): Promise<AutomationRun> {
+  const params = new URLSearchParams();
+  if (options.scope) params.set("scope", options.scope);
+  if (options.force) params.set("force", "1");
+  if (options.dryRun) params.set("dry_run", "1");
+  return request<AutomationRun>(`/api/automation/run?${params.toString()}`, token, { method: "POST" });
+}
+
+export function fetchAutomationRuns(token: string, limit = 10): Promise<AutomationRun[]> {
+  return request<AutomationRun[]>(`/api/automation/runs?limit=${limit}`, token);
+}
+
+export function fetchAutomationRunDetail(
+  token: string,
+  id: string,
+): Promise<{ run: AutomationRun; items: AutomationRunItem[] }> {
+  return request(`/api/automation/runs/${id}`, token);
+}
+
+export function enrichCandidateApi(token: string, id: string): Promise<{ id: string; status: string; fields_updated: string[] }> {
+  return request(`/api/candidates/${id}/enrich`, token, { method: "POST" });
 }
 
 export interface ReviewFilter {

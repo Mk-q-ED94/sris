@@ -558,6 +558,22 @@ export interface Locale {
     keywords: string;
     abstract: string;
   };
+  automation: {
+    title: string;
+    description: string;
+    runNow: string;
+    running: string;
+    scopeAll: string;
+    scopeSources: string;
+    scopeCandidates: string;
+    scopeResources: string;
+    scopeAi: string;
+    dryRun: string;
+    lastRun: string;
+    runHistory: string;
+    noRuns: string;
+    viewItems: string;
+  };
 }
 
 export type MetricKey =
@@ -628,7 +644,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "高", medium: "中", low: "低" },
     taskStatuses: { todo: "待办", doing: "进行中", done: "已完成" },
     status: { db: "D1 数据库", arxiv: "arXiv Radar", ai: "AI 摘要", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", requirements: "申请要求", papers: "论文雷达", review: "待确认", timeline: "时间线", sources: "数据源", conflicts: "冲突" },
+    nav: { dashboard: "总览", universities: "院校", professors: "教授", labs: "实验室", programs: "项目", requirements: "申请要求", papers: "论文雷达", review: "待确认", automation: "自动化", timeline: "时间线", sources: "数据源", conflicts: "冲突" },
     pages: {
       dashboard: { title: "总览", description: "Dashboard" },
       universities: { title: "院校", description: "目标院校数据库会在下一轮迁移到 React 表格视图。" },
@@ -641,6 +657,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       timeline: { title: "时间线", description: "TOEFL / JLPT / SOP / 推荐信 / 申请 DDL 的 Gantt 视图。" },
       sources: { title: "数据源", description: "arXiv RSS、iCal 订阅、浏览器抽取刷。" },
       conflicts: { title: "冲突管理", description: "检测并解决信息冲突，追踪来源可信度与信息过期。" },
+      automation: { title: "自动化", description: "统一管理自动化流水线，查看运行历史与健康状态。" },
     },
     placeholderNote: "当前大改先完成总览页,后续页面会逐个迁移。",
     university: {
@@ -736,7 +753,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       newSource: "新建数据源",
       editSource: "编辑",
       deleteSource: "删除",
-      sourceTypes: { arxiv: "arXiv", official: "官方网站", program_page: "项目页面", professor_page: "教授页面", lab_page: "实验室页面", admission: "招生信息", scholar: "Google Scholar", forum: "论坛", video: "视频" },
+      sourceTypes: { arxiv: "arXiv", official: "官方网站", webpage: "网页", program_page: "项目页面", professor_page: "教授页面", lab_page: "实验室页面", admission: "招生信息", scholar: "Google Scholar", forum: "论坛", video: "视频" },
       staleWarning: "超过 7 天未检查",
       neverRun: "从未运行",
       staleSourcesTitle: "数据源停滞",
@@ -1033,6 +1050,22 @@ export const LOCALES: Record<LangCode, Locale> = {
       reliabilityScore: "来源可靠性",
       runRefresh: "刷新可信度",
     },
+    automation: {
+      title: "自动化",
+      description: "统一管理自动化流水线，查看运行历史与健康状态。",
+      runNow: "立即运行",
+      running: "运行中…",
+      scopeAll: "全部",
+      scopeSources: "仅来源",
+      scopeCandidates: "仅候选",
+      scopeResources: "仅资源",
+      scopeAi: "仅 AI",
+      dryRun: "试运行",
+      lastRun: "最近运行",
+      runHistory: "运行历史",
+      noRuns: "暂无运行记录",
+      viewItems: "查看详情",
+    },
     requirementsPage: {
       title: "申请要求详情",
       description: "已通过 AI 匹配标记为相关的 SGU 项目，把官方招生公告里的语言成绩、文档清单、申请窗口、学费等结构化字段铺开。",
@@ -1221,7 +1254,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "High", medium: "Medium", low: "Low" },
     taskStatuses: { todo: "Todo", doing: "Doing", done: "Done" },
     status: { db: "D1 database", arxiv: "arXiv radar", ai: "AI summary", cron: "Cloudflare cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "Daily 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", requirements: "Requirements", papers: "Paper radar", review: "Review", timeline: "Timeline", sources: "Sources", conflicts: "Conflicts" },
+    nav: { dashboard: "Dashboard", universities: "Universities", professors: "Professors", labs: "Labs", programs: "Programs", requirements: "Requirements", papers: "Paper radar", review: "Review", automation: "Automation", timeline: "Timeline", sources: "Sources", conflicts: "Conflicts" },
     pages: {
       dashboard: { title: "Dashboard", description: "Dashboard" },
       universities: { title: "Universities", description: "The target-university database moves to a React table view next." },
@@ -1234,6 +1267,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       timeline: { title: "Timeline", description: "Gantt view of TOEFL / JLPT / SOP / recommendation / application DDLs." },
       sources: { title: "Sources", description: "arXiv RSS, iCal subscription, browser quick-capture." },
       conflicts: { title: "Conflicts", description: "Detect and resolve information conflicts, track source reliability." },
+      automation: { title: "Automation", description: "Manage the automated intelligence pipeline, view run history and health." },
     },
     placeholderNote: "The redesign starts from the dashboard; other pages are migrated in subsequent passes.",
     university: {
@@ -1329,7 +1363,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       newSource: "New source",
       editSource: "Edit",
       deleteSource: "Delete",
-      sourceTypes: { arxiv: "arXiv", official: "Official site", program_page: "Program page", professor_page: "Professor page", lab_page: "Lab page", admission: "Admission", scholar: "Google Scholar", forum: "Forum", video: "Video" },
+      sourceTypes: { arxiv: "arXiv", official: "Official site", webpage: "Webpage", program_page: "Program page", professor_page: "Professor page", lab_page: "Lab page", admission: "Admission", scholar: "Google Scholar", forum: "Forum", video: "Video" },
       staleWarning: "Not checked in 7+ days",
       neverRun: "Never run",
       staleSourcesTitle: "Stale sources",
@@ -1626,6 +1660,22 @@ export const LOCALES: Record<LangCode, Locale> = {
       reliabilityScore: "Source reliability",
       runRefresh: "Refresh confidence",
     },
+    automation: {
+      title: "Automation",
+      description: "Manage the automated intelligence pipeline, view run history and health.",
+      runNow: "Run now",
+      running: "Running…",
+      scopeAll: "All",
+      scopeSources: "Sources only",
+      scopeCandidates: "Candidates only",
+      scopeResources: "Resources only",
+      scopeAi: "AI only",
+      dryRun: "Dry run",
+      lastRun: "Last run",
+      runHistory: "Run history",
+      noRuns: "No runs yet",
+      viewItems: "View details",
+    },
     requirementsPage: {
       title: "Program requirements",
       description: "Structured requirements for SGU programs you've AI-matched — language scores, document checklists, application windows, fees — all laid out side by side.",
@@ -1814,7 +1864,7 @@ export const LOCALES: Record<LangCode, Locale> = {
     priorities: { high: "高", medium: "中", low: "低" },
     taskStatuses: { todo: "未着手", doing: "進行中", done: "完了" },
     status: { db: "D1 データベース", arxiv: "arXiv レーダー", ai: "AI サマリ", cron: "Cloudflare Cron", connected: "Connected", checking: "Checking", aiReserved: "Interface reserved", cronSchedule: "毎日 23:15 UTC", pendingFmt: (n) => `${n} pending` },
-    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", requirements: "出願要件", papers: "論文レーダー", review: "レビュー", timeline: "タイムライン", sources: "ソース", conflicts: "競合" },
+    nav: { dashboard: "ダッシュボード", universities: "大学", professors: "教授", labs: "研究室", programs: "プログラム", requirements: "出願要件", papers: "論文レーダー", review: "レビュー", automation: "自動化", timeline: "タイムライン", sources: "ソース", conflicts: "競合" },
     pages: {
       dashboard: { title: "ダッシュボード", description: "Dashboard" },
       universities: { title: "大学", description: "志望校データベースは次回 React テーブルに移行します。" },
@@ -1827,6 +1877,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       timeline: { title: "タイムライン", description: "TOEFL / JLPT / SOP / 推薦状 / 出願締切のガントビュー。" },
       sources: { title: "ソース", description: "arXiv RSS、iCal 購読、ブラウザクイックキャプチャ。" },
       conflicts: { title: "競合管理", description: "情報の競合を検出・解決し、ソースの信頼性を追跡。" },
+      automation: { title: "自動化", description: "自動化パイプラインを管理し、実行履歴と健全性を確認。" },
     },
     placeholderNote: "総覧から大改修を始め、他ページは順次移行します。",
     university: {
@@ -1922,7 +1973,7 @@ export const LOCALES: Record<LangCode, Locale> = {
       newSource: "新規ソース",
       editSource: "編集",
       deleteSource: "削除",
-      sourceTypes: { arxiv: "arXiv", official: "公式サイト", program_page: "プログラムページ", professor_page: "教授ページ", lab_page: "研究室ページ", admission: "入試情報", scholar: "Google Scholar", forum: "フォーラム", video: "動画" },
+      sourceTypes: { arxiv: "arXiv", official: "公式サイト", webpage: "ウェブページ", program_page: "プログラムページ", professor_page: "教授ページ", lab_page: "研究室ページ", admission: "入試情報", scholar: "Google Scholar", forum: "フォーラム", video: "動画" },
       staleWarning: "7 日以上未チェック",
       neverRun: "未実行",
       staleSourcesTitle: "ソース停滞",
@@ -2218,6 +2269,22 @@ export const LOCALES: Record<LangCode, Locale> = {
       confidenceDecayed: "信頼度が低下",
       reliabilityScore: "ソース信頼性",
       runRefresh: "信頼度を更新",
+    },
+    automation: {
+      title: "自動化",
+      description: "自動化パイプラインを管理し、実行履歴と健全性を確認。",
+      runNow: "今すぐ実行",
+      running: "実行中…",
+      scopeAll: "すべて",
+      scopeSources: "ソースのみ",
+      scopeCandidates: "候補のみ",
+      scopeResources: "リソースのみ",
+      scopeAi: "AIのみ",
+      dryRun: "ドライラン",
+      lastRun: "前回の実行",
+      runHistory: "実行履歴",
+      noRuns: "実行履歴なし",
+      viewItems: "詳細を表示",
     },
     requirementsPage: {
       title: "出願要件詳細",

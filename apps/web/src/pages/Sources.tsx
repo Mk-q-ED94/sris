@@ -35,6 +35,8 @@ export function Sources() {
   const [formConfidence, setFormConfidence] = useState("medium");
   const [formFrequency, setFormFrequency] = useState("daily");
   const [formEnabled, setFormEnabled] = useState(true);
+  const [formPriority, setFormPriority] = useState("normal");
+  const [formAiEnrichment, setFormAiEnrichment] = useState(true);
   const [saving, setSaving] = useState(false);
   const [patrollingId, setPatrollingId] = useState<string | null>(null);
   const [batchPatrolling, setBatchPatrolling] = useState(false);
@@ -65,6 +67,7 @@ export function Sources() {
     setFormName(""); setFormType("arxiv"); setFormUrl(""); setFormQuery("");
     setFormKeywords(""); setFormUniversityId(""); setFormConfidence("medium");
     setFormFrequency("daily"); setFormEnabled(true);
+    setFormPriority("normal"); setFormAiEnrichment(true);
     setEditingSource(null); setShowForm(false);
   }
 
@@ -74,6 +77,7 @@ export function Sources() {
     setFormQuery(src.query ?? ""); setFormKeywords(src.keywords?.join(", ") ?? "");
     setFormUniversityId(src.university_id ?? ""); setFormConfidence(src.confidence ?? "medium");
     setFormFrequency(src.check_frequency ?? "daily"); setFormEnabled(src.enabled);
+    setFormPriority(src.priority ?? "normal"); setFormAiEnrichment(src.ai_enrichment_enabled ?? true);
     setShowForm(true);
   }
 
@@ -89,6 +93,8 @@ export function Sources() {
       university_id: formUniversityId || null,
       confidence: formConfidence || null,
       check_frequency: formFrequency || null,
+      priority: formPriority || null,
+      ai_enrichment_enabled: formAiEnrichment ? 1 : 0,
     };
     try {
       if (editingSource) {
@@ -238,11 +244,12 @@ export function Sources() {
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.sourceNameLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.sourceTypeLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.universityLabel}</th>
+                  <th className="px-4 py-3 font-medium text-[var(--color-muted)]">Priority</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.confidenceLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.lastRunLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">Patrol</th>
-                  <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.lastChecked}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.conflicts.reliabilityScore}</th>
+                  <th className="px-4 py-3 font-medium text-[var(--color-muted)]">Failures</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]">{t.sources.enabledLabel}</th>
                   <th className="px-4 py-3 font-medium text-[var(--color-muted)]" />
                 </tr>
@@ -266,6 +273,16 @@ export function Sources() {
                     </td>
                     <td className="px-4 py-3 text-[var(--color-muted)]">
                       {src.university_id ? (uniMap.get(src.university_id) ?? src.university_id) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`mono inline-flex h-5 items-center px-1.5 text-[9px] uppercase tracking-[0.12em] ${
+                        src.priority === "critical" ? "bg-red-100 text-red-700" :
+                        src.priority === "high" ? "bg-amber-100 text-amber-700" :
+                        src.priority === "normal" ? "bg-[var(--color-hairline)] text-[var(--color-muted)]" :
+                        "bg-[var(--color-hairline)] text-[var(--color-subtle)]"
+                      }`}>
+                        {src.priority ?? "normal"}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       {src.confidence ? (
@@ -299,14 +316,16 @@ export function Sources() {
                         <span className="text-[10px] text-[var(--color-subtle)]">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-muted)] text-[11px]">
-                      {src.last_checked_at ? formatDate(src.last_checked_at, t.dateLocale, "—") : "—"}
-                    </td>
                     <td className="px-4 py-3 text-[11px]">
                       {src.reliability_score != null ? (
                         <span className={`mono ${(src.reliability_score ?? 0) >= 0.7 ? "text-emerald-600" : (src.reliability_score ?? 0) >= 0.4 ? "text-amber-600" : "text-red-600"}`}>
                           {(src.reliability_score * 100).toFixed(0)}%
                         </span>
+                      ) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-[11px]">
+                      {(src.consecutive_failures ?? 0) > 0 ? (
+                        <span className="mono text-red-600">{src.consecutive_failures}</span>
                       ) : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -382,7 +401,16 @@ export function Sources() {
               <select value={formFrequency} onChange={(e) => setFormFrequency(e.target.value)} className="input-base">
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
                 <option value="manual">Manual</option>
+              </select>
+            </Field>
+            <Field label="Priority">
+              <select value={formPriority} onChange={(e) => setFormPriority(e.target.value)} className="input-base">
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="normal">Normal</option>
+                <option value="low">Low</option>
               </select>
             </Field>
           </div>
@@ -390,6 +418,10 @@ export function Sources() {
             <label className="flex items-center gap-2 text-[12.5px] text-[var(--color-muted)]">
               <input type="checkbox" checked={formEnabled} onChange={(e) => setFormEnabled(e.target.checked)} className="h-4 w-4" />
               {t.sources.enabledLabel}
+            </label>
+            <label className="flex items-center gap-2 text-[12.5px] text-[var(--color-muted)]">
+              <input type="checkbox" checked={formAiEnrichment} onChange={(e) => setFormAiEnrichment(e.target.checked)} className="h-4 w-4" />
+              AI enrichment
             </label>
           </div>
           <div className="mt-5 flex gap-3">

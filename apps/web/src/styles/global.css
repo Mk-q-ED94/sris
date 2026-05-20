@@ -42,7 +42,10 @@ body {
   color: var(--color-ink);
 }
 
-button,
+button {
+  font: inherit;
+}
+
 input,
 select,
 textarea {

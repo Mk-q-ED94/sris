@@ -136,7 +136,7 @@ const FALLBACK_IMPACT: Record<string, string> = {
   video: "Use as supplementary context; verify claims against official sources.",
 };
 
-function fallbackImpact(resource: ResourceForSuggestion): string {
+export function fallbackImpact(resource: ResourceForSuggestion): string {
   return FALLBACK_IMPACT[resource.resource_type] ?? "Review and link to a target university or program.";
 }
 

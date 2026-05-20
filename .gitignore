@@ -11,6 +11,8 @@ build
 .venv
 .uv-cache
 .secrets.json
+.wrangler
+apps/worker/.wrangler
 __pycache__
 .pytest_cache
 .ruff_cache

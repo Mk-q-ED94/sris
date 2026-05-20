@@ -169,24 +169,24 @@ VALUES
 
 INSERT OR IGNORE INTO radar_sources (id, name, source_type, url, query, keywords, enabled, university_id, confidence, check_frequency, patrol_status)
 VALUES
-  ('src-sgu-utokyo-ist-en', 'UTokyo IST English Program', 'webpage', 'https://www.i.u-tokyo.ac.jp/edu/entra/entra_e.shtml', NULL, '["english","master","ist"]', 1, 'utokyo', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-utokyo-epiip', 'UTokyo EPIIP', 'webpage', 'https://www.i.u-tokyo.ac.jp/edu/entra/epiip_e.shtml', NULL, '["epiip","ai","mext"]', 1, 'utokyo', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-utokyo-soe', 'UTokyo Engineering International', 'webpage', 'https://www.t.u-tokyo.ac.jp/en/study-at-utokyo/soe/apply-abroad', NULL, '["engineering","international","master"]', 1, 'utokyo', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-utokyo-gsfs-complex', 'UTokyo GSFS Complexity Sci', 'webpage', 'https://www.k.u-tokyo.ac.jp/complex/html/examinee/examinee_e.html', NULL, '["frontier","complexity"]', 1, 'utokyo', 'medium', 'monthly', 'never_checked'),
+  ('src-sgu-utokyo-ist-en', 'UTokyo IST English Program', 'program_page', 'https://www.i.u-tokyo.ac.jp/edu/entra/entra_e.shtml', NULL, '["english","master","ist"]', 1, 'utokyo', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-utokyo-epiip', 'UTokyo EPIIP', 'program_page', 'https://www.i.u-tokyo.ac.jp/edu/entra/epiip_e.shtml', NULL, '["epiip","ai","mext"]', 1, 'utokyo', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-utokyo-soe', 'UTokyo Engineering International', 'program_page', 'https://www.t.u-tokyo.ac.jp/en/study-at-utokyo/soe/apply-abroad', NULL, '["engineering","international","master"]', 1, 'utokyo', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-utokyo-gsfs-complex', 'UTokyo GSFS Complexity Sci', 'program_page', 'https://www.k.u-tokyo.ac.jp/complex/html/examinee/examinee_e.html', NULL, '["frontier","complexity"]', 1, 'utokyo', 'medium', 'monthly', 'never_checked'),
 
-  ('src-sgu-isct-igpc', 'Science Tokyo IGP(C)', 'webpage', 'https://admissions.isct.ac.jp/en/013/graduate/programs/science-and-engineering/igp-c', NULL, '["igp","privately-funded","english"]', 1, 'science-tokyo', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-isct-igpa', 'Science Tokyo IGP(A)', 'webpage', 'https://admissions.isct.ac.jp/en/013/graduate/programs/igp/igp-a', NULL, '["igp","mext","english"]', 1, 'science-tokyo', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-isct-ipsss', 'Science Tokyo IPSSS', 'webpage', 'https://www.e.titech.ac.jp/igpa/', NULL, '["ipsss","super-smart","english"]', 1, 'science-tokyo', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-isct-cs', 'Science Tokyo CS Dept', 'webpage', 'https://educ.titech.ac.jp/cs/eng/admissions/', NULL, '["cs","computing","admission"]', 1, 'science-tokyo', 'high', 'monthly', 'never_checked'),
+  ('src-sgu-isct-igpc', 'Science Tokyo IGP(C)', 'program_page', 'https://admissions.isct.ac.jp/en/013/graduate/programs/science-and-engineering/igp-c', NULL, '["igp","privately-funded","english"]', 1, 'science-tokyo', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-isct-igpa', 'Science Tokyo IGP(A)', 'program_page', 'https://admissions.isct.ac.jp/en/013/graduate/programs/igp/igp-a', NULL, '["igp","mext","english"]', 1, 'science-tokyo', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-isct-ipsss', 'Science Tokyo IPSSS', 'program_page', 'https://www.e.titech.ac.jp/igpa/', NULL, '["ipsss","super-smart","english"]', 1, 'science-tokyo', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-isct-cs', 'Science Tokyo CS Dept', 'program_page', 'https://educ.titech.ac.jp/cs/eng/admissions/', NULL, '["cs","computing","admission"]', 1, 'science-tokyo', 'high', 'monthly', 'never_checked'),
 
-  ('src-sgu-osaka-ist-en', 'Osaka IST English Admission', 'webpage', 'https://www.ist.osaka-u.ac.jp/english/examinees/admission/', NULL, '["itsce","english","ist"]', 1, 'osaka', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-osaka-es21-mext', 'Osaka EngSci 21st Century', 'webpage', 'https://www.es.osaka-u.ac.jp/en/admission-aid/mext-granted/index.html', NULL, '["engineering-science","mext","english"]', 1, 'osaka', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-osaka-eng-foreign', 'Osaka Eng Foreign Admissions', 'webpage', 'https://www.eng.osaka-u.ac.jp/en/entrance/f_admissions/', NULL, '["engineering","global","english"]', 1, 'osaka', 'high', 'monthly', 'never_checked'),
+  ('src-sgu-osaka-ist-en', 'Osaka IST English Admission', 'program_page', 'https://www.ist.osaka-u.ac.jp/english/examinees/admission/', NULL, '["itsce","english","ist"]', 1, 'osaka', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-osaka-es21-mext', 'Osaka EngSci 21st Century', 'program_page', 'https://www.es.osaka-u.ac.jp/en/admission-aid/mext-granted/index.html', NULL, '["engineering-science","mext","english"]', 1, 'osaka', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-osaka-eng-foreign', 'Osaka Eng Foreign Admissions', 'program_page', 'https://www.eng.osaka-u.ac.jp/en/entrance/f_admissions/', NULL, '["engineering","global","english"]', 1, 'osaka', 'high', 'monthly', 'never_checked'),
 
-  ('src-sgu-tohoku-gsis-exam', 'Tohoku GSIS Exam', 'webpage', 'https://www.is.tohoku.ac.jp/en/entrance/exam.html', NULL, '["gsis","information-sciences","english"]', 1, 'tohoku', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-tohoku-nifs', 'Tohoku GSIS NIFS', 'webpage', 'https://sgpis.is.tohoku.ac.jp/nifs/application.html', NULL, '["nifs","english","gsis"]', 1, 'tohoku', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-tohoku-aiqds', 'Tohoku GSIS AIQDS', 'webpage', 'https://www.is.tohoku.ac.jp/_eng/aiqds/', NULL, '["aiqds","ai","quantum","data-science"]', 1, 'tohoku', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-tohoku-gsis-exam', 'Tohoku GSIS Exam', 'program_page', 'https://www.is.tohoku.ac.jp/en/entrance/exam.html', NULL, '["gsis","information-sciences","english"]', 1, 'tohoku', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-tohoku-nifs', 'Tohoku GSIS NIFS', 'program_page', 'https://sgpis.is.tohoku.ac.jp/nifs/application.html', NULL, '["nifs","english","gsis"]', 1, 'tohoku', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-tohoku-aiqds', 'Tohoku GSIS AIQDS', 'program_page', 'https://www.is.tohoku.ac.jp/_eng/aiqds/', NULL, '["aiqds","ai","quantum","data-science"]', 1, 'tohoku', 'high', 'weekly', 'never_checked'),
 
-  ('src-sgu-tsukuba-cse', 'Tsukuba CS English', 'webpage', 'https://www.cs.tsukuba.ac.jp/english/admission.html', NULL, '["cse","cs","overseas"]', 1, 'tsukuba', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-tsukuba-aisip', 'Tsukuba AISIP', 'webpage', 'https://www.cs.tsukuba.ac.jp/aisip/', NULL, '["aisip","ai","mext"]', 1, 'tsukuba', 'high', 'weekly', 'never_checked'),
-  ('src-sgu-tsukuba-emp', 'Tsukuba Empowerment Informatics', 'webpage', 'https://www.emp.tsukuba.ac.jp/english', NULL, '["empowerment","hci","integrated"]', 1, 'tsukuba', 'high', 'monthly', 'never_checked');
+  ('src-sgu-tsukuba-cse', 'Tsukuba CS English', 'program_page', 'https://www.cs.tsukuba.ac.jp/english/admission.html', NULL, '["cse","cs","overseas"]', 1, 'tsukuba', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-tsukuba-aisip', 'Tsukuba AISIP', 'program_page', 'https://www.cs.tsukuba.ac.jp/aisip/', NULL, '["aisip","ai","mext"]', 1, 'tsukuba', 'high', 'weekly', 'never_checked'),
+  ('src-sgu-tsukuba-emp', 'Tsukuba Empowerment Informatics', 'program_page', 'https://www.emp.tsukuba.ac.jp/english', NULL, '["empowerment","hci","integrated"]', 1, 'tsukuba', 'high', 'monthly', 'never_checked');

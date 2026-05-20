@@ -12,6 +12,7 @@ import {
   Search,
   University,
   UsersRound,
+  Workflow,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n, LANG_LABELS } from "../contexts/I18nContext";
@@ -26,6 +27,7 @@ export type PageKey =
   | "requirements"
   | "papers"
   | "review"
+  | "automation"
   | "timeline"
   | "sources"
   | "conflicts";
@@ -39,6 +41,7 @@ const navIcons: Record<PageKey, React.ComponentType<{ className?: string }>> = {
   requirements: ClipboardList,
   papers: BookOpen,
   review: Inbox,
+  automation: Workflow,
   timeline: CalendarDays,
   sources: Radar,
   conflicts: AlertTriangle,
@@ -53,6 +56,7 @@ const NAV_ORDER: PageKey[] = [
   "requirements",
   "papers",
   "review",
+  "automation",
   "timeline",
   "sources",
   "conflicts",

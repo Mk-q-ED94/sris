@@ -1,9 +1,10 @@
-import { CheckCircle2, Clock, Inbox, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Inbox, RefreshCw, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useI18n } from "../contexts/I18nContext";
 import {
   acceptCandidate,
+  enrichCandidateApi,
   fetchReviewCandidates,
   fetchUniversities,
   ignoreCandidate,
@@ -39,6 +40,7 @@ export function Review() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [reenrichingId, setReenrichingId] = useState<string | null>(null);
   const [tab, setTab] = useState<"pending" | "later">("pending");
   const [filterType, setFilterType] = useState<string>("");
   const [filterUni, setFilterUni] = useState<string>("");
@@ -119,6 +121,23 @@ export function Review() {
       // Keep the card on failure
     } finally {
       setActionId(null);
+    }
+  }
+
+  async function handleReenrich(id: string) {
+    setReenrichingId(id);
+    try {
+      await enrichCandidateApi(token, id);
+      // Reload the review list to reflect updated enrichment status
+      const filter: ReviewFilter = { status: tab };
+      if (filterType) filter.resource_type = filterType;
+      if (filterUni) filter.university_id = filterUni;
+      const result = await fetchReviewCandidates(token, filter);
+      setCandidates(result);
+    } catch {
+      // Keep the card as-is on failure
+    } finally {
+      setReenrichingId(null);
     }
   }
 
@@ -241,8 +260,28 @@ export function Review() {
                       </>
                     )}
                   </div>
-                  <h2 className="serif text-[20px] font-semibold tracking-[-0.01em] text-[var(--color-ink)]">
+                  <h2 className="serif flex flex-wrap items-center gap-2 text-[20px] font-semibold tracking-[-0.01em] text-[var(--color-ink)]">
                     {candidate.title}
+                    {candidate.enrichment_status && (
+                      <span
+                        className={`mono inline-flex h-5 items-center gap-1 px-1.5 text-[9px] uppercase tracking-[0.12em] ${
+                          candidate.enrichment_status === "succeeded"
+                            ? "bg-emerald-50 text-emerald-600"
+                            : candidate.enrichment_status === "running"
+                              ? "bg-sky-50 text-sky-600"
+                              : candidate.enrichment_status === "partial"
+                                ? "bg-amber-50 text-amber-700"
+                                : candidate.enrichment_status === "failed"
+                                  ? "bg-red-50 text-red-600"
+                                  : "bg-gray-50 text-gray-500"
+                        }`}
+                      >
+                        {candidate.enrichment_status === "running" && (
+                          <RefreshCw className="h-2.5 w-2.5 animate-spin" />
+                        )}
+                        {candidate.enrichment_status}
+                      </span>
+                    )}
                   </h2>
                   {candidate.university_id && uniMap.has(candidate.university_id) && (
                     <p className="mt-1.5 text-[12.5px] text-[var(--color-todai)]">
@@ -261,7 +300,7 @@ export function Review() {
                   )}
                   {candidate.excerpt && (
                     <p className="mt-2 line-clamp-2 border-l-2 border-[var(--color-todai)] pl-3 text-[12.5px] leading-[1.6] text-[var(--color-muted)] italic">
-                      {candidate.excerpt}
+                      {candidate.excerpt.length > 200 ? candidate.excerpt.slice(0, 200) + "…" : candidate.excerpt}
                     </p>
                   )}
                   {candidate.confidence && (
@@ -271,6 +310,11 @@ export function Review() {
                         {candidate.confidence === "high" ? t.review2.confidenceHigh : candidate.confidence === "low" ? t.review2.confidenceLow : t.review2.confidenceMedium}
                       </span>
                     </div>
+                  )}
+                  {candidate.decision_impact && (
+                    <p className="mt-2 line-clamp-1 text-[12.5px] leading-[1.6] text-[var(--color-muted)]">
+                      {candidate.decision_impact}
+                    </p>
                   )}
                   {candidate.matched_keywords.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -309,6 +353,16 @@ export function Review() {
                           {acting ? t.review2.ignoring : t.review2.ignore}
                         </button>
                       </>
+                    )}
+                    {candidate.enrichment_status === "failed" && (
+                      <button
+                        onClick={() => handleReenrich(candidate.id)}
+                        disabled={reenrichingId === candidate.id}
+                        className="inline-flex h-9 items-center gap-2 border border-[var(--color-hairline-strong)] bg-[var(--color-surface)] px-4 text-[12px] font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${reenrichingId === candidate.id ? "animate-spin" : ""}`} />
+                        {reenrichingId === candidate.id ? "Re-enriching…" : "Re-enrich"}
+                      </button>
                     )}
                     {candidate.url && (
                       <a

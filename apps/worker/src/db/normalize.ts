@@ -26,6 +26,8 @@ export function normalizeRow<R extends Record<string, unknown>>(
     normalized[field] = parseJson(normalized[field], jsonFallbackFor(field));
   }
   if ("enabled" in normalized) normalized.enabled = Boolean(normalized.enabled);
+  if ("ai_enrichment_enabled" in normalized) normalized.ai_enrichment_enabled = Boolean(normalized.ai_enrichment_enabled);
+  if ("auto_detected" in normalized) normalized.auto_detected = Boolean(normalized.auto_detected);
   return normalized;
 }
 

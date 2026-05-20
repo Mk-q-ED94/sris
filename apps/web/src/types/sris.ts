@@ -52,6 +52,9 @@ export type IntelligenceCandidate = {
   excerpt?: string | null;
   raw_snapshot?: string | null;
   snapshot_at?: string | null;
+  enrichment_status?: string | null;
+  enriched_at?: string | null;
+  enrichment_error?: string | null;
 };
 
 export type PaperCandidate = IntelligenceCandidate;
@@ -426,4 +429,43 @@ export type ConfidenceSummary = {
   stale_unverified: number;
   avg_confidence: number | null;
   low_confidence_count: number;
+};
+
+export type AutomationRunStatus = "running" | "succeeded" | "partial_success" | "failed";
+
+export type AutomationRunScope = "all" | "sources" | "candidates" | "resources" | "ai";
+
+export type AutomationRun = {
+  id: string;
+  run_type: string;
+  status: AutomationRunStatus;
+  started_at: string;
+  finished_at: string | null;
+  triggered_by: string;
+  sources_checked: number;
+  candidates_created: number;
+  candidates_enriched: number;
+  resources_extracted: number;
+  conflicts_detected: number;
+  failed_count: number;
+  llm_input_tokens: number;
+  llm_output_tokens: number;
+  error_summary: string | null;
+  details_json?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type AutomationRunItem = {
+  id: string;
+  run_id: string;
+  item_type: "source" | "candidate" | "resource" | "conflict" | "system";
+  item_id: string | null;
+  step: string;
+  status: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  error_message?: string | null;
+  details_json?: Record<string, unknown>;
+  created_at: string;
 };

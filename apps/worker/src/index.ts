@@ -1,4 +1,4 @@
-import type { ExecutionContext } from "@cloudflare/workers-types";
+import type { D1Database, ExecutionContext } from "@cloudflare/workers-types";
 import type { Env } from "./env";
 import { HttpError, JSON_HEADERS, json } from "./http";
 import { requireApiToken, requireApiTokenOrQuery, requireCron } from "./auth";
@@ -21,6 +21,8 @@ import { extractAllResources, extractOneResource } from "./routes/extract";
 import { suggestResourceMetaRoute } from "./routes/suggest";
 import { summarizeResourceRoute } from "./routes/summarize-content";
 import { generateMatchReason } from "./ai/match-reason";
+import { runAutomation, type AutomationRunOptions } from "./routes/automation";
+import { enrichCandidate } from "./routes/enrichment";
 
 function llmConfigOrNull(env: Env): LlmConfig | null {
   if (!env.LLM_API_KEY) return null;
@@ -73,7 +75,20 @@ export default {
 
       if (url.pathname === "/api/ingest/arxiv/run" && request.method === "POST") {
         requireCron(request, env);
-        return json(await runIngest(env.DB));
+        const ingestResult = await runIngest(env.DB);
+        // Wrap in automation run for tracking
+        ctx.waitUntil(
+          (async () => {
+            try {
+              const runId = crypto.randomUUID();
+              const now = new Date().toISOString();
+              await env.DB.prepare(
+                "insert into automation_runs (id, run_type, status, started_at, finished_at, triggered_by, sources_checked, candidates_created, created_at, updated_at) values (?,?,?,?,?,?,?,?,?,?)"
+              ).bind(runId, "sources", "succeeded", now, now, "api", ingestResult.sources_checked, ingestResult.candidates_created, now, now).run();
+            } catch { /* non-critical */ }
+          })()
+        );
+        return json(ingestResult);
       }
 
       // iCal feed accepts ?token=API_TOKEN so calendar clients without
@@ -106,7 +121,7 @@ export default {
         const payload = (await request.json()) as QuickCapturePayload;
         const result = await quickCapture(env.DB, payload);
         if (payload.url) {
-          ctx.waitUntil(fetchAndSaveCandidate(env.DB, result.id, payload.url));
+          ctx.waitUntil(enrichCandidate(env.DB, result.id, llmConfigOrNull(env)));
         }
         return json(result, 201);
       }
@@ -225,6 +240,29 @@ export default {
         return json({ ok: true });
       }
 
+      // Automation run routes
+      if (url.pathname === "/api/automation/run" && request.method === "POST") {
+        const scope = (url.searchParams.get("scope") || "all") as AutomationRunOptions["scope"];
+        const force = url.searchParams.get("force") === "1";
+        const dryRun = url.searchParams.get("dry_run") === "1";
+        return json(await runAutomation(env.DB, llmConfigOrNull(env), { scope, force, dryRun, triggeredBy: "manual" }));
+      }
+
+      if (url.pathname === "/api/automation/runs" && request.method === "GET") {
+        const limit = Math.min(20, parseInt(url.searchParams.get("limit") || "10"));
+        const rows = await listRows(env.DB, "automation_runs", null, [], `started_at desc limit ${limit}`);
+        return json(rows.map((r) => normalizeRow(r, ["details_json"])));
+      }
+
+      const automationRunMatch = url.pathname.match(/^\/api\/automation\/runs\/([^/]+)$/);
+      if (automationRunMatch && request.method === "GET") {
+        const runId = automationRunMatch[1]!;
+        const run = await env.DB.prepare("select * from automation_runs where id = ?").bind(runId).first<Record<string, unknown>>();
+        if (!run) return json({ error: "Run not found" }, 404);
+        const items = await listRows(env.DB, "automation_run_items", "run_id = ?", [runId], "created_at asc");
+        return json({ run: normalizeRow(run, ["details_json"]), items: items.map((r) => normalizeRow(r, ["details_json"])) });
+      }
+
       if (url.pathname === "/api/confidence/refresh" && request.method === "POST") {
         return json(await runConfidenceUpdate(env.DB));
       }
@@ -280,9 +318,15 @@ export default {
         const id = candidateRefreshMatch[1]!;
         const row = await env.DB.prepare("select url from paper_candidates where id = ?").bind(id).first<{ url: string }>();
         if (!row?.url) return json({ error: "Candidate not found or no URL" }, 404);
-        await fetchAndSaveCandidate(env.DB, id, row.url);
+        await enrichCandidate(env.DB, id, llmConfigOrNull(env));
         const updated = await env.DB.prepare("select * from paper_candidates where id = ?").bind(id).first<Record<string, unknown>>();
         return json(normalizeIntelligenceCandidate(updated!));
+      }
+
+      const candidateEnrichMatch = url.pathname.match(/^\/api\/candidates\/([^/]+)\/enrich$/);
+      if (candidateEnrichMatch && request.method === "POST") {
+        const id = candidateEnrichMatch[1]!;
+        return json(await enrichCandidate(env.DB, id, llmConfigOrNull(env)));
       }
 
       const resourceRefreshMatch = url.pathname.match(/^\/api\/resources\/([^/]+)\/refresh$/);
@@ -396,8 +440,8 @@ export default {
         const labCount = labs.length;
         const progCount = programs.length;
         const resourceCount = resources.length;
-        const admissionCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "admission_notice"]);
-        const experienceCount = await countRows(env.DB, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "experience_post"]);
+        const admissionCount = await countEvidenceByType(env.DB, uniId, "admission_notice");
+        const experienceCount = await countEvidenceByType(env.DB, uniId, "experience_post");
         // Granular gap checks
         const programsWithDeadline = progCount > 0 ? await countRows(env.DB, "programs", "university_id = ? and deadline is not null", [uniId]) : 1;
         const programsWithRequirements = progCount > 0 ? await countRows(env.DB, "programs", "university_id = ? and requirements is not null and requirements != ''", [uniId]) : 1;
@@ -451,9 +495,27 @@ export default {
   },
 
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(runIngest(env.DB));
-    ctx.waitUntil(runPatrol(env.DB));
-    ctx.waitUntil(runConflictDetection(env.DB, llmConfigOrNull(env)));
-    ctx.waitUntil(runConfidenceUpdate(env.DB));
+    ctx.waitUntil(
+      runAutomation(env.DB, llmConfigOrNull(env), {
+        scope: "all",
+        force: false,
+        dryRun: false,
+        triggeredBy: "cron",
+      })
+    );
   },
 };
+
+async function countEvidenceByType(db: D1Database, universityId: string, resourceType: string): Promise<number> {
+  const row = await db
+    .prepare(
+      `select count(*) as cnt from (
+        select id from paper_candidates where university_id = ? and resource_type = ? and status != 'ignored'
+        union all
+        select id from intelligence_resources where university_id = ? and resource_type = ?
+      )`,
+    )
+    .bind(universityId, resourceType, universityId, resourceType)
+    .first<{ cnt: number }>();
+  return row?.cnt ?? 0;
+}

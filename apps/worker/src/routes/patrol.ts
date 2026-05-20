@@ -3,6 +3,7 @@ import { fetchUrlContent } from "./fetch";
 
 const SOURCE_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
   official: "official_page",
+  webpage: "program_page",
   program_page: "program_page",
   professor_page: "professor_page",
   lab_page: "lab_page",
@@ -38,9 +39,9 @@ export async function patrolSource(
   if (!result) {
     await db
       .prepare(
-        "update radar_sources set patrol_status = 'failed', last_checked_at = ?, updated_at = ? where id = ?",
+        "update radar_sources set patrol_status = 'failed', last_run_at = ?, last_checked_at = ?, updated_at = ? where id = ?",
       )
-      .bind(now, now, sourceId)
+      .bind(now, now, now, sourceId)
       .run();
     return { status: "failed", changed: false };
   }
@@ -51,13 +52,14 @@ export async function patrolSource(
 
   await db
     .prepare(
-      "update radar_sources set patrol_status = ?, last_http_status = ?, last_title = ?, content_hash = ?, last_checked_at = ?, last_changed_at = ?, updated_at = ? where id = ?",
+      "update radar_sources set patrol_status = ?, last_http_status = ?, last_title = ?, content_hash = ?, last_run_at = ?, last_checked_at = ?, last_changed_at = ?, updated_at = ? where id = ?",
     )
     .bind(
       patrolStatus,
       result.status,
       result.title,
       newHash,
+      now,
       now,
       changed ? now : (source.last_changed_at ? String(source.last_changed_at) : null),
       now,

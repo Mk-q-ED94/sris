@@ -47,11 +47,13 @@ export async function runIngest(db: D1Database): Promise<IngestResult> {
     const adapter = ADAPTERS[source.source_type];
     if (!adapter) {
       skipped += 1;
+      await markSourceRun(db, source.id, false, "Unsupported source adapter");
       continue;
     }
     const papers = await adapter(source);
     if (!papers) {
       skipped += 1;
+      await markSourceRun(db, source.id, false, "Feed fetch returned no papers");
       continue;
     }
     const sourceKeywords = parseJson<string[]>(source.keywords, []);
@@ -60,13 +62,20 @@ export async function runIngest(db: D1Database): Promise<IngestResult> {
       if (inserted) created += 1;
       else skipped += 1;
     }
-    await db
-      .prepare("update radar_sources set last_run_at = ?, updated_at = ? where id = ?")
-      .bind(new Date().toISOString(), new Date().toISOString(), source.id)
-      .run();
+    await markSourceRun(db, source.id, true);
   }
 
   return { sources_checked: sources.length, candidates_created: created, candidates_skipped: skipped };
+}
+
+async function markSourceRun(db: D1Database, sourceId: string, ok: boolean, error?: string): Promise<void> {
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      "update radar_sources set last_run_at = ?, patrol_status = ?, last_error = ?, updated_at = ? where id = ?",
+    )
+    .bind(now, ok ? "ok" : "failed", error ?? null, now, sourceId)
+    .run();
 }
 
 async function tryInsertCandidate(

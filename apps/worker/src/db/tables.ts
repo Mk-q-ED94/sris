@@ -102,7 +102,7 @@ export const TABLES: Record<string, TableConfig> = {
     table: "radar_sources",
     order: "name asc",
     jsonFields: ["keywords"],
-    createFields: ["name", "source_type", "url", "query", "keywords", "enabled", "university_id", "confidence", "check_frequency"],
+    createFields: ["name", "source_type", "url", "query", "keywords", "enabled", "university_id", "confidence", "check_frequency", "priority", "ai_enrichment_enabled"],
   },
   resources: {
     path: "/api/resources",
@@ -131,5 +131,19 @@ export const TABLES: Record<string, TableConfig> = {
     order: "updated_at desc",
     jsonFields: [],
     createFields: ["source_id", "total_checks", "successful_checks", "failed_checks", "changed_checks", "reliability_score"],
+  },
+  automationRuns: {
+    path: "/api/automation/runs",
+    table: "automation_runs",
+    order: "started_at desc",
+    jsonFields: ["details_json"],
+    createFields: ["run_type", "status", "triggered_by", "sources_checked", "candidates_created", "candidates_enriched", "resources_extracted", "conflicts_detected", "failed_count", "llm_input_tokens", "llm_output_tokens", "error_summary"],
+  },
+  automationRunItems: {
+    path: "/api/automation-run-items",
+    table: "automation_run_items",
+    order: "created_at asc",
+    jsonFields: ["details_json"],
+    createFields: ["run_id", "item_type", "item_id", "step", "status", "started_at", "finished_at", "error_message"],
   },
 };

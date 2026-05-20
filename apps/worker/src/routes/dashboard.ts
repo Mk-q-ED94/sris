@@ -178,8 +178,8 @@ async function buildGaps(db: D1Database, counts: Record<string, number>, singleU
     const labCount = await countRows(db, "labs", "university_id = ?", [uniId]);
     const progCount = await countRows(db, "programs", "university_id = ?", [uniId]);
     const resourceCount = await countRows(db, "intelligence_resources", "university_id = ?", [uniId]);
-    const admissionCount = await countRows(db, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "admission_notice"]);
-    const experienceCount = await countRows(db, "paper_candidates", "university_id = ? and resource_type = ? and status != 'ignored'", [uniId, "experience_post"]);
+    const admissionCount = await countEvidenceByType(db, uniId, "admission_notice");
+    const experienceCount = await countEvidenceByType(db, uniId, "experience_post");
 
     if (progCount === 0) {
       gaps.push({ label_key: "no_programs_for", priority: "high", university_id: uniId, university_name: uniName });
@@ -228,4 +228,18 @@ async function buildGaps(db: D1Database, counts: Record<string, number>, singleU
   }
 
   return gaps.slice(0, 8);
+}
+
+async function countEvidenceByType(db: D1Database, universityId: string, resourceType: string): Promise<number> {
+  const row = await db
+    .prepare(
+      `select count(*) as cnt from (
+        select id from paper_candidates where university_id = ? and resource_type = ? and status != 'ignored'
+        union all
+        select id from intelligence_resources where university_id = ? and resource_type = ?
+      )`,
+    )
+    .bind(universityId, resourceType, universityId, resourceType)
+    .first<{ cnt: number }>();
+  return row?.cnt ?? 0;
 }
