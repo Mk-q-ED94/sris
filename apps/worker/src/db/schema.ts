@@ -1,4 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
+import { RESEARCH_RESOURCE_SEED_STATEMENTS } from "./research-resource-seed";
 import { SGU_PROGRAM_SEED_STATEMENTS } from "./sgu-seed";
 
 export const SCHEMA_SQL: readonly string[] = [
@@ -48,8 +49,6 @@ export const SEED_SQL: readonly string[] = [
   "insert or ignore into universities (id,name,location,website,notes) values ('osaka','Osaka University','Osaka','https://www.osaka-u.ac.jp/en','Track IST and engineering programs')",
   "insert or ignore into universities (id,name,location,website,notes) values ('tohoku','Tohoku University','Sendai','https://www.tohoku.ac.jp/en/','Track AI, robotics, information sciences')",
   "insert or ignore into universities (id,name,location,website,notes) values ('tsukuba','University of Tsukuba','Tsukuba','https://www.tsukuba.ac.jp/en/','Track CS, intelligent interaction, systems programs')",
-  "insert or ignore into professors (id,university_id,name,title,website,research_keywords,notes) values ('prof-science-tokyo-ai-systems','science-tokyo','Example Professor','Professor','https://example.com','[\"AI systems\",\"distributed training\"]','Replace with real professor profile after manual review.')",
-  "insert or ignore into labs (id,university_id,professor_id,lab_name,research_keywords,website,recent_papers,notes) values ('lab-ai-systems','science-tokyo','prof-science-tokyo-ai-systems','AI Systems Lab','[\"systems\",\"distributed training\",\"LLM inference\"]','https://example.com','[\"Efficient inference scheduling for foundation models\"]','Seed lab for structure validation.')",
   "insert or ignore into programs (id,university_id,program_name,degree,language,deadline,requirements) values ('program-utokyo-ist','utokyo','Graduate School of Information Science and Technology','Master','English / Japanese','2026-08-20','SOP, transcripts, English score, recommendation letters')",
   "insert or ignore into programs (id,university_id,program_name,degree,language,deadline,requirements) values ('program-science-tokyo-cs','science-tokyo','Computer Science International Graduate Program','Master','English','2026-07-15','Research plan, English score, interview')",
   "insert or ignore into radar_sources (id,name,source_type,query,keywords,enabled) values ('source-ai-systems','arXiv AI Systems','arxiv','machine learning systems','[\"systems\",\"inference\",\"training\",\"distributed\",\"GPU\"]',1)",
@@ -192,6 +191,7 @@ export async function initializeDatabase(db: D1Database): Promise<{ ok: true; st
     ...TARGET_PROGRAM_SEED_SQL,
     ...SGU_PROGRAM_SEED_STATEMENTS,
     ...RESOURCE_LINK_SEED_SQL,
+    ...RESEARCH_RESOURCE_SEED_STATEMENTS,
   ];
   let executed = 0;
   for (const sql of statements) {

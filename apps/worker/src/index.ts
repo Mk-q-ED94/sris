@@ -441,16 +441,24 @@ export default {
         const progCount = programs.length;
         const resourceCount = resources.length;
         const admissionCount = await countEvidenceByType(env.DB, uniId, "admission_notice");
-        const experienceCount = await countEvidenceByType(env.DB, uniId, "experience_post");
+        const experienceCount = await countEvidenceByTypes(env.DB, uniId, ["experience_post", "experience_index"]);
         // Granular gap checks
         const programsWithDeadline = progCount > 0 ? await countRows(env.DB, "programs", "university_id = ? and deadline is not null", [uniId]) : 1;
         const programsWithRequirements = progCount > 0 ? await countRows(env.DB, "programs", "university_id = ? and requirements is not null and requirements != ''", [uniId]) : 1;
-        const labPageCount = (profCount > 0 || labCount > 0) ? await countRows(env.DB, "intelligence_resources", "university_id = ? and resource_type in ('lab_page','professor_page')", [uniId]) : 1;
+        const researchDirectoryCount = await countEvidenceByTypes(env.DB, uniId, [
+          "faculty_directory",
+          "lab_directory",
+          "professor_page",
+          "lab_page",
+        ]);
+        const labPageCount = (profCount > 0 || labCount > 0)
+          ? await countEvidenceByTypes(env.DB, uniId, ["lab_page", "professor_page", "faculty_directory", "lab_directory"])
+          : 1;
 
         interface GapItem { label_key: string; priority: "high" | "medium" | "low"; action_id?: string | null; action_status?: string | null; resolved_by?: string | null; }
         const gaps: GapItem[] = [];
         if (progCount === 0) gaps.push({ label_key: "no_programs_for", priority: "high" });
-        if (profCount === 0 && labCount === 0) gaps.push({ label_key: "no_professors_for", priority: "high" });
+        if (profCount === 0 && labCount === 0 && researchDirectoryCount === 0) gaps.push({ label_key: "no_professors_for", priority: "high" });
         if (progCount > 0 && programsWithDeadline === 0) gaps.push({ label_key: "no_deadline_for", priority: "high" });
         if (resourceCount < 3) gaps.push({ label_key: "few_resources_for", priority: "medium" });
         if (admissionCount === 0) gaps.push({ label_key: "no_admission_for", priority: "medium" });
@@ -507,15 +515,20 @@ export default {
 };
 
 async function countEvidenceByType(db: D1Database, universityId: string, resourceType: string): Promise<number> {
+  return countEvidenceByTypes(db, universityId, [resourceType]);
+}
+
+async function countEvidenceByTypes(db: D1Database, universityId: string, resourceTypes: string[]): Promise<number> {
+  const placeholders = resourceTypes.map(() => "?").join(", ");
   const row = await db
     .prepare(
       `select count(*) as cnt from (
-        select id from paper_candidates where university_id = ? and resource_type = ? and status != 'ignored'
+        select id from paper_candidates where university_id = ? and resource_type in (${placeholders}) and status != 'ignored'
         union all
-        select id from intelligence_resources where university_id = ? and resource_type = ?
+        select id from intelligence_resources where university_id = ? and resource_type in (${placeholders})
       )`,
     )
-    .bind(universityId, resourceType, universityId, resourceType)
+    .bind(universityId, ...resourceTypes, universityId, ...resourceTypes)
     .first<{ cnt: number }>();
   return row?.cnt ?? 0;
 }

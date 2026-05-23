@@ -99,9 +99,15 @@ export async function dashboard(db: D1Database): Promise<DashboardResult> {
     const progCount = await countRows(db, "programs", "university_id = ?", [uniId]);
     const profCount = await countRows(db, "professors", "university_id = ?", [uniId]);
     const labCount = await countRows(db, "labs", "university_id = ?", [uniId]);
+    const researchDirectoryCount = await countEvidenceByTypes(db, uniId, [
+      "faculty_directory",
+      "lab_directory",
+      "professor_page",
+      "lab_page",
+    ]);
     let gapCount = 0;
     if (progCount === 0) gapCount++;
-    if (profCount === 0 && labCount === 0) gapCount++;
+    if (profCount === 0 && labCount === 0 && researchDirectoryCount === 0) gapCount++;
     const latestRow = await db
       .prepare("select max(created_at) as latest from (select created_at from paper_candidates where university_id = ? union all select created_at from intelligence_resources where university_id = ?)")
       .bind(uniId, uniId)
@@ -179,12 +185,18 @@ async function buildGaps(db: D1Database, counts: Record<string, number>, singleU
     const progCount = await countRows(db, "programs", "university_id = ?", [uniId]);
     const resourceCount = await countRows(db, "intelligence_resources", "university_id = ?", [uniId]);
     const admissionCount = await countEvidenceByType(db, uniId, "admission_notice");
-    const experienceCount = await countEvidenceByType(db, uniId, "experience_post");
+    const experienceCount = await countEvidenceByTypes(db, uniId, ["experience_post", "experience_index"]);
+    const researchDirectoryCount = await countEvidenceByTypes(db, uniId, [
+      "faculty_directory",
+      "lab_directory",
+      "professor_page",
+      "lab_page",
+    ]);
 
     if (progCount === 0) {
       gaps.push({ label_key: "no_programs_for", priority: "high", university_id: uniId, university_name: uniName });
     }
-    if (profCount === 0 && labCount === 0) {
+    if (profCount === 0 && labCount === 0 && researchDirectoryCount === 0) {
       gaps.push({ label_key: "no_professors_for", priority: "high", university_id: uniId, university_name: uniName });
     }
     if (resourceCount < 3) {
@@ -231,15 +243,20 @@ async function buildGaps(db: D1Database, counts: Record<string, number>, singleU
 }
 
 async function countEvidenceByType(db: D1Database, universityId: string, resourceType: string): Promise<number> {
+  return countEvidenceByTypes(db, universityId, [resourceType]);
+}
+
+async function countEvidenceByTypes(db: D1Database, universityId: string, resourceTypes: string[]): Promise<number> {
+  const placeholders = resourceTypes.map(() => "?").join(", ");
   const row = await db
     .prepare(
       `select count(*) as cnt from (
-        select id from paper_candidates where university_id = ? and resource_type = ? and status != 'ignored'
+        select id from paper_candidates where university_id = ? and resource_type in (${placeholders}) and status != 'ignored'
         union all
-        select id from intelligence_resources where university_id = ? and resource_type = ?
+        select id from intelligence_resources where university_id = ? and resource_type in (${placeholders})
       )`,
     )
-    .bind(universityId, resourceType, universityId, resourceType)
+    .bind(universityId, ...resourceTypes, universityId, ...resourceTypes)
     .first<{ cnt: number }>();
   return row?.cnt ?? 0;
 }
