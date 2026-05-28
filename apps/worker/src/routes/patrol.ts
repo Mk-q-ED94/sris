@@ -3,11 +3,19 @@ import { fetchUrlContent } from "./fetch";
 
 const SOURCE_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
   official: "official_page",
+  official_page: "official_page",
   webpage: "program_page",
   program_page: "program_page",
+  admission_notice: "admission_notice",
   professor_page: "professor_page",
+  faculty_directory: "professor_page",
   lab_page: "lab_page",
+  lab_directory: "lab_page",
   admission: "admission_notice",
+  scholarship_page: "program_page",
+  experience_index: "experience_post",
+  conference: "official_page",
+  scholar: "paper",
   forum: "experience_post",
   video: "video",
 };

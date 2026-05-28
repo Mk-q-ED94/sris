@@ -1,4 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
+import { INTELLIGENCE_COMPLETION_SEED_STATEMENTS } from "./intelligence-completion-seed";
 import { RESEARCH_RESOURCE_SEED_STATEMENTS } from "./research-resource-seed";
 import { SGU_PROGRAM_SEED_STATEMENTS } from "./sgu-seed";
 
@@ -192,6 +193,7 @@ export async function initializeDatabase(db: D1Database): Promise<{ ok: true; st
     ...SGU_PROGRAM_SEED_STATEMENTS,
     ...RESOURCE_LINK_SEED_SQL,
     ...RESEARCH_RESOURCE_SEED_STATEMENTS,
+    ...INTELLIGENCE_COMPLETION_SEED_STATEMENTS,
   ];
   let executed = 0;
   for (const sql of statements) {

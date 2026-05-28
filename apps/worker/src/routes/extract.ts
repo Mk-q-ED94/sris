@@ -4,7 +4,16 @@ import { httpError } from "../http";
 import { extractProgramFields, type LlmConfig } from "../ai/extract-program";
 import { extractWebpageFields } from "../ai/extract-webpage";
 
-const WEBPAGE_TYPES = new Set(["professor_page", "program_page", "lab_page"]);
+const EXTRACTION_TYPE_ALIASES: Record<string, "professor_page" | "program_page" | "lab_page"> = {
+  professor_page: "professor_page",
+  faculty_directory: "professor_page",
+  program_page: "program_page",
+  official_page: "program_page",
+  scholarship_page: "program_page",
+  experience_index: "program_page",
+  lab_page: "lab_page",
+  lab_directory: "lab_page",
+};
 
 interface ResourceRow {
   id: string;
@@ -52,11 +61,11 @@ async function runExtraction(
   resource: ResourceRow,
 ): Promise<{ ok: true; usage: Usage; model: string }> {
   const isAdmission = resource.resource_type === "admission_notice";
-  const isWebpage = WEBPAGE_TYPES.has(resource.resource_type);
-  if (!isAdmission && !isWebpage) {
+  const webpageType = EXTRACTION_TYPE_ALIASES[resource.resource_type];
+  if (!isAdmission && !webpageType) {
     throw httpError(
       400,
-      `Resource ${resource.id} has type '${resource.resource_type}'; extraction supports: admission_notice, professor_page, program_page, lab_page`,
+      `Resource ${resource.id} has type '${resource.resource_type}'; extraction supports: admission_notice, professor_page, faculty_directory, program_page, official_page, scholarship_page, experience_index, lab_page, lab_directory`,
     );
   }
 
@@ -71,11 +80,7 @@ async function runExtraction(
   try {
     const result = isAdmission
       ? await extractProgramFields(config, resource.url)
-      : await extractWebpageFields(
-          config,
-          resource.url,
-          resource.resource_type as "professor_page" | "program_page" | "lab_page",
-        );
+      : await extractWebpageFields(config, resource.url, webpageType!);
     const now = new Date().toISOString();
     await env.DB.prepare(
       `UPDATE intelligence_resources
@@ -134,7 +139,7 @@ export async function extractAllResources(
   env: Env,
   options: ExtractOptions = {},
 ): Promise<unknown> {
-  const extractableTypes = "'admission_notice','professor_page','program_page','lab_page'";
+  const extractableTypes = "'admission_notice','professor_page','faculty_directory','program_page','official_page','scholarship_page','experience_index','lab_page','lab_directory'";
   const filter = options.force
     ? `resource_type IN (${extractableTypes})`
     : `resource_type IN (${extractableTypes}) AND (extraction_status IS NULL OR extraction_status IN ('pending', 'failed'))`;
